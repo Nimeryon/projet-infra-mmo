@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <title>SoloGame testing</title>
+    <meta name="description" content="SoloGame testing">
+    <meta charset="utf_8">
+
+    <link rel="stylesheet" href="style.css" type="text/css">
+
+    <script src="pixi/pixi.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src='messageSystem.js'></script>
+    <script type='module' src='index.js' defer></script>
+</head>
+
+<body>
+    <div class="game">
+        <div class="app-chat">
+            <ul class="messages"></ul>
+            <form class="form-messages" onsubmit="return false" onclick=sendMessage()>
+                <input class="input-message" />
+                <button>Envoyer</button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>
