@@ -4,18 +4,27 @@
 }
 
 .app-screen {
+    margin: 2%;
+    border: 2px solid black;
+    border-radius: 5px;
+}
 
+canvas {
+    max-width: 100%;
+    min-width: 600px;
+    display: block;
 }
 
 .app-chat {
     position: relative;
     padding: 1%;
     margin: 1%;
-    border: 1px solid black;
+    border: 2px solid black;
     border-radius: 2%;
     background-color: lightgray;
-    width: 45%;
-    min-width: 300px;
+    width: 28%;
+    min-width: 400px;
+    min-height: 400px;
 }
 
 .form-messages {

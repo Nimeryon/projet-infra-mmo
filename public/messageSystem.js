@@ -9,12 +9,10 @@ function sendMessage() {
     }
 }
 
-
 // Récupération message chat
 socket.on('chat message', function (msg) {
     let ul = document.querySelector(".messages");
     let li = document.createElement("li");
     li.innerText = msg;
     ul.appendChild(li);
-    console.log(msg);
 });
