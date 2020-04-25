@@ -24,6 +24,7 @@ function createPlayer() {
         id: Math.random().toString(36).substring(7),
         x: Math.floor(Math.random() * (roomScreen[0] - 32)) + 16,
         y: Math.floor(Math.random() * (roomScreen[1] - 32)) + 16,
+        dir: 0,
         sprite_number: String(Math.floor(Math.random() * 20) + 1).padStart(2, '0')
     };
     playersData.players[player.id] = player;
@@ -55,6 +56,7 @@ io.on('connection', function (socket) {
     socket.on('update user', function (data) {
         playersData.players[data.id].x = data.x;
         playersData.players[data.id].y = data.y;
+        playersData.players[data.id].dir = data.dir;
     });
 
     socket.on('chat message', function (msg) {
@@ -72,7 +74,7 @@ io.on('connection', function (socket) {
 
 io.on('error', function (err) {
     console.log(err);
-})
+});
 
 http.listen(3000, function () {
     console.log("le serveur est sur l'URL : http://" + host + ":" + port)

@@ -63,7 +63,7 @@ loader.add('sound_music_01', "sounds/red_carpet_wooden_floor.mp3");
 // Execution
 loader.load((loader, resources) => {
     const packetsArray = [];
-    const players = [];
+    const players = {};
 
     class Player {
         constructor(playerData) {
@@ -134,43 +134,31 @@ loader.load((loader, resources) => {
             }
         }
 
-        changeSprite(dir = 0, anim = "walk") {
+        changeSprite(dir = 0) {
             if (dir != this.direction) {
                 this.direction = dir;
-                if (!this.moving) {
-                    switch (this.direction) {
-                        case 0:
-                            this.sprite.textures = this.player_animation_walk_front;
-                            break;
+                switch (this.direction) {
+                    case 0:
+                        this.sprite.textures = this.player_animation_walk_front;
+                        break;
 
-                        case 1:
-                            this.sprite.textures = this.player_animation_walk_left;
-                            break;
+                    case 1:
+                        this.sprite.textures = this.player_animation_walk_left;
+                        break;
 
-                        case 2:
-                            this.sprite.textures = this.player_animation_walk_back;
-                            break;
+                    case 2:
+                        this.sprite.textures = this.player_animation_walk_back;
+                        break;
 
-                        case 3:
-                            this.sprite.textures = this.player_animation_walk_right;
-                            break;
+                    case 3:
+                        this.sprite.textures = this.player_animation_walk_right;
+                        break;
 
-                        default: break;
-                    }
+                    default: break;
                 }
             }
         }
     }
-
-    // class Player_ghost {
-    //     constructor(x, y) {
-    //         this.sprite = new PIXI.Sprite(player_sprite_textures[1]);
-    //         this.sprite.x = x;
-    //         this.sprite.y = y;
-    //         this.sprite.anchor.set(.5);
-    //         return this.sprite;
-    //     }
-    // }
 
     let keyMap = {
         90: "Z",
@@ -191,11 +179,6 @@ loader.load((loader, resources) => {
         }
 
         on(key, fonction) {
-            // key.forEach(element => {
-            //     if (this.keys[element]) {
-            //         fonction();
-            //     }
-            // })
             if (this.keys[key[0]] || this.keys[key[1]]) {
                 fonction();
             } else {
@@ -217,48 +200,7 @@ loader.load((loader, resources) => {
         }
     }
 
-    // const rect = new PIXI.Graphics();
-    // rect.beginFill();
-    // rect.drawRect(0, 0, app.screen.width, app.screen.height);
-    // rect.endFill();
-    // rect.alpha = 0;
-    // app.stage.addChild(rect);
-
-    // const ghost_players = []
-
     const listener = new listenKeys();
-
-    // function dash(/*event*/) {
-    //     // let pos_x = event.data.global.x;
-    //     // let pos_y = event.data.global.y;
-    //     let pos_x = app.renderer.plugins.interaction.mouse.global.x;
-    //     let pos_y = app.renderer.plugins.interaction.mouse.global.y;
-    //     let old_x = player.sprite.x;
-    //     let old_y = player.sprite.y;
-
-    //     let dist_x = Math.ceil(Math.abs(pos_x) - Math.abs(old_x));
-    //     let dist_y = Math.ceil(Math.abs(pos_y) - Math.abs(old_y));
-    //     let dist = Math.floor(Math.sqrt(Math.abs(Math.floor(dist_x * dist_x) - Math.floor(dist_y * dist_y))));
-
-    //     // console.log(Math.floor(dist_x), Math.floor(dist_y), dist);
-
-    //     player.sprite.x = pos_x;
-    //     player.sprite.y = pos_y;
-
-    //     let nbr_ghost = Math.ceil(dist / 48);
-
-    //     if (dist > 20) {
-    //         for (let x = 0; x < nbr_ghost; x++) {
-    //             let ghost = new Player_ghost(old_x + ((dist_x / nbr_ghost) * x), old_y + ((dist_y / nbr_ghost) * x));
-    //             ghost_players.push(ghost);
-    //             app.stage.addChild(ghost);
-    //         }
-    //     }
-    // }
-
-    // app.stage.interactive = true;
-    // app.stage.buttonMode = true;
-    // app.stage.on('pointerdown', dash);
 
     function lerp(start, end, amt) {
         return (1 - amt) * start + amt * end
@@ -296,11 +238,12 @@ loader.load((loader, resources) => {
 
                 const interpX = lerp(t2_Player.x, current_player.x, ratio);
                 const interpY = lerp(t2_Player.y, current_player.y, ratio);
+                const dir = t2_Player.dir;
 
                 const cords = { x: interpX, y: interpY };
 
                 if (current_player.id !== player.id) {
-                    editPlayerPosition(current_player, cords);
+                    editPlayerPosition(current_player, cords, dir);
                 }
             });
             packetsArray.slice();
@@ -311,16 +254,38 @@ loader.load((loader, resources) => {
         return players[id];
     }
 
-    function editPlayerPosition(current_player, cords) {
+    function editPlayerPosition(current_player, cords, dir) {
         const playerSprite = getCurrentPlayer(current_player.id);
         if (!playerSprite) {
             createPlayer(current_player);
             const newPlayerSprite = getCurrentPlayer(current_player.id);
-            newPlayerSprite.sprite.x = cords.x;
-            newPlayerSprite.sprite.y = cords.y;
+            if (newPlayerSprite.direction != dir) {
+                newPlayerSprite.changeSprite(dir);
+            }
+            if (Math.floor(newPlayerSprite.sprite.x) == Math.floor(cords.x) && Math.floor(newPlayerSprite.sprite.y) == Math.floor(cords.y)) {
+                newPlayerSprite.moving = false;
+            } else {
+                if (newPlayerSprite.moving == false) {
+                    newPlayerSprite.moving = true;
+                }
+                newPlayerSprite.sprite.x = cords.x;
+                newPlayerSprite.sprite.y = cords.y;
+                newPlayerSprite.sprite.play();
+            }
         } else {
-            playerSprite.sprite.x = cords.x;
-            playerSprite.sprite.y = cords.y;
+            if (playerSprite.direction != dir) {
+                playerSprite.changeSprite(dir);
+            }
+            if (Math.floor(playerSprite.sprite.x) == Math.floor(cords.x) && Math.floor(playerSprite.sprite.y) == Math.floor(cords.y)) {
+                playerSprite.moving = false;
+            } else {
+                if (playerSprite.moving == false) {
+                    playerSprite.moving = true;
+                }
+                playerSprite.sprite.x = cords.x;
+                playerSprite.sprite.y = cords.y;
+                playerSprite.sprite.play();
+            }
         }
     }
 
@@ -328,7 +293,8 @@ loader.load((loader, resources) => {
         let data = {
             id: player.id,
             x: player.sprite.x,
-            y: player.sprite.y
+            y: player.sprite.y,
+            dir: player.direction
         };
 
         socket.emit('update user', data);
@@ -363,6 +329,14 @@ loader.load((loader, resources) => {
                 }
             }
 
+            Array.from(Object.values(players)).forEach(current_player => {
+                if (current_player.moving == false) {
+                    if (current_player.sprite.texture == current_player.sprite.textures[0] || current_player.sprite.texture == current_player.sprite.textures[2]) {
+                        current_player.sprite.stop();
+                    }
+                }
+            });
+
             // mouvement joueur
             listener.on(["Z", "^"], () => {
                 player.move(delta, 2);
@@ -383,20 +357,6 @@ loader.load((loader, resources) => {
                 player.move(delta, 3);
                 sendData();
             });
-
-            // listener.on(["Space", null], () => {
-            //     dash();
-            // });
-
-            // ghost_players.forEach(ghost_player => {
-            //     if (ghost_player.alpha > 0) {
-            //         ghost_player.alpha -= 0.065 * delta;
-            //     } else {
-            //         app.stage.removeChild(ghost_player)
-            //         ghost_player.destroy();
-            //         ghost_players.splice(ghost_players.indexOf(ghost_player), 1);
-            //     }
-            // });
         });
     });
 
