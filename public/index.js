@@ -12,6 +12,7 @@ const app = new PIXI.Application(
         width: 1080,
         height: 720,
         backgroundColor: 0xAAAAAA,
+        // resizeTo: window
     }
 );
 
@@ -61,22 +62,8 @@ loader.add('player_sprites_20', "sprites/players/spr_player_20.png");
 loader.add('sound_music_01', "sounds/red_carpet_wooden_floor.mp3");
 // Execution
 loader.load((loader, resources) => {
-    const player_sprite_textures = [];
-
-    let frame_count = 0;
-    for (let y = 0; y < 4; y++) {
-        for (let x = 0; x < 3; x++) {
-            player_sprite_textures[frame_count] = new PIXI.Texture(resources.player_sprites_19.texture,
-                new PIXI.Rectangle(x * 32, y * 32, 32, 32)
-            );
-            frame_count++;
-        }
-    }
-
-    let player_animation_walk_front = [player_sprite_textures[1], player_sprite_textures[0], player_sprite_textures[1], player_sprite_textures[2]];
-    let player_animation_walk_left = [player_sprite_textures[4], player_sprite_textures[3], player_sprite_textures[4], player_sprite_textures[5]];
-    let player_animation_walk_right = [player_sprite_textures[7], player_sprite_textures[6], player_sprite_textures[7], player_sprite_textures[8]];
-    let player_animation_walk_back = [player_sprite_textures[10], player_sprite_textures[9], player_sprite_textures[10], player_sprite_textures[11]];
+    const packetsArray = [];
+    const players = [];
 
     class Player {
         constructor(playerData) {
@@ -85,7 +72,10 @@ loader.load((loader, resources) => {
             this.moving = false;
             this.speed = 4;
 
-            this.sprite = new PIXI.AnimatedSprite(player_animation_walk_front);
+            this.generateSprite(playerData.sprite_number);
+
+            this.sprite = new PIXI.AnimatedSprite(this.player_animation_walk_front);
+            this.sprite.id = playerData.id;
             this.sprite.x = playerData.x;
             this.sprite.y = playerData.y;
             this.sprite.animationSpeed = 0.1;
@@ -93,7 +83,26 @@ loader.load((loader, resources) => {
             this.sprite.scale.x = scale;
             this.sprite.scale.y = scale;
             app.stage.addChild(this.sprite);
-            // return this.sprite;
+        }
+
+        generateSprite(sprite_number) {
+            this.player_sprite_textures = [];
+
+            let frame_count = 0;
+            let player_sprite = `player_sprites_${sprite_number}`;
+            for (let y = 0; y < 4; y++) {
+                for (let x = 0; x < 3; x++) {
+                    this.player_sprite_textures[frame_count] = new PIXI.Texture(resources[player_sprite].texture,
+                        new PIXI.Rectangle(x * 32, y * 32, 32, 32)
+                    );
+                    frame_count++;
+                }
+            }
+
+            this.player_animation_walk_front = [this.player_sprite_textures[1], this.player_sprite_textures[0], this.player_sprite_textures[1], this.player_sprite_textures[2]];
+            this.player_animation_walk_left = [this.player_sprite_textures[4], this.player_sprite_textures[3], this.player_sprite_textures[4], this.player_sprite_textures[5]];
+            this.player_animation_walk_right = [this.player_sprite_textures[7], this.player_sprite_textures[6], this.player_sprite_textures[7], this.player_sprite_textures[8]];
+            this.player_animation_walk_back = [this.player_sprite_textures[10], this.player_sprite_textures[9], this.player_sprite_textures[10], this.player_sprite_textures[11]];
         }
 
         move(delta = 1, dir = 0) {
@@ -128,38 +137,40 @@ loader.load((loader, resources) => {
         changeSprite(dir = 0, anim = "walk") {
             if (dir != this.direction) {
                 this.direction = dir;
-                switch (this.direction) {
-                    case 0:
-                        this.sprite.textures = player_animation_walk_front;
-                        break;
+                if (!this.moving) {
+                    switch (this.direction) {
+                        case 0:
+                            this.sprite.textures = this.player_animation_walk_front;
+                            break;
 
-                    case 1:
-                        this.sprite.textures = player_animation_walk_left;
-                        break;
+                        case 1:
+                            this.sprite.textures = this.player_animation_walk_left;
+                            break;
 
-                    case 2:
-                        this.sprite.textures = player_animation_walk_back;
-                        break;
+                        case 2:
+                            this.sprite.textures = this.player_animation_walk_back;
+                            break;
 
-                    case 3:
-                        this.sprite.textures = player_animation_walk_right;
-                        break;
+                        case 3:
+                            this.sprite.textures = this.player_animation_walk_right;
+                            break;
 
-                    default: break;
+                        default: break;
+                    }
                 }
             }
         }
     }
 
-    class Player_ghost {
-        constructor(x, y) {
-            this.sprite = new PIXI.Sprite(player_sprite_textures[1]);
-            this.sprite.x = x;
-            this.sprite.y = y;
-            this.sprite.anchor.set(.5);
-            return this.sprite;
-        }
-    }
+    // class Player_ghost {
+    //     constructor(x, y) {
+    //         this.sprite = new PIXI.Sprite(player_sprite_textures[1]);
+    //         this.sprite.x = x;
+    //         this.sprite.y = y;
+    //         this.sprite.anchor.set(.5);
+    //         return this.sprite;
+    //     }
+    // }
 
     let keyMap = {
         90: "Z",
@@ -249,32 +260,90 @@ loader.load((loader, resources) => {
     // app.stage.buttonMode = true;
     // app.stage.on('pointerdown', dash);
 
+    function lerp(start, end, amt) {
+        return (1 - amt) * start + amt * end
+    }
+
+
+    function createPlayer(playerdata) {
+        players[playerdata.id] = new Player(playerdata);
+    }
+
+    function interPolate() {
+        if (packetsArray.length < 5) return;
+
+        const past = 140;
+        const now = Date.now();
+        const renderTime = now - past;
+
+        const t1 = packetsArray[1].timestamp;
+        const t2 = packetsArray[0].timestamp;
+
+        if (renderTime <= t2 && renderTime >= t1) {
+            // total time from t1 to t2
+            const total = t2 - t1;
+            // how far between t1 and t2 this entity is as of 'renderTime'
+            const portion = renderTime - t1;
+            // fractional distance between t1 and t2
+            const ratio = portion / total;
+
+            const t1_Players = packetsArray[0].data;
+            const t2_Players = packetsArray[1].data;
+
+            t1_Players.forEach(current_player => {
+                const t2_Player = t2_Players.filter(item => current_player.id === item.id)[0];
+                if (!t2_Player) return;
+
+                const interpX = lerp(t2_Player.x, current_player.x, ratio);
+                const interpY = lerp(t2_Player.y, current_player.y, ratio);
+
+                const cords = { x: interpX, y: interpY };
+
+                if (current_player.id !== player.id) {
+                    editPlayerPosition(current_player, cords);
+                }
+            });
+            packetsArray.slice();
+        }
+    }
+
+    function getCurrentPlayer(id) {
+        return players[id];
+    }
+
+    function editPlayerPosition(current_player, cords) {
+        const playerSprite = getCurrentPlayer(current_player.id);
+        if (!playerSprite) {
+            createPlayer(current_player);
+            const newPlayerSprite = getCurrentPlayer(current_player.id);
+            newPlayerSprite.sprite.x = cords.x;
+            newPlayerSprite.sprite.y = cords.y;
+        } else {
+            playerSprite.sprite.x = cords.x;
+            playerSprite.sprite.y = cords.y;
+        }
+    }
+
+    function sendData() {
+        let data = {
+            id: player.id,
+            x: player.sprite.x,
+            y: player.sprite.y
+        };
+
+        socket.emit('update user', data);
+    }
+
     resources.sound_music_01.sound.play({
         loop: true
     });
 
     var player;
-    socket.on('init', function (data) {
-        console.log(data);
-        player = new Player(data);
+    socket.on('init', function (data, sprite_number) {
+        player = new Player(data, sprite_number);
         // Listen for animate update
         app.ticker.add(delta => {
-            // mouvement joueur
-            listener.on(["Z", "^"], () => {
-                player.move(delta, 2);
-            });
-
-            listener.on(["S", "V"], () => {
-                player.move(delta, 0);
-            });
-
-            listener.on(["Q", "<"], () => {
-                player.move(delta, 1);
-            });
-
-            listener.on(["D", ">"], () => {
-                player.move(delta, 3);
-            });
+            interPolate();
 
             // Tester si la moindre touche est préssée pour tester si le joueur bouge
             let pressedKey = false;
@@ -285,9 +354,35 @@ loader.load((loader, resources) => {
             }
 
             if (!pressedKey) {
-                player.moving = false;
-                player.sprite.stop();
+                if (player.moving) {
+                    player.moving = false;
+                }
+
+                if (player.sprite.texture == player.sprite.textures[0] || player.sprite.texture == player.sprite.textures[2]) {
+                    player.sprite.stop();
+                }
             }
+
+            // mouvement joueur
+            listener.on(["Z", "^"], () => {
+                player.move(delta, 2);
+                sendData();
+            });
+
+            listener.on(["S", "V"], () => {
+                player.move(delta, 0);
+                sendData();
+            });
+
+            listener.on(["Q", "<"], () => {
+                player.move(delta, 1);
+                sendData();
+            });
+
+            listener.on(["D", ">"], () => {
+                player.move(delta, 3);
+                sendData();
+            });
 
             // listener.on(["Space", null], () => {
             //     dash();
@@ -303,6 +398,11 @@ loader.load((loader, resources) => {
             //     }
             // });
         });
+    });
+
+    socket.on('update', (data) => {
+        // console.log(data);
+        packetsArray.unshift(data);
     });
 });
 

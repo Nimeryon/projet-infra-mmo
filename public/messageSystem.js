@@ -1,7 +1,7 @@
 var socket = io();
 
 function sendMessage() {
-    let input = document.querySelector(".input-message")
+    let input = document.querySelector(".input-message");
     let message = input.value;
     input.value = "";
     if (message != "") {
