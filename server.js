@@ -20,10 +20,17 @@ const playersData = {
 const updateRate = 10;
 
 function createPlayer() {
+    // const player = {
+    //     id: Math.random().toString(36).substring(7),
+    //     x: Math.floor(Math.random() * (roomScreen[0] - 32)) + 16,
+    //     y: Math.floor(Math.random() * (roomScreen[1] - 32)) + 16,
+    //     dir: 0,
+    //     sprite_number: String(Math.floor(Math.random() * 20) + 1).padStart(2, '0')
+    // };
     const player = {
         id: Math.random().toString(36).substring(7),
-        x: Math.floor(Math.random() * (roomScreen[0] - 32)) + 16,
-        y: Math.floor(Math.random() * (roomScreen[1] - 32)) + 16,
+        x: roomScreen[0] / 2,
+        y: roomScreen[1] / 2,
         dir: 0,
         sprite_number: String(Math.floor(Math.random() * 20) + 1).padStart(2, '0')
     };
