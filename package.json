@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "express": "4.x",
-	"socket.io": "2.3.x"
+	"socket.io": "2.3.x",
+	"http": "x"
   }
 }

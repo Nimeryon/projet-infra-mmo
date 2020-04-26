@@ -77,5 +77,5 @@ io.on('error', function (err) {
 });
 
 http.listen(3000, function () {
-    console.log("le serveur est sur l'URL : http://" + host + ":" + port)
+    console.log("le serveur est sur l'URL : http://" + host + ":" + port);
 });
