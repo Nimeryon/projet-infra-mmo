@@ -186,7 +186,8 @@ loader.load((loader, resources) => {
         37: "<",
         40: "V",
         39: ">",
-        32: "Space"
+        32: "Space",
+        84: "T"
     };
 
     class listenKeys {
@@ -205,6 +206,7 @@ loader.load((loader, resources) => {
 
         listenKeys() {
             const keysPressed = e => {
+                // console.log(e.keyCode);
                 this.keys[keyMap[e.keyCode]] = true;
             };
 
@@ -465,16 +467,16 @@ loader.load((loader, resources) => {
         }
     }
 
-    app.stage.addChild(generateMap(maps.spawn, tileset.textures, scale));
-
     resources.sound_music_01.sound.play({
         loop: true
     });
 
     var player;
+    const message_input = document.querySelector(".input-message");
+
     socket.on('init', function (data) {
+        app.stage.addChild(generateMap(maps.spawn, tileset.textures, scale));
         player = new Player(data, scale);
-        // Listen for animate update
         app.ticker.add(delta => {
             interPolate();
 
@@ -496,55 +498,60 @@ loader.load((loader, resources) => {
                 }
             }
 
-            // mouvement joueur
-            listener.on(["Z", "^"], () => {
-                player.move(delta, 2);
-                sendData();
-            });
+            if (document.activeElement != message_input) {
+                // mouvement joueur
+                listener.on(["Z", "^"], () => {
+                    player.move(delta, 2);
+                    sendData();
+                });
 
-            listener.on(["S", "V"], () => {
-                player.move(delta, 0);
-                sendData();0
-            });
+                listener.on(["S", "V"], () => {
+                    player.move(delta, 0);
+                    sendData();0
+                });
 
-            listener.on(["Q", "<"], () => {
-                player.move(delta, 1);
-                sendData();
-            });
+                listener.on(["Q", "<"], () => {
+                    player.move(delta, 1);
+                    sendData();
+                });
 
-            listener.on(["D", ">"], () => {
-                player.move(delta, 3);
-                sendData();
-            });
-            
-            if (player.sprite.x + view_x > app.view.width - 32 * scale * 3) {
-                view_x = Math.max(
-                    app.view.width - ((maps.spawn.width * 32) * scale),
-                    app.view.width - player.sprite.x - 32 * scale * 3
-                );
-              }
-              if (player.sprite.x + view_x < 32 * scale * 3) {
-                view_x = Math.min(0, -player.sprite.x + 32 * scale * 3);
-              }
-              if (player.sprite.y + view_y > app.view.height - 32 * scale * 2) {
-                view_y = Math.max(
-                    app.view.height - ((maps.spawn.height * 32) * scale),
-                    app.view.height - player.sprite.y - 32 * scale * 2
-                );
-              }
-              if (player.sprite.y + view_y < 32 * scale * 1.5) {
-                view_y = Math.min(0, -player.sprite.y + 32 * scale * 1.5);
-              }
+                listener.on(["D", ">"], () => {
+                    player.move(delta, 3);
+                    sendData();
+                });
 
-            if (app.stage.x != view_x || app.stage.y != view_y) {
-                app.stage.x = view_x;
-                app.stage.y = view_y;
+                listener.on(["T", null], () => {
+                    document.getElementsByClassName("input-message")[0].focus();
+                });
+                
+                if (player.sprite.x + view_x > app.view.width - 32 * scale * 3) {
+                    view_x = Math.max(
+                        app.view.width - ((maps.spawn.width * 32) * scale),
+                        app.view.width - player.sprite.x - 32 * scale * 3
+                    );
+                }
+                if (player.sprite.x + view_x < 32 * scale * 3) {
+                    view_x = Math.min(0, -player.sprite.x + 32 * scale * 3);
+                }
+                if (player.sprite.y + view_y > app.view.height - 32 * scale * 2) {
+                    view_y = Math.max(
+                        app.view.height - ((maps.spawn.height * 32) * scale),
+                        app.view.height - player.sprite.y - 32 * scale * 2
+                    );
+                }
+                if (player.sprite.y + view_y < 32 * scale * 1.5) {
+                    view_y = Math.min(0, -player.sprite.y + 32 * scale * 1.5);
+                }
+
+                if (app.stage.x != view_x || app.stage.y != view_y) {
+                    app.stage.x = view_x;
+                    app.stage.y = view_y;
+                }
             }
         });
     });
 
     socket.on('update', (data) => {
-        // console.log(data);
         packetsArray.unshift(data);
     });
 });

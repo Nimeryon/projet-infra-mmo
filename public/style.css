@@ -15,6 +15,15 @@ canvas {
     display: block;
 }
 
+ul {
+    list-style: none;
+}
+
+li p {
+    text-decoration: none;
+    overflow-wrap: break-word;
+}
+
 .app-chat {
     position: relative;
     padding: 1%;

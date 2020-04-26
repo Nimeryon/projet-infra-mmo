@@ -10,7 +10,13 @@ function sendMessage() {
 // Récupération message chat
 socket.on('chat message', function (msg) {
     let ul = document.querySelector(".messages");
+    let nbr_messages = ul.childElementCount;
+    if (nbr_messages == 20) {
+        ul.removeChild(ul.firstChild);
+    }
     let li = document.createElement("li");
-    li.innerText = msg;
+    let p = document.createElement("p");
+    p.innerText = msg;
+    li.appendChild(p);
     ul.appendChild(li);
 });
