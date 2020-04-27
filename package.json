@@ -4,7 +4,6 @@
   "description": "Projet infra MMO (WIP)",
   "main": "server.js",
   "scripts": {
-    "test": "node test.js",
     "start": "node server.js"
   },
   "repository": {

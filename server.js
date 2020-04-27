@@ -6,7 +6,7 @@ var io = require('socket.io')(http);
 app.use(express.static('public'));
 
 const port = 3000;
-const host = "127.0.0.1";
+const host = '192.168.43.60';
 
 app.get("/", (req, res) => {
     res.sendFile('index.hmtl');
@@ -76,6 +76,6 @@ io.on('error', function (err) {
     console.log(err);
 });
 
-http.listen(3000, function () {
+http.listen(3000, '192.168.43.60' || 'localhost', function () {
     console.log("le serveur est sur l'URL : http://" + host + ":" + port);
 });
