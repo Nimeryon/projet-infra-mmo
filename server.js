@@ -4,6 +4,7 @@ const app = express();
 var helmet = require('helmet');
 app.use(helmet());
 app.disable('x-powered-by');
+
 app.use(express.static('public'));
 
 var http = require('http').createServer(app);
