@@ -1,11 +1,11 @@
 const express = require("express");
 const app = express();
 
+var helmet = require('helmet');
 app.use(helmet());
 app.disable('x-powered-by');
 app.use(express.static('public'));
 
-var helmet = require('helmet');
 var http = require('http').createServer(app);
 var io = require('socket.io')(http);
 
