@@ -1,0 +1,27 @@
+{
+  "name": "projet-infra-mmo",
+  "version": "0.0.5",
+  "description": "Projet infra MMO (WIP)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nimeryon/projet-infra-mmo.git"
+  },
+  "author": "Nimeryon",
+  "bugs": {
+    "url": "https://github.com/Nimeryon/projet-infra-mmo/issues"
+  },
+  "homepage": "https://github.com/Nimeryon/projet-infra-mmo#readme",
+  "engines": {
+    "node": "12.x"
+  },
+  "dependencies": {
+    "express": "4.x",
+    "helmet": "^3.22.0",
+    "http": "x",
+    "socket.io": "2.3.x"
+  }
+}

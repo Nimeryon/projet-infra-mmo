@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <title>SoloGame testing</title>
+    <meta name="description" content="SoloGame testing">
+    <meta charset="utf_8">
+
+    <link rel="stylesheet" href="style.css" type="text/css">
+
+    <script src="pixi/pixi.min.js"></script>
+    <script src="pixi/pixi-sound.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+    </script>
+    <script src='scripts/messageSystem.js'></script>
+    <script type='module' src='scripts/index.js' defer></script>
+</head>
+
+<body>
+    <div id="startMenuWrapper">
+        <div id="startMenu">
+            <p>Your Online Game</p>
+            <input type="text" tabindex="0" autofocus placeholder="Enter your name here" id="playerNameInput" />
+            <b class="input-error">Nick name must be alphanumeric characters only!</b>
+            <br />
+            <button id="startButton">Play</button>
+        </div>
+    </div>
+    <div class="game">
+        <div class="app-chat">
+            <ul class="messages"></ul>
+            <form class="form-messages" onsubmit="return false" onclick=sendMessage()>
+                <input class="input-message" />
+                <button>Envoyer</button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>
