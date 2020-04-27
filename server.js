@@ -1,9 +1,14 @@
 const express = require("express");
 const app = express();
+
+app.use(helmet());
+app.disable('x-powered-by');
+app.use(express.static('public'));
+
+var helmet = require('helmet');
 var http = require('http').createServer(app);
 var io = require('socket.io')(http);
 
-app.use(express.static('public'));
 
 const port = 3000;
 const host = '192.168.43.60';

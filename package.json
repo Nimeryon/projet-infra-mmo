@@ -20,7 +20,8 @@
   },
   "dependencies": {
     "express": "4.x",
-	"socket.io": "2.3.x",
-	"http": "x"
+    "helmet": "^3.22.0",
+    "http": "x",
+    "socket.io": "2.3.x"
   }
 }
