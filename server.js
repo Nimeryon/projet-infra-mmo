@@ -82,6 +82,6 @@ io.on('error', function (err) {
     console.log(err);
 });
 
-http.listen(3000, '192.168.43.60' || 'localhost', function () {
+http.listen(3000, host || 'localhost', function () {
     console.log("le serveur est sur l'URL : http://" + host + ":" + port);
 });
