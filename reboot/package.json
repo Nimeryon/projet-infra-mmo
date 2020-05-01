@@ -1,0 +1,17 @@
+{
+  "name": "project-mmo-reboot",
+  "version": "0.0.1",
+  "description": "reboot project mmo",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "startDev": "nodemon server.js"
+  },
+  "author": "Nimeryon",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "helmet": "^3.22.0",
+    "socket.io": "^2.3.0"
+  }
+}

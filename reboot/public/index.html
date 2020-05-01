@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <title>MMO Project Reboot</title>
+    <meta name="description" content="SoloGame testing">
+    <meta charset="utf_8">
+
+    <link rel="stylesheet" href="style.css" type="text/css">
+
+    <script src="pixi/pixi.min.js"></script>
+    <script src="pixi/pixi-sound.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+    </script>
+    <script src="scripts/messageSystem.js"></script>
+    <script src="scripts/index.js" defer></script>
+</head>
+
+<body>
+    <div id="startMenuWrapper">
+        <div id="startMenu">
+            <form class="form-login" onsubmit="return false">
+                <input type="text" tabindex="0" autofocus placeholder="Pseudo" id="playerNameInput" />
+                <button onclick=sendInit()>Jouer</button>
+            </form>
+        </div>
+    </div>
+    <div id="game">
+        <canvas id="ctx" width="500" height="500" style="border: 1px solid black;"></canvas>
+        <div class="app-chat">
+            <ul class="messages"></ul>
+            <form class="form-messages" onsubmit="return false">
+                <input class="input-message" />
+                <button onclick=sendMessage()>Envoyer</button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>
