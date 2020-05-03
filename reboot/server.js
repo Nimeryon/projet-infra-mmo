@@ -1,16 +1,13 @@
 const express = require('express');
 const app = express();
 const fs = require('fs');
-const serveur = require('https').createServer({
-    key: fs.readFileSync('/etc/nginx/ssl/cert.key'),
-    cert: fs.readFileSync('/etc/nginx/ssl/cert.crt')
-}, app);
+const serveur = require('http').createServer(app);
 const io = require('socket.io')(serveur);
 const helmet = require('helmet');
 
 // Connection base de donnée
-const mongojs = require('mongojs');
-const db = mongojs('127.0.0.1:27017/mmo-project', ['account', 'progress']);
+// const mongojs = require('mongojs');
+// const db = mongojs('127.0.0.1:27017/mmo-project', ['account', 'progress']);
 
 // ==================================================================================================================
 //  ____  ____  ____  _  _  ____  _  _  ____ 
@@ -177,7 +174,7 @@ io.on('connection', function (socket) {
     });
 
     socket.on('signin request', function (data) {
-        db.account.find({ username: data.usernmae }, function (err, res) {
+        /* db.account.find({ username: data.usernmae }, function (err, res) {
             if (err) console.log(err);
 
             console.log(res);
@@ -188,7 +185,7 @@ io.on('connection', function (socket) {
                 db.account.insert({ username: data.username, password: data.password });
                 socket.emit('signin answer', { state: true, username: data.username });
             }
-        });
+        }); */
     });
 
     socket.on('player ready', function (pseudo) {
