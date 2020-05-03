@@ -15,15 +15,35 @@
         var socket = io();
     </script>
     <script src="scripts/messageSystem.js"></script>
+    <script src="scripts/login.js"></script>
     <script src="scripts/index.js" defer></script>
 </head>
 
 <body>
     <div id="startMenuWrapper">
-        <div id="startMenu">
-            <form class="form-login" onsubmit="return false">
-                <input type="text" tabindex="0" autofocus placeholder="Pseudo" id="playerNameInput" />
-                <button onclick=sendInit()>Jouer</button>
+        <div id="login-menu">
+            <h2>Connexion</h2>
+            <form id="form-login" onsubmit="validateLogin();return false;" onreset="return false">
+                <input type="text" placeholder="Nom d'utilisateur" id="username" />
+                <p id="username-error"></p>
+                <input type="password" placeholder="Mot de passe" id="password" />
+                <p id="password-error"></p>
+                <button type="submit">JOUER</button>
+                <button type="button" class="switch-signin-login" onclick=switchSignin()>Nouveau joueur ?</button>
+            </form>
+        </div>
+        <div id="signin-menu">
+            <h2>Inscription</h2>
+            <form id="form-signin" onsubmit="validateCreation();return false;" onreset="return false">
+                <input type="text" placeholder="Nom d'utilisateur" id="username-signin" onchange=testUsername() />
+                <p id="username-signin-error"></p>
+                <input type="password" placeholder="Mot de passe" id="password-signin" onchange=testPassword() />
+                <p id="password-signin-error"></p>
+                <input type="password" placeholder="Confirmation mot de passe" id="password-signin-2"
+                    onchange=testPassword2() />
+                <p id="password-signin-2-error"></p>
+                <button type="submit">JOUER</button>
+                <button type="button" class="switch-signin-login" onclick=switchLogin()>Déjà membre ?</button>
             </form>
         </div>
     </div>

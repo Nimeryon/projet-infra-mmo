@@ -1,3 +1,98 @@
+#startMenuWrapper {
+    width: 50%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#login-menu {
+    display: block;
+    text-align: center;
+    min-width: 400px;
+    width: 70%;
+    padding: 5%;
+    margin: auto;
+    background: #ddd;
+    border: 2px solid black;
+    border-radius: 10px;
+}
+
+#signin-menu {
+    display: none;
+    text-align: center;
+    min-width: 400px;
+    width: 70%;
+    padding: 5%;
+    margin: auto;
+    background: #ddd;
+    border: 2px solid black;
+    border-radius: 10px;
+}
+
+#form-login {
+    display: flex;
+    flex-direction: column;
+}
+
+#form-signin {
+    display: flex;
+    flex-direction: column;
+}
+
+form input[type="password"], form input[type="text"], form button[type="submit"] {
+    padding: 2%;
+    
+    color: #333;
+
+    border: 1px solid #ccc;
+    border-radius: 5px;
+
+    outline: 0;
+}
+
+form p {
+    margin-bottom: 5%;
+    color: red;
+}
+
+form button[type="submit"] {
+    margin-bottom: 2%;
+}
+
+.switch-signin-login {
+    padding: 2%;
+    
+    color: #333;
+
+    border: 1px solid #ccc;
+    border-radius: 5px;
+
+    outline: 0;
+}
+
+.switch-signin-login:hover {
+    color: #eee;
+    background-color: darkgray;
+}
+
+form input[type="password"]:hover, form input[type="text"]:hover {
+    background-color: rgb(204, 204, 204);
+}
+
+form input[type="password"]:focus, form input[type="text"]:focus {
+    background-color: #ccc;
+    border: 1px solid #aaa;
+}
+
+form button[type="submit"] {
+    font-weight: bold;
+    color: #eee;
+    background-color: darkgray;
+}
+
+form button[type="submit"]:hover {
+    background-color: gray;
+}
+
 #game {
     display: none;
 }

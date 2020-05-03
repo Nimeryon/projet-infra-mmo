@@ -1,16 +1,5 @@
 var current_player = null;
 
-function sendInit() {
-    let pseudo = document.getElementById("playerNameInput").value;
-    if (pseudo != "" && pseudo.length > 5) {
-        document.getElementById("game").style.display = "flex";
-        document.getElementById("startMenuWrapper").style.display = "none";
-        socket.emit('player ready', pseudo);
-    } else {
-        alert("Le pseudo ne doit pas être vide et doit être d'au moins 5 caractères !");
-    }
-}
-
 function testActiveChat() {
     let message_input = document.querySelector(".input-message");
     return document.activeElement != message_input;

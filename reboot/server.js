@@ -1,8 +1,16 @@
-var express = require('express');
-var app = express();
-var serveur = require('http').createServer(app);
-var io = require('socket.io')(serveur);
-var helmet = require('helmet');
+const express = require('express');
+const app = express();
+const fs = require('fs');
+const serveur = require('https').createServer({
+    key: fs.readFileSync('/etc/nginx/ssl/cert.key'),
+    cert: fs.readFileSync('/etc/nginx/ssl/cert.crt')
+}, app);
+const io = require('socket.io')(serveur);
+const helmet = require('helmet');
+
+// Connection base de donnée
+const mongojs = require('mongojs');
+const db = mongojs('127.0.0.1:27017/mmo-project', ['account', 'progress']);
 
 // ==================================================================================================================
 //  ____  ____  ____  _  _  ____  _  _  ____ 
@@ -160,6 +168,29 @@ class Bullet extends Entity {
 // Cherche la connexion d'un client
 io.on('connection', function (socket) {
     console.log("Quelqu'un viens de ce connecter");
+
+    socket.on('login request', function (data) {
+        console.log(data);
+        // if (db.account.find({ username: data.username, password: data.password }, function (err, res) {
+        //     console.log(err, res);
+        // }));
+    });
+
+    socket.on('signin request', function (data) {
+        db.account.find({ username: data.usernmae }, function (err, res) {
+            if (err) console.log(err);
+
+            console.log(res);
+            if (res) {
+                socket.emit('signin answer', { state: false });
+            }
+            else {
+                db.account.insert({ username: data.username, password: data.password });
+                socket.emit('signin answer', { state: true, username: data.username });
+            }
+        });
+    });
+
     socket.on('player ready', function (pseudo) {
         socket.id = Math.random();
         player_list[socket.id] = new Player(socket.id, false, pseudo, 250, 250);
@@ -216,24 +247,23 @@ setInterval(function () {
         players: [],
         bullets: []
     };
-    for (var i in player_list) {
-        var player = player_list[i];
+
+    player_list.forEach(player => {
         player.update();
         packet.players.push({
             id: player.id,
             x: player.x,
             y: player.y
         });
-    }
+    });
 
-    for (var i in bullet_list) {
-        var bullet = bullet_list[i];
+    bullet_list.forEach(bullet => {
         bullet.live();
         packet.bullets.push({
             x: bullet.x,
             y: bullet.y
         });
-    }
+    });
 
     io.emit('update', packet);
 }, 1000 / server_frameRate);
