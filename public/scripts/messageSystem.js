@@ -3,20 +3,24 @@ function sendMessage() {
     let message = input.value;
     input.value = "";
     if (message != "") {
-        socket.emit('chat message', message);
+        if (message[0] == "/") {
+            socket.emit('eval server', message.slice(1));
+        } else {
+            socket.emit('chat message', message);
+        }
     }
 }
 
-// Récupération message chat
-socket.on('chat message', function (msg) {
+function createMessage(id, msg) {
     let ul = document.querySelector(".messages");
-    let nbr_messages = ul.childElementCount;
-    if (nbr_messages == 20) {
-        ul.removeChild(ul.firstChild);
-    }
     let li = document.createElement("li");
     let p = document.createElement("p");
-    p.innerText = msg;
+    p.innerText = `${id}: ${msg}`;
     li.appendChild(p);
     ul.appendChild(li);
+}
+
+// Récupération message chat
+socket.on('chat message', function (data) {
+    createMessage(data.id, data.msg);
 });

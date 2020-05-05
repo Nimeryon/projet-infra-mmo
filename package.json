@@ -1,27 +1,17 @@
 {
-  "name": "projet-infra-mmo",
-  "version": "0.0.5",
-  "description": "Projet infra MMO (WIP)",
+  "name": "project-mmo-reboot",
+  "version": "0.0.3",
+  "description": "reboot project mmo",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Nimeryon/projet-infra-mmo.git"
+    "start": "node server.js",
+    "startDev": "nodemon server.js"
   },
   "author": "Nimeryon",
-  "bugs": {
-    "url": "https://github.com/Nimeryon/projet-infra-mmo/issues"
-  },
-  "homepage": "https://github.com/Nimeryon/projet-infra-mmo#readme",
-  "engines": {
-    "node": "12.x"
-  },
   "dependencies": {
-    "express": "4.x",
+    "express": "^4.17.1",
     "helmet": "^3.22.0",
-    "http": "x",
-    "socket.io": "2.3.x"
+    "mongojs": "^3.1.0",
+    "socket.io": "^2.3.0"
   }
 }
