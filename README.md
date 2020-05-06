@@ -1,4 +1,8 @@
 # Project infra mmo
+## Présentation : 
+(WIP)
+
+---
 ## Installation pour Ubuntu : 
 ### Prérequis : 
 
