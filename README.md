@@ -90,14 +90,14 @@ sudo nginx -t
 ```
 - Si la commande est réussi passer à la suite, redémarrer nginx :
 ```
-- sudo systemctl restart nginx
+sudo systemctl restart nginx
 ```
 
 ---
 ### Installer et configurer netdata : 
 ```
-- bash <(curl -Ss https://my-netdata.io/kickstart.sh) --stable-channel
-- cd /etc/netdata
+bash <(curl -Ss https://my-netdata.io/kickstart.sh) --stable-channel
+cd /etc/netdata
 ```
 - Créer et éditer le fichier python.d/nginx.conf avec vi, vim ou nano (au choix ^^)
 ```
