@@ -6,7 +6,7 @@ const helmet = require('helmet');
 
 // Connection base de donnée
 const mongojs = require('mongojs');
-const db = mongojs('localhost:27017/mmo-project', ['account', 'progress']);
+const db = mongojs('192.168.43.87:27017/mmo-project', ['account', 'progress']);
 
 // ==================================================================================================================
 //  ____  ____  ____  _  _  ____  _  _  ____ 
@@ -172,7 +172,6 @@ io.on('connection', function (socket) {
             res = res[0];
 
             if (res != null) {
-                console.log(res);
                 socket.emit('login answer', { state: true, username: data.username });
             }
             else {
@@ -254,22 +253,24 @@ setInterval(function () {
         bullets: []
     };
 
-    player_list.forEach(player => {
+    for (let i in player_list) {
+        let player = player_list[i];
         player.update();
         packet.players.push({
             id: player.id,
             x: player.x,
             y: player.y
         });
-    });
+    }
 
-    bullet_list.forEach(bullet => {
+    for (let i in bullet_list) {
+        let bullet = bullet_list[i];
         bullet.live();
         packet.bullets.push({
             x: bullet.x,
             y: bullet.y
         });
-    });
+    }
 
     io.emit('update', packet);
 }, 1000 / server_frameRate);
