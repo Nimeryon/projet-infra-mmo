@@ -258,8 +258,11 @@ setInterval(function () {
         player.update();
         packet.players.push({
             id: player.id,
+            pseudo: player.pseudo,
             x: player.x,
-            y: player.y
+            y: player.y,
+            spdX: player.spdX,
+            spdY: player.spdY
         });
     }
 
@@ -267,8 +270,12 @@ setInterval(function () {
         let bullet = bullet_list[i];
         bullet.live();
         packet.bullets.push({
+            id: bullet.id,
             x: bullet.x,
-            y: bullet.y
+            y: bullet.y,
+            parent_id: bullet.parent_id,
+            spdX: bullet.spdX,
+            spdY: bullet.spdY
         });
     }
 

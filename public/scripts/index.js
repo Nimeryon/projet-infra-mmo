@@ -31,26 +31,27 @@ document.getElementById("game").appendChild(divAppScreen);
 
 const loader = new PIXI.Loader();
 // Chargement sprites joueur
-loader.add('player_sprites_01', "sprites/players/spr_player_01.png");
-loader.add('player_sprites_02', "sprites/players/spr_player_02.png");
-loader.add('player_sprites_03', "sprites/players/spr_player_03.png");
-loader.add('player_sprites_04', "sprites/players/spr_player_04.png");
-loader.add('player_sprites_05', "sprites/players/spr_player_05.png");
-loader.add('player_sprites_06', "sprites/players/spr_player_06.png");
-loader.add('player_sprites_07', "sprites/players/spr_player_07.png");
-loader.add('player_sprites_08', "sprites/players/spr_player_08.png");
-loader.add('player_sprites_09', "sprites/players/spr_player_09.png");
-loader.add('player_sprites_10', "sprites/players/spr_player_10.png");
-loader.add('player_sprites_11', "sprites/players/spr_player_11.png");
-loader.add('player_sprites_12', "sprites/players/spr_player_12.png");
-loader.add('player_sprites_13', "sprites/players/spr_player_13.png");
-loader.add('player_sprites_14', "sprites/players/spr_player_14.png");
-loader.add('player_sprites_15', "sprites/players/spr_player_15.png");
-loader.add('player_sprites_16', "sprites/players/spr_player_16.png");
-loader.add('player_sprites_17', "sprites/players/spr_player_17.png");
-loader.add('player_sprites_18', "sprites/players/spr_player_18.png");
-loader.add('player_sprites_19', "sprites/players/spr_player_19.png");
-loader.add('player_sprites_20', "sprites/players/spr_player_20.png");
+// loader.add('player_sprites_01', "sprites/players/spr_player_01.png");
+// loader.add('player_sprites_02', "sprites/players/spr_player_02.png");
+// loader.add('player_sprites_03', "sprites/players/spr_player_03.png");
+// loader.add('player_sprites_04', "sprites/players/spr_player_04.png");
+// loader.add('player_sprites_05', "sprites/players/spr_player_05.png");
+// loader.add('player_sprites_06', "sprites/players/spr_player_06.png");
+// loader.add('player_sprites_07', "sprites/players/spr_player_07.png");
+// loader.add('player_sprites_08', "sprites/players/spr_player_08.png");
+// loader.add('player_sprites_09', "sprites/players/spr_player_09.png");
+// loader.add('player_sprites_10', "sprites/players/spr_player_10.png");
+// loader.add('player_sprites_11', "sprites/players/spr_player_11.png");
+// loader.add('player_sprites_12', "sprites/players/spr_player_12.png");
+// loader.add('player_sprites_13', "sprites/players/spr_player_13.png");
+// loader.add('player_sprites_14', "sprites/players/spr_player_14.png");
+// loader.add('player_sprites_15', "sprites/players/spr_player_15.png");
+// loader.add('player_sprites_16', "sprites/players/spr_player_16.png");
+// loader.add('player_sprites_17', "sprites/players/spr_player_17.png");
+// loader.add('player_sprites_18', "sprites/players/spr_player_18.png");
+// loader.add('player_sprites_19', "sprites/players/spr_player_19.png");
+// loader.add('player_sprites_20', "sprites/players/spr_player_20.png");
+loader.add('player_sprite', "sprites/players/player.png");
 // Chargement sons
 // loader.add('sound_music_01', "sounds/red_carpet_wooden_floor.mp3");
 // Chargement tilesets
@@ -65,6 +66,54 @@ loader.add('tileset_grass', "sprites/tilesets/grass.png");
 // Execution
 loader.load((loader, resources) => {
     var current_player = null;
+    var player_list = [];
+    var bullet_list = [];
+
+    class Entity {
+        constructor(texture, id, parent_id, x, y, scale) {
+            this.sprite = new PIXI.Sprite(texture);
+            this.sprite.id = id;
+            this.sprite.x = x;
+            this.sprite.y = y;
+            this.sprite.scale.x = scale;
+            this.sprite.scale.y = scale;
+            this.sprite.anchor.set(0.5);
+            app.stage.addChild(this.sprite);
+
+            this.id = id;
+            this.parent_id = parent_id;
+        }
+    }
+
+    class Player extends Entity {
+        constructor(texture, id, parent_id, pseudo, x, y, scale) {
+            // Hérite de la classe Entity
+            super(texture, id, parent_id, x, y, scale);
+
+            this.pseudo = pseudo;
+
+            player_list[id] = this;
+        }
+
+        die() {
+            this.sprite.destroy();
+            delete player_list[this.id];
+        }
+    }
+
+    class Bullet extends Entity {
+        constructor(texture, id, parent_id, x, y, scale) {
+            // Hérite de la classe Entity
+            super(texture, id, parent_id, x, y, scale);
+
+            bullet_list[id] = this;
+        }
+
+        die() {
+            this.sprite.destroy();
+            delete bullet_list[this.id];
+        }
+    }
 
     function testActiveChat() {
         let message_input = document.querySelector(".input-message");
@@ -92,6 +141,61 @@ loader.load((loader, resources) => {
         current_player = player;
 
         socket.on('update', function (packet) {
+            // Joueur
+            for (var i = 0; i < packet.players.length; i++) {
+                let player = packet.players[i];
+                if (!player_list[player.id]) {
+                    new Player(resources.player_sprite.texture, player.id, null, player.pseudo, player.x, player.y, scale);
+                }
+                else {
+                    player_list[player.id].sprite.x = player.x;
+                    player_list[player.id].sprite.y = player.y;
+
+                    if (current_player.id == player.id) {
+                        current_player.x = player.x;
+                        current_player.y = player.y;
+                    }
+                }
+            }
+
+            // Supprimer les joueurs déconnecté
+            for (let player_id in player_list) {
+                let find = false;
+                for (let i = 0; i < packet.players.length; i++) {
+                    if (player_list[player_id].id == packet.players[i].id) {
+                        find = true;
+                    }
+                }
+                if (!find) {
+                    player_list[player_id].die();
+                }
+            }
+
+            // Bullet
+            for (var i = 0; i < packet.bullets.length; i++) {
+                let bullet = packet.bullets[i];
+                if (!bullet_list[bullet.id]) {
+                    new Bullet(resources.player_sprite.texture, bullet.id, bullet.parent_id, player.x, player.y, 1);
+                }
+                else {
+                    bullet_list[bullet.id].sprite.x = bullet.x;
+                    bullet_list[bullet.id].sprite.y = bullet.y;
+                }
+            }
+
+            // Supprimer les balles supprimé
+            for (let bullet_id in bullet_list) {
+                let find = false;
+                for (let i = 0; i < packet.bullets.length; i++) {
+                    if (bullet_list[bullet_id].id == packet.bullets[i].id) {
+                        find = true;
+                    }
+                }
+                if (!find) {
+                    bullet_list[bullet_id].die();
+                }
+            }
+
             // ctx.clearRect(0, 0, 500, 500);
             // for (var i = 0; i < packet.players.length; i++) {
             //     let player = packet.players[i];
@@ -152,12 +256,10 @@ loader.load((loader, resources) => {
         }
 
         document.onmousemove = function (e) {
-            if (testActiveChat()) {
-                var x = -current_player.x + e.clientX;
-                var y = -current_player.y + e.clientY;
-                var angle = Math.atan2(y, x) / Math.PI * 180;
-                socket.emit('input', { key: 'mouseAngle', state: angle });
-            }
+            var x = -current_player.x + e.clientX;
+            var y = -current_player.y + e.clientY;
+            var angle = Math.atan2(y, x) / Math.PI * 180;
+            socket.emit('input', { key: 'mouseAngle', state: angle });
         }
     });
 });
