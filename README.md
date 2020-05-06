@@ -39,14 +39,14 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/
 ```
 sudo touch sites-available/mmo-project.conf
 ```
-- Ouvrir le fichier de configuration avec votre éditeur préférée et y coller le code suivant en remplacant les cases [IP] par votre ip local, fonctionne aussi avec localhost : 
+- Ouvrir le fichier de configuration avec votre éditeur préférée et y coller le code suivant en remplacant les cases [IP local] par votre ip local, fonctionne aussi avec localhost : 
 ```
 upstream express_server {
-    server localhost:3000;
+    server [IP local]:3000;
 }
 
 upstream monitoring {
-    server 192.168.43.87:19999;
+    server [IP local]:19999;
 }
 
 server {
