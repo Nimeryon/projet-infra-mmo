@@ -1,8 +1,8 @@
 # Project infra mmo
 ## Présentation : 
-Bonjour, voici mon projet de petit mmo, toujours en cours de devellopement.
-Pour le moment seule la partie infrastructure as étais travaillé.
-Les fonctionnalités plus avancé le gameplay arriveront dans les semaines / mois à venir.
+Bonjour, voici mon projet de petit mmo, toujours en cours de developpement.
+Pour le moment, seule la partie infrastructure a été travaillé.
+Les fonctionnalités plus avancées comme le gameplay arriveront dans les semaines ou mois à venir.
 Bonne journée à vous ^^
 (WIP)
 
@@ -27,7 +27,7 @@ sudo apt-get install ufw -y
 
 ---
 ### Configurer nginx : 
-- Ce rendre dans le dossier de nginx :
+- Se rendre dans le dossier de nginx :
 ```
 cd /etc/nginx/
 ```
@@ -36,18 +36,18 @@ cd /etc/nginx/
 sudo rm sites-available/default
 sudo rm sites-enabled/default
 ```
-- Création des certificats ssl permetant la mise en place du https : 
+- Création des certificats ssl permettant la mise en place du https : 
 ```
 sudo mkdir ssl
 sudo chmod 700 ssl/
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/cert.key -out /etc/nginx/ssl/cert.crt
 (Passer le remplissage des informations, elles ne sont pas importantes dans notre cas)
 ```
-- Creer la configuration du serveur nginx : 
+- Créer la configuration du serveur nginx : 
 ```
 sudo touch sites-available/mmo-project.conf
 ```
-- Ouvrir le fichier de configuration avec votre éditeur préférée et y coller le code suivant en remplacant les cases [IP local] par votre ip local, fonctionne aussi avec localhost : 
+- Ouvrir le fichier de configuration avec votre éditeur préférée et y coller le code suivant en remplaçant les cases [IP local] par votre ip local, fonctionne aussi avec localhost : 
 ```
 upstream express_server {
     server [IP local]:3000;
@@ -92,7 +92,7 @@ server {
 ```
 sudo ln sites-available/mmo-roject.conf sites-enabled/
 ```
-- Tester la congiguration du fichier : 
+- Tester la configuration du fichier : 
 ```
 sudo nginx -t
 ```
@@ -117,12 +117,12 @@ localhost:
     name : 'local'
     url  : 'http://localhost/stub_status'
 ```
-- Configurer l'ip de netdata afin de pouvoir y accéder sur notre réseaux avec d'autre machine : 
+- Configurer l'ip de netdata afin de pouvoir y accéder sur notre réseau avec d'autres machines : 
 ```
 sudo vi netdata.conf
 
 ```
-- Rechercher la partie [web] et remplace # bind to =  * par : 
+- Rechercher la partie [web] et remplacer # bind to =  * par : 
 ```
 bind to = 127.0.0.1,[IP local]
 ```
@@ -168,30 +168,30 @@ db.createCollection("progress");
 ```
 
 ---
-### Configuration du parefeu : 
+### Configuration du pare-feu : 
 - Autoriser les ports 80 et 443 : 
 ```
 sudo ufw allow http
 sudo ufw allow https
 ```
-- Bloquer les ports 3000, 19999 et 27017 pour éviter que les utilisateurs sur le réseaux puisse utiliser nos application sans passer par le reverse proxy : 
+- Bloquer les ports 3000, 19999 et 27017 pour éviter que les utilisateurs sur le réseau puisse utiliser nos applications sans passer par le reverse proxy : 
 ```
 sudo ufw deny 3000
 sudo ufw deny 19999
 sudo ufw deny 27017
 ```
-- Activer les rêgle de parefeu au démarrage :
+- Activer les règles de pare-feu au démarrage :
 ```
 sudo ufw enable
 ```
 
 ### Clonage du projet et lancement : 
-- Ce rendre dans votre dossier favori 
+- Se rendre dans votre dossier favori 
 ```
 git clone git@github.com:Nimeryon/projet-infra-mmo.git
 cd projet-infra-mmo
 ```
-- Installer toutes les dépendances nécessaire au fonctionnement de nodejs : 
+- Installer toutes les dépendances nécessaires au fonctionnement de nodejs : 
 ```
 npm install
 ```
