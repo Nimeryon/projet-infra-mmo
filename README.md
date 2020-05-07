@@ -31,7 +31,7 @@ sudo apt-get install ufw -y
 ```
 cd /etc/nginx/
 ```
-- Supprimer la congiguration par défault : 
+- Supprimer la configuration par défault : 
 ```
 sudo rm sites-available/default
 sudo rm sites-enabled/default
