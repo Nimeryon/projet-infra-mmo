@@ -29,7 +29,7 @@ app.get("/", function (req, res) {
 
 // Allumage du serveur sur le port 3000
 serveur.listen(3000, function () {
-    console.log("Les serveur est accesible sur l'adresse suivante : *:3000");
+    console.log("Le serveur est accesible sur l'adresse suivante : *:3000");
 });
 
 // ==================================================================================================================
@@ -163,7 +163,7 @@ class Bullet extends Entity {
 
 // Cherche la connexion d'un client
 io.on('connection', function (socket) {
-    console.log("Quelqu'un viens de ce connecter");
+    console.log("Quelqu'un vient de se connecter");
 
     socket.on('login request', function (data) {
         db.account.find({ username: data.username, password: data.password }, function (err, res) {
@@ -173,7 +173,7 @@ io.on('connection', function (socket) {
 
             if (res != null) {
                 socket.emit('login answer', { state: true, username: data.username });
-                console.log(`utilisateur: ${data.username} vient de ce connecter`);
+                console.log(`utilisateur: ${data.username} vient de se connecter`);
             }
             else {
                 socket.emit('login answer', { state: false });
@@ -239,7 +239,7 @@ io.on('connection', function (socket) {
         });
 
         socket.on('disconnect', function () {
-            console.log("Quelqu'un viens de ce déconnecter");
+            console.log("Quelqu'un vient de se déconnecter");
             delete player_list[socket.id];
         });
     });
