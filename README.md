@@ -1,5 +1,9 @@
 # Project infra mmo
 ## Présentation : 
+Bonjour, voici mon projet de petit mmo, toujours en cours de devellopement.
+Pour le moment seule la partie infrastructure as étais travaillé.
+Les fonctionnalités plus avancé le gameplay arriveront dans les semaines / mois à venir.
+Bonne journée à vous ^^
 (WIP)
 
 ---

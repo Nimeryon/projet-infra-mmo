@@ -173,6 +173,7 @@ io.on('connection', function (socket) {
 
             if (res != null) {
                 socket.emit('login answer', { state: true, username: data.username });
+                console.log(`utilisateur: ${data.username} vient de ce connecter`);
             }
             else {
                 socket.emit('login answer', { state: false });
@@ -192,6 +193,7 @@ io.on('connection', function (socket) {
             else {
                 db.account.insert({ username: data.username, password: data.password });
                 socket.emit('signin answer', { state: true, username: data.username });
+                console.log(`utilisateur: ${data.username} vient d'être créé`);
             }
         });
     });
