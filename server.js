@@ -6,7 +6,7 @@ const helmet = require('helmet');
 
 // Connection base de donnée
 const mongojs = require('mongojs');
-const db = mongojs('192.168.43.87:27017/mmo-project', ['account', 'progress']);
+const db = mongojs('localhost:27017/mmo-project', ['account', 'progress']);
 
 // ==================================================================================================================
 //  ____  ____  ____  _  _  ____  _  _  ____ 
