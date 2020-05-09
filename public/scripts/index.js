@@ -103,10 +103,7 @@ loader.load((loader, resources) => {
             this.hp = hp;
             this.maxHP = maxHP
 
-            this.HPBar = new PIXI.Container();
-            this.HPBar = new
-
-                this.hp_text = new PIXI.Text(`HP : ${this.hp}`, { fontSize: 14 });
+            this.hp_text = new PIXI.Text(`HP : ${this.hp}`, { fontSize: 14 });
             this.hp_text.x = this.x - (16 * this.scale / 2);
             this.hp_text.y = this.y - (24 * this.scale);
             app.stage.addChild(this.hp_text);
