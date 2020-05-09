@@ -70,6 +70,9 @@ loader.load((loader, resources) => {
     var current_player = null;
     var player_list = [];
     var bullet_list = [];
+    var view_size = [1280, 720];
+    var view_x = 0;
+    var view_y = 0;
     var keyMap = {
         90: "Z",
         81: "Q",
@@ -240,7 +243,54 @@ loader.load((loader, resources) => {
         }
     }
 
+    function generateLayer(container, tileset, scale, layer, nbr_tile_x, nbr_tile_y, tile_size_x, tile_size_y) {
+        let layer_container = new PIXI.Container();
+        for (let y = 0; y < nbr_tile_y; y++) {
+            for (let x = 0; x < nbr_tile_x; x++) {
+                let tile = layer[y][x];
+                if (tile != 0) {
+                    let sprite = createSprite(tileset[tile - 1], x * (tile_size_x * scale), y * (tile_size_y * scale), 1, 0, { x: scale, y: scale });
+                    layer_container.addChild(sprite);
+                }
+            }
+        }
+        container.addChild(layer_container);
+    }
+
+    function generateMap(map, tileset, scale) {
+        view_size = [(map.width * 32) * scale, (map.height * 32) * scale];
+        let map_container = new PIXI.Container();
+        generateLayer(map_container, tileset, scale, map.back_layer, map.width, map.height, 32, 32);
+        return map_container;
+    }
+
+    const tileset = generateTextures(resources['tileset_grass'].texture, 8, 6, 32, 32);
+
+    const maps = {
+        spawn: {
+            width: 20,
+            height: 14,
+            back_layer: [
+                [6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8],
+                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
+                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
+                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
+                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
+                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
+                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
+                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
+                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
+                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
+                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
+                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
+                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
+                [22, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 24]
+            ]
+        }
+    }
+
     socket.on('init', function (player) {
+        app.stage.addChild(generateMap(maps.spawn, tileset.textures, scale));
         // Musique
         resources.sound_music_01.sound.play({
             loop: true
@@ -269,6 +319,30 @@ loader.load((loader, resources) => {
                     current_player.y = player.y;
                     current_player.hp = player.hp;
                     updateCurrentPlayerScore(player.score);
+
+                    if (current_player.x + view_x > app.view.width - 32 * scale * 3) {
+                        view_x = Math.max(
+                            app.view.width - ((maps.spawn.width * 32) * scale),
+                            app.view.width - current_player.x - 32 * scale * 3
+                        );
+                    }
+                    if (current_player.x + view_x < 32 * scale * 3) {
+                        view_x = Math.min(0, -current_player.x + 32 * scale * 3);
+                    }
+                    if (current_player.y + view_y > app.view.height - 32 * scale * 2) {
+                        view_y = Math.max(
+                            app.view.height - ((maps.spawn.height * 32) * scale),
+                            app.view.height - current_player.y - 32 * scale * 2
+                        );
+                    }
+                    if (current_player.y + view_y < 32 * scale * 1.5) {
+                        view_y = Math.min(0, -current_player.y + 32 * scale * 1.5);
+                    }
+
+                    if (app.stage.x != view_x || app.stage.y != view_y) {
+                        app.stage.x = view_x;
+                        app.stage.y = view_y;
+                    }
                 }
             }
 
@@ -369,8 +443,8 @@ loader.load((loader, resources) => {
 
         document.onmousemove = function () {
             let mousePos = app.renderer.plugins.interaction.mouse.global;
-            var x = -current_player.x + mousePos.x;
-            var y = -current_player.y + mousePos.y;
+            var x = (-current_player.x + mousePos.x) - view_x;
+            var y = (-current_player.y + mousePos.y) - view_y;
 
             var angle = Math.atan2(y, x) / Math.PI * 180;
             socket.emit('input', { key: 'mouseAngle', state: angle });

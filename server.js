@@ -41,6 +41,10 @@ serveur.listen(process.env.PORT || 3000, function () {
 
 var player_list = [];
 var bullet_list = [];
+var map_size = {
+    width: 20 * 32 * 3,
+    height: 14 * 32 * 3
+};
 var server_frameRate = 25;
 var DEBUG_MODE = true;
 
@@ -55,8 +59,13 @@ class Entity {
     }
 
     updatePosition() {
-        this.x += this.spdX;
-        this.y += this.spdY;
+        if (this.x + this.spdX > 0 && this.x + this.spdX < map_size.width) {
+            this.x += this.spdX;
+        }
+
+        if (this.y + this.spdY > 0 && this.y + this.spdY < map_size.height) {
+            this.y += this.spdY;
+        }
     }
 
     update() {
