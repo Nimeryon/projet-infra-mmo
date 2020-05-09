@@ -5,8 +5,8 @@ const io = require('socket.io')(serveur);
 const helmet = require('helmet');
 
 // Connection base de donnée
-const mongojs = require('mongojs');
-const db = mongojs('localhost:27017/mmo-project', ['account', 'progress']);
+// const mongojs = require('mongojs');
+// const db = mongojs('192.168.43.87:27017/mmo-project', ['account', 'progress']);
 
 // ==================================================================================================================
 //  ____  ____  ____  _  _  ____  _  _  ____ 
@@ -28,7 +28,7 @@ app.get("/", function (req, res) {
 });
 
 // Allumage du serveur sur le port 3000
-serveur.listen(3000, function () {
+serveur.listen(process.env.PORT || 3000, function () {
     console.log("Le serveur est accesible sur l'adresse suivante : *:3000");
 });
 
@@ -180,36 +180,38 @@ io.on('connection', function (socket) {
     console.log("Quelqu'un vient de se connecter");
 
     socket.on('login request', function (data) {
-        db.account.find({ username: data.username, password: data.password }, function (err, res) {
-            if (err) console.log(err);
+        socket.emit('login answer', { state: true, username: data.username });
+        // db.account.find({ username: data.username, password: data.password }, function (err, res) {
+        //     if (err) console.log(err);
 
-            res = res[0];
+        //     res = res[0];
 
-            if (res != null) {
-                socket.emit('login answer', { state: true, username: data.username });
-                console.log(`utilisateur: ${data.username} vient de se connecter`);
-            }
-            else {
-                socket.emit('login answer', { state: false });
-            }
-        });
+        //     if (res != null) {
+        //         socket.emit('login answer', { state: true, username: data.username });
+        //         console.log(`utilisateur: ${data.username} vient de se connecter`);
+        //     }
+        //     else {
+        //         socket.emit('login answer', { state: false });
+        //     }
+        // });
     });
 
     socket.on('signin request', function (data) {
-        db.account.find({ username: data.username }, function (err, res) {
-            if (err) console.log(err);
+        socket.emit('signin answer', { state: true, username: data.username });
+        // db.account.find({ username: data.username }, function (err, res) {
+        //     if (err) console.log(err);
 
-            res = res[0];
+        //     res = res[0];
 
-            if (res != null) {
-                socket.emit('signin answer', { state: false });
-            }
-            else {
-                db.account.insert({ username: data.username, password: data.password });
-                socket.emit('signin answer', { state: true, username: data.username });
-                console.log(`utilisateur: ${data.username} vient d'être créé`);
-            }
-        });
+        //     if (res != null) {
+        //         socket.emit('signin answer', { state: false });
+        //     }
+        //     else {
+        //         db.account.insert({ username: data.username, password: data.password });
+        //         socket.emit('signin answer', { state: true, username: data.username });
+        //         console.log(`utilisateur: ${data.username} vient d'être créé`);
+        //     }
+        // });
     });
 
     socket.on('player ready', function (pseudo) {

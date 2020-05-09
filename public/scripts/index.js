@@ -54,6 +54,7 @@ loader.add('weapon_sprites_01', "sprites/weapons/spr_weapon_01.png");
 loader.add('weapon_sprites_02', "sprites/weapons/spr_weapon_02.png");
 // Chargement sons
 loader.add('sound_music_01', "sounds/red_carpet_wooden_floor.mp3");
+loader.add('sound_shoot', "sounds/shoot.mp3");
 // Chargement tilesets
 loader.add('tileset_water', "sprites/tilesets/water.png");
 loader.add('tileset_waterfall', "sprites/tilesets/waterfall.png");
@@ -100,13 +101,16 @@ loader.load((loader, resources) => {
             this.scale = scale;
 
             this.hp = hp;
+            this.maxHP = maxHP
 
-            this.hp_text = new PIXI.Text(`HP : ${this.hp}`, { fontSize: 14 });
+            this.HPBar = new PIXI.Container();
+            this.HPBar = new
+
+                this.hp_text = new PIXI.Text(`HP : ${this.hp}`, { fontSize: 14 });
             this.hp_text.x = this.x - (16 * this.scale / 2);
             this.hp_text.y = this.y - (24 * this.scale);
             app.stage.addChild(this.hp_text);
 
-            this.maxHP = maxHP
             this.score = score;
 
             this.pseudo = pseudo;
@@ -240,6 +244,12 @@ loader.load((loader, resources) => {
     }
 
     socket.on('init', function (player) {
+        // Musique
+        resources.sound_music_01.sound.play({
+            loop: true
+        });
+
+        // Current player
         current_player = player;
         current_player.score_text = new PIXI.Text(`Score : ${current_player.score}`, { fontSize: 24 });
         current_player.score_text.x = 20;
@@ -283,6 +293,7 @@ loader.load((loader, resources) => {
                 let bullet = packet.bullets[i];
                 if (!bullet_list[bullet.id]) {
                     new Bullet(bullet.id, bullet.parent_id, bullet.x, bullet.y, 3, bullet.angle);
+                    resources.sound_shoot.sound.play();
                 }
                 else {
                     bullet_list[bullet.id].update(bullet.x, bullet.y);
