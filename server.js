@@ -75,6 +75,8 @@ class Player extends Entity {
 
         this.pseudo = pseudo;
 
+        this.sprite_number = String(Math.floor(Math.random() * 20) + 1).padStart(2, '0');
+
         this.pressingRight = false;
         this.pressingLeft = false;
         this.pressingUp = false;
@@ -83,7 +85,10 @@ class Player extends Entity {
         this.pressingAttack = false;
         this.mouseAngle = 0;
 
-        this.speed = 8;
+        this.speed = 15;
+        this.maxHP = 10;
+        this.hp = 10;
+        this.score = 0;
     }
 
     updateSpeed() {
@@ -141,9 +146,18 @@ class Bullet extends Entity {
     live() {
         for (let i in player_list) {
             if (player_list[i].id != this.parent_id) {
-                console.log(this.getDistance({ x: player_list[i].x, y: player_list[i].y }));
-                if (this.getDistance({ x: player_list[i].x, y: player_list[i].y }) < 20) {
+                // console.log(this.getDistance({ x: player_list[i].x, y: player_list[i].y }));
+                if (this.getDistance({ x: player_list[i].x, y: player_list[i].y }) < 32) {
                     this.die();
+                    if (player_list[i].hp > 1) {
+                        player_list[i].hp--;
+                    }
+                    else {
+                        player_list[i].hp = player_list[i].maxHP;
+                        player_list[i].x = Math.floor(Math.random() * 1080);
+                        player_list[i].y = Math.floor(Math.random() * 720);
+                        player_list[this.parent_id].score++;
+                    }
                 }
             }
         }
@@ -204,7 +218,10 @@ io.on('connection', function (socket) {
         socket.emit('init', {
             id: player_list[socket.id].id,
             x: player_list[socket.id].x,
-            y: player_list[socket.id].y
+            y: player_list[socket.id].y,
+            hp: player_list[socket.id].hp,
+            maxHP: player_list[socket.id].maxHP,
+            score: player_list[socket.id].score
         });
 
         socket.on('input', function (data) {
@@ -264,7 +281,10 @@ setInterval(function () {
             x: player.x,
             y: player.y,
             spdX: player.spdX,
-            spdY: player.spdY
+            spdY: player.spdY,
+            sprite_number: player.sprite_number,
+            hp: player.hp,
+            score: player.score
         });
     }
 
@@ -277,7 +297,8 @@ setInterval(function () {
             y: bullet.y,
             parent_id: bullet.parent_id,
             spdX: bullet.spdX,
-            spdY: bullet.spdY
+            spdY: bullet.spdY,
+            angle: bullet.angle
         });
     }
 
