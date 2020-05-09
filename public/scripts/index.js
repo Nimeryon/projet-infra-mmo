@@ -124,7 +124,7 @@ loader.load((loader, resources) => {
             player_list[id] = this;
         }
 
-        update(x, y, hp) {
+        update(x, y, hp, moving, direction) {
             this.x = x;
             this.y = y;
 
@@ -132,6 +132,7 @@ loader.load((loader, resources) => {
             this.sprite.y = this.y;
 
             this.updateHP(hp, this.x, this.y);
+            this.updateSprite(moving, direction);
         }
 
         updateHP(hp, x, y) {
@@ -142,6 +143,41 @@ loader.load((loader, resources) => {
 
             this.hp_text.x = x - (16 * this.scale / 2);
             this.hp_text.y = y - (24 * this.scale);
+        }
+
+        updateSprite(moving, direction) {
+            if (this.direction != direction) {
+                this.direction = direction;
+                switch (this.direction) {
+                    case 0:
+                        this.sprite.textures = this.player_animation_walk_front;
+                        break;
+
+                    case 1:
+                        this.sprite.textures = this.player_animation_walk_left;
+                        break;
+
+                    case 2:
+                        this.sprite.textures = this.player_animation_walk_back;
+                        break;
+
+                    case 3:
+                        this.sprite.textures = this.player_animation_walk_right;
+                        break;
+
+                    default: break;
+                }
+            }
+
+            if (moving) {
+                this.moving = true;
+                this.sprite.play();
+            }
+            else {
+                this.moving = false;
+                this.sprite.stop();
+                this.sprite.texture = this.sprite.textures[0];
+            }
         }
 
         generateSprite(sprite_number) {
@@ -308,16 +344,18 @@ loader.load((loader, resources) => {
             for (var i = 0; i < packet.players.length; i++) {
                 let player = packet.players[i];
                 if (!player_list[player.id]) {
-                    new Player(player.id, null, player.pseudo, player.x, player.y, scale, player.hp, player.maxHP, player.score, player.sprite_number);
+                    new Player(player.id, null, player.pseudo, player.x, player.y, scale, player.hp, player.maxHP, player.score, player.sprite_number, player.moving, player.direction);
                 }
                 else {
-                    player_list[player.id].update(player.x, player.y, player.hp);
+                    player_list[player.id].update(player.x, player.y, player.hp, player.moving, player.direction);
                 }
 
                 if (current_player.id == player.id) {
                     current_player.x = player.x;
                     current_player.y = player.y;
                     current_player.hp = player.hp;
+                    current_player.direction = player.direction;
+                    current_player.moving = player.moving;
                     updateCurrentPlayerScore(player.score);
 
                     if (current_player.x + view_x > app.view.width - 32 * scale * 3) {

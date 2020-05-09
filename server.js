@@ -94,6 +94,9 @@ class Player extends Entity {
         this.pressingAttack = false;
         this.mouseAngle = 0;
 
+        this.direction = 0;
+        this.moving = false;
+
         this.speed = 15;
         this.maxHP = 10;
         this.hp = 10;
@@ -101,24 +104,43 @@ class Player extends Entity {
     }
 
     updateSpeed() {
+        let moving_1;
+        let moving_2;
         if (this.pressingUp) {
             this.spdY = -this.speed;
+            moving_1 = true;
+            this.direction = 2;
         }
         else if (this.pressingDown) {
             this.spdY = this.speed;
+            moving_1 = true;
+            this.direction = 0;
         }
         else {
             this.spdY = 0;
+            moving_1 = false;
         }
 
         if (this.pressingLeft) {
             this.spdX = -this.speed;
+            moving_2 = true;
+            this.direction = 1;
         }
         else if (this.pressingRight) {
             this.spdX = this.speed;
+            moving_2 = true;
+            this.direction = 3;
         }
         else {
             this.spdX = 0;
+            moving_2 = false;
+        }
+
+        if (moving_1 || moving_2) {
+            this.moving = true;
+        }
+        else {
+            this.moving = false;
         }
     }
 
@@ -232,7 +254,9 @@ io.on('connection', function (socket) {
             y: player_list[socket.id].y,
             hp: player_list[socket.id].hp,
             maxHP: player_list[socket.id].maxHP,
-            score: player_list[socket.id].score
+            score: player_list[socket.id].score,
+            moving: player_list[socket.id].moving,
+            direction: player_list[socket.id].direction
         });
 
         socket.on('input', function (data) {
@@ -295,7 +319,9 @@ setInterval(function () {
             spdY: player.spdY,
             sprite_number: player.sprite_number,
             hp: player.hp,
-            score: player.score
+            score: player.score,
+            moving: player.moving,
+            direction: player.direction
         });
     }
 
