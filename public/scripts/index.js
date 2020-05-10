@@ -479,14 +479,23 @@ loader.load((loader, resources) => {
             socket.emit('input', { key: 'shoot', state: false });
         }
 
-        document.onmousemove = function () {
+        // document.onmousemove = function () {
+        //     let mousePos = app.renderer.plugins.interaction.mouse.global;
+        //     var x = (-current_player.x + mousePos.x) - view_x;
+        //     var y = (-current_player.y + mousePos.y) - view_y;
+
+        //     var angle = Math.atan2(y, x) / Math.PI * 180;
+        //     socket.emit('input', { key: 'mouseAngle', state: angle });
+        // }
+
+        setInterval(function () {
             let mousePos = app.renderer.plugins.interaction.mouse.global;
             var x = (-current_player.x + mousePos.x) - view_x;
             var y = (-current_player.y + mousePos.y) - view_y;
 
             var angle = Math.atan2(y, x) / Math.PI * 180;
             socket.emit('input', { key: 'mouseAngle', state: angle });
-        }
+        }, 1000 / 30);
     });
 });
 

@@ -246,6 +246,7 @@ io.on('connection', function (socket) {
     });
 
     socket.on('player ready', function (pseudo) {
+        io.emit('chat message', { id: "Serveur", msg: `${pseudo} vient de se connecter !` });
         socket.id = Math.random();
         player_list[socket.id] = new Player(socket.id, false, pseudo, 250, 250);
         socket.emit('init', {
@@ -292,6 +293,9 @@ io.on('connection', function (socket) {
 
         socket.on('disconnect', function () {
             console.log("Quelqu'un vient de se déconnecter");
+            if (player_list[socket.id]) {
+                io.emit('chat message', { id: "Serveur", msg: `${player_list[socket.id].pseudo} vient de se déconnecter !` });
+            }
             delete player_list[socket.id];
         });
     });
