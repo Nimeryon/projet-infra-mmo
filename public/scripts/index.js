@@ -328,9 +328,9 @@ loader.load((loader, resources) => {
     socket.on('init', function (player) {
         app.stage.addChild(generateMap(maps.spawn, tileset.textures, scale));
         // Musique
-        resources.sound_music_01.sound.play({
-            loop: true
-        });
+        // resources.sound_music_01.sound.play({
+        //     loop: true
+        // });
 
         // Current player
         current_player = player;
@@ -402,7 +402,7 @@ loader.load((loader, resources) => {
                 let bullet = packet.bullets[i];
                 if (!bullet_list[bullet.id]) {
                     new Bullet(bullet.id, bullet.parent_id, bullet.x, bullet.y, 3, bullet.angle);
-                    resources.sound_shoot.sound.play();
+                    // resources.sound_shoot.sound.play();
                 }
                 else {
                     bullet_list[bullet.id].update(bullet.x, bullet.y);

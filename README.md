@@ -5,6 +5,7 @@ Pour le moment, seule la partie infrastructure a été travaillé.
 Les fonctionnalités plus avancées comme le gameplay arriveront dans les semaines ou mois à venir.
 Bonne journée à vous ^^
 (WIP)
+Disponible sur https://mmo-project.herokuapp.com/
 
 ---
 ## Installation pour Ubuntu : 
