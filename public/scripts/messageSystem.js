@@ -3,11 +3,7 @@ function sendMessage() {
     let message = input.value;
     input.value = "";
     if (message != "") {
-        if (message[0] == "/") {
-            socket.emit('eval server', message.slice(1));
-        } else {
-            socket.emit('chat message', message);
-        }
+        socket.emit('chat message', message);
     }
 }
 

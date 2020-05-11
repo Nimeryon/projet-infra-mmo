@@ -39,6 +39,7 @@ serveur.listen(process.env.PORT || 3000, function () {
 //  \___) \__/ \_)(_/      (____) (__)       \____/(____)\____/(_/\_)
 // ==================================================================================================================
 
+var socket_list = [];
 var player_list = [];
 var bullet_list = [];
 var map_size = {
@@ -248,6 +249,7 @@ io.on('connection', function (socket) {
     socket.on('player ready', function (pseudo) {
         io.emit('chat message', { id: "Serveur", msg: `${pseudo} vient de se connecter !` });
         socket.id = Math.random();
+        socket_list[socket.id] = socket;
         player_list[socket.id] = new Player(socket.id, false, pseudo, 250, 250);
         socket.emit('init', {
             id: player_list[socket.id].id,
@@ -282,13 +284,44 @@ io.on('connection', function (socket) {
         });
 
         socket.on('chat message', function (data) {
-            io.emit('chat message', { id: player_list[socket.id].pseudo, msg: data });
-        });
+            if (data[0] == "/") {
+                let command = data.substring(1).split(" ")[0];
+                let args = data.substring(1).split(" ").slice(1);
+                switch (command) {
+                    case "msg":
+                        let msg_target = null;
+                        for (let i in player_list) {
+                            if (player_list[i].pseudo == args[0]) {
+                                msg_target = {
+                                    pseudo: player_list[i].pseudo,
+                                    id: player_list[i].id
+                                }
+                                break;
+                            }
+                        }
 
-        socket.on('eval server', function (data) {
-            if (!DEBUG_MODE) return;
+                        if (msg_target) {
+                            if (args.length < 2 || args[1] == "") {
+                                socket.emit('chat message', { id: "Serveur", msg: "Il n'y as pas de message." });
+                            }
+                            else {
+                                socket.emit('chat message', { id: `À ${msg_target.pseudo}`, msg: args[1] });
+                                socket_list[msg_target.id].emit('chat message', { id: `De ${msg_target.pseudo}`, msg: args[1] });
+                            }
+                        }
+                        else {
+                            socket.emit('chat message', { id: "Serveur", msg: "Cette utilisateur n'as pas étais trouvé." });
+                        }
+                        break;
 
-            console.log(eval(data));
+                    default:
+                        socket.emit('chat message', { id: "Serveur", msg: "Cette commande n'existe pas." });
+                        break;
+                }
+            }
+            else {
+                io.emit('chat message', { id: player_list[socket.id].pseudo, msg: data });
+            }
         });
 
         socket.on('disconnect', function () {
