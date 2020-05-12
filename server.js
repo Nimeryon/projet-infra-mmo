@@ -47,7 +47,6 @@ var map_size = {
     height: 14 * 32 * 3
 };
 var server_frameRate = 25;
-var DEBUG_MODE = true;
 
 class Entity {
     constructor(id, parent_id, x, y) {

@@ -1,6 +1,6 @@
 PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 
-const app = new PIXI.Application(
+var app = new PIXI.Application(
     {
         width: 1080,
         height: 720,
@@ -11,8 +11,8 @@ const app = new PIXI.Application(
 const renderer = PIXI.autoDetectRenderer(window.innerWidth, window.innerHeight);
 
 window.onresize = function (event) {
-    var w = window.innerWidth;
-    var h = window.innerHeight;
+    let w = window.innerWidth;
+    let h = window.innerHeight;
 
     renderer.view.style.width = w + "px";
     renderer.view.style.height = h + "px";
@@ -109,7 +109,7 @@ loader.load((loader, resources) => {
             this.hp_text = new PIXI.Text(`HP : ${this.hp}`, { fontSize: 14 });
             this.hp_text.x = this.x - (16 * this.scale / 2);
             this.hp_text.y = this.y - (24 * this.scale);
-            app.stage.addChild(this.hp_text);
+            // app.stage.addChild(this.hp_text);
 
             this.score = score;
 
@@ -120,7 +120,7 @@ loader.load((loader, resources) => {
             this.sprite.id = id;
             this.sprite.anchor.set(.5);
 
-            app.stage.addChild(this.sprite);
+            // app.stage.addChild(this.sprite);
             player_list[id] = this;
         }
 
@@ -130,6 +130,7 @@ loader.load((loader, resources) => {
 
             this.sprite.x = this.x;
             this.sprite.y = this.y;
+            this.sprite.zIndex = this.y;
 
             this.updateHP(hp, this.x, this.y);
             this.updateSprite(moving, direction);
@@ -205,7 +206,6 @@ loader.load((loader, resources) => {
             this.sprite.id = id;
             this.sprite.anchor.set(0.5);
 
-            app.stage.addChild(this.sprite);
             bullet_list[id] = this;
         }
 
@@ -215,6 +215,7 @@ loader.load((loader, resources) => {
 
             this.sprite.x = this.x;
             this.sprite.y = this.y;
+            this.sprite.zIndex = this.y;
         }
 
         die() {
@@ -326,18 +327,23 @@ loader.load((loader, resources) => {
     }
 
     socket.on('init', function (player) {
-        app.stage.addChild(generateMap(maps.spawn, tileset.textures, scale));
-        // Musique
-        // resources.sound_music_01.sound.play({
-        //     loop: true
-        // });
+        let map_layer = generateMap(maps.spawn, tileset.textures, scale);
+        app.stage.addChild(map_layer);
+        let bullet_layer = new PIXI.Container();
+        bullet_layer.sortableChildren = true;
+        app.stage.addChild(bullet_layer);
+        let player_layer = new PIXI.Container();
+        player_layer.sortableChildren = true;
+        app.stage.addChild(player_layer);
+        let UI_layer = new PIXI.Container();
+        app.stage.addChild(UI_layer);
 
         // Current player
         current_player = player;
         current_player.score_text = new PIXI.Text(`Score : ${current_player.score}`, { fontSize: 24 });
         current_player.score_text.x = 20;
         current_player.score_text.y = 20;
-        app.stage.addChild(current_player.score_text);
+        UI_layer.addChild(current_player.score_text);
 
         socket.on('update', function (packet) {
             // Joueur
@@ -345,6 +351,8 @@ loader.load((loader, resources) => {
                 let player = packet.players[i];
                 if (!player_list[player.id]) {
                     new Player(player.id, null, player.pseudo, player.x, player.y, scale, player.hp, player.maxHP, player.score, player.sprite_number, player.moving, player.direction);
+                    player_layer.addChild(player_list[player.id].sprite);
+                    player_layer.addChild(player_list[player.id].hp_text);
                 }
                 else {
                     player_list[player.id].update(player.x, player.y, player.hp, player.moving, player.direction);
@@ -379,7 +387,9 @@ loader.load((loader, resources) => {
 
                     if (app.stage.x != view_x || app.stage.y != view_y) {
                         app.stage.x = view_x;
+                        UI_layer.x = -view_x;
                         app.stage.y = view_y;
+                        UI_layer.y = -view_y;
                     }
                 }
             }
@@ -402,6 +412,7 @@ loader.load((loader, resources) => {
                 let bullet = packet.bullets[i];
                 if (!bullet_list[bullet.id]) {
                     new Bullet(bullet.id, bullet.parent_id, bullet.x, bullet.y, 3, bullet.angle);
+                    bullet_layer.addChild(bullet_list[bullet.id].sprite);
                     // resources.sound_shoot.sound.play();
                 }
                 else {
@@ -488,7 +499,7 @@ loader.load((loader, resources) => {
         //     socket.emit('input', { key: 'mouseAngle', state: angle });
         // }
 
-        setInterval(function () {
+        var mouseAngleInterval = setInterval(function () {
             let mousePos = app.renderer.plugins.interaction.mouse.global;
             var x = (-current_player.x + mousePos.x) - view_x;
             var y = (-current_player.y + mousePos.y) - view_y;
