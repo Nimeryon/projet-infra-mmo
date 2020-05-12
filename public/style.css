@@ -170,16 +170,17 @@ form button[type="submit"]:hover {
 
 #game {
     display: none;
-    flex-direction: row-reverse;
+    flex-direction: row;
+    justify-content: space-evenly;
 }
 
-.app-screen canvas {
+#app-screen {
     max-width: 100%;
     min-width: 600px;
     display: block;
 }
 
-.app-chat {
+#app-chat {
     position: relative;
     padding: 1%;
     margin: 1%;
@@ -202,7 +203,7 @@ li p {
     overflow-wrap: break-word;
 }
 
-.form-messages {
+#form-messages {
     position: absolute;
     bottom: 2%;
     width: 95%;
@@ -212,10 +213,10 @@ li p {
     justify-content: space-between;
 }
 
-.form-messages input {
+#form-messages input {
     width: 75%;
 }
 
-.form-messages button {
+#form-messages button {
     width: 20%;
 }

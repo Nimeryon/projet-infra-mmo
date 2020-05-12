@@ -4,6 +4,7 @@ var app = new PIXI.Application(
     {
         width: 1080,
         height: 720,
+        view: document.getElementById("app-screen"),
         backgroundColor: 0xCCD1D1
     }
 );
@@ -21,11 +22,6 @@ window.onresize = function (event) {
 }
 
 const scale = 3;
-
-const divAppScreen = document.createElement("div");
-divAppScreen.className = "app-screen";
-divAppScreen.appendChild(app.view);
-document.getElementById("game").appendChild(divAppScreen);
 
 const loader = new PIXI.Loader();
 // Chargement sprites joueur
@@ -70,6 +66,8 @@ loader.load((loader, resources) => {
     var current_player = null;
     var player_list = [];
     var bullet_list = [];
+    var layers = null;
+    var map_layer = null;
     var view_size = [1280, 720];
     var view_x = 0;
     var view_y = 0;
@@ -89,17 +87,18 @@ loader.load((loader, resources) => {
 
     // Class
     class Entity {
-        constructor(id, parent_id, x, y) {
+        constructor(id, parent_id, x, y, map) {
             this.id = id;
             this.parent_id = parent_id;
             this.x = x;
             this.y = y;
+            this.map = map;
         }
     }
 
     class Player extends Entity {
-        constructor(id, parent_id, pseudo, x, y, scale, hp, maxHP, score, sprite_number) {
-            super(id, parent_id, x, y);
+        constructor(id, parent_id, pseudo, x, y, scale, hp, maxHP, score, sprite_number, map) {
+            super(id, parent_id, x, y, map);
 
             this.scale = scale;
 
@@ -199,8 +198,8 @@ loader.load((loader, resources) => {
     }
 
     class Bullet extends Entity {
-        constructor(id, parent_id, x, y, scale, angle) {
-            super(id, parent_id, x, y);
+        constructor(id, parent_id, x, y, scale, angle, map) {
+            super(id, parent_id, x, y, map);
 
             this.sprite = createSprite(resources.weapon_sprites_02.texture, x, y, 1, angle + 45, { x: scale, y: scale });
             this.sprite.id = id;
@@ -280,6 +279,18 @@ loader.load((loader, resources) => {
         }
     }
 
+    function updateCurrentMap(map) {
+        current_player.map = map;
+        changeMapLayer(maps[map], tileset.textures, scale);
+        for (let i in player_list) {
+            player_list[i].die();
+        }
+
+        for (let i in bullet_list) {
+            bullet_list[i].die();
+        }
+    }
+
     function generateLayer(container, tileset, scale, layer, nbr_tile_x, nbr_tile_y, tile_size_x, tile_size_y) {
         let layer_container = new PIXI.Container();
         for (let y = 0; y < nbr_tile_y; y++) {
@@ -301,7 +312,16 @@ loader.load((loader, resources) => {
         return map_container;
     }
 
-    const tileset = generateTextures(resources['tileset_grass'].texture, 8, 6, 32, 32);
+    function changeMapLayer(map, tileset, scale) {
+        if (map_layer != null) {
+            map_layer.destroy();
+        }
+        map_layer = generateMap(map, tileset, scale);
+        map_layer.zIndex = 0;
+        layers.addChild(map_layer);
+    }
+
+    const tileset = generateTextures(resources['tileset_grass'].texture, 8, 12, 32, 32);
 
     const maps = {
         spawn: {
@@ -323,20 +343,45 @@ loader.load((loader, resources) => {
                 [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
                 [22, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 24]
             ]
+        },
+        spawn1: {
+            width: 20,
+            height: 14,
+            back_layer: [
+                [54, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 56],
+                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
+                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
+                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
+                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
+                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
+                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
+                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
+                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
+                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
+                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
+                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
+                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
+                [80, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81]
+            ]
         }
     }
 
     socket.on('init', function (player) {
-        let map_layer = generateMap(maps.spawn, tileset.textures, scale);
-        app.stage.addChild(map_layer);
+        layers = new PIXI.Container();
+        layers.sortableChildren = true;
+        app.stage.addChild(layers);
+        changeMapLayer(maps[player.map], tileset.textures, scale);
         let bullet_layer = new PIXI.Container();
         bullet_layer.sortableChildren = true;
-        app.stage.addChild(bullet_layer);
+        bullet_layer.zIndex = 1;
+        layers.addChild(bullet_layer);
         let player_layer = new PIXI.Container();
         player_layer.sortableChildren = true;
-        app.stage.addChild(player_layer);
+        player_layer.zIndex = 2;
+        layers.addChild(player_layer);
         let UI_layer = new PIXI.Container();
-        app.stage.addChild(UI_layer);
+        UI_layer.zIndex = 3;
+        layers.addChild(UI_layer);
 
         // Current player
         current_player = player;
@@ -349,21 +394,15 @@ loader.load((loader, resources) => {
             // Joueur
             for (var i = 0; i < packet.players.length; i++) {
                 let player = packet.players[i];
-                if (!player_list[player.id]) {
-                    new Player(player.id, null, player.pseudo, player.x, player.y, scale, player.hp, player.maxHP, player.score, player.sprite_number, player.moving, player.direction);
-                    player_layer.addChild(player_list[player.id].sprite);
-                    player_layer.addChild(player_list[player.id].hp_text);
-                }
-                else {
-                    player_list[player.id].update(player.x, player.y, player.hp, player.moving, player.direction);
-                }
-
                 if (current_player.id == player.id) {
                     current_player.x = player.x;
                     current_player.y = player.y;
                     current_player.hp = player.hp;
                     current_player.direction = player.direction;
                     current_player.moving = player.moving;
+                    if (current_player.map != player.map) {
+                        updateCurrentMap(player.map);
+                    }
                     updateCurrentPlayerScore(player.score);
 
                     if (current_player.x + view_x > app.view.width - 32 * scale * 3) {
@@ -392,9 +431,25 @@ loader.load((loader, resources) => {
                         UI_layer.y = -view_y;
                     }
                 }
+
+                if (player.map == current_player.map) {
+                    if (!player_list[player.id]) {
+                        new Player(player.id, null, player.pseudo, player.x, player.y, scale, player.hp, player.maxHP, player.score, player.sprite_number, player.moving, player.direction, player.map);
+                        player_layer.addChild(player_list[player.id].sprite);
+                        player_layer.addChild(player_list[player.id].hp_text);
+                    }
+                    else {
+                        player_list[player.id].update(player.x, player.y, player.hp, player.moving, player.direction);
+                    }
+                }
+                else {
+                    if (player_list[player.id]) {
+                        player_list[player.id].die();
+                    }
+                }
             }
 
-            // Supprimer les joueurs déconnecté
+            // Supprimer les joueurs déconnecté ou qui ont changé de map
             for (let player_id in player_list) {
                 let find = false;
                 for (let i = 0; i < packet.players.length; i++) {
@@ -410,13 +465,15 @@ loader.load((loader, resources) => {
             // Bullet
             for (var i = 0; i < packet.bullets.length; i++) {
                 let bullet = packet.bullets[i];
-                if (!bullet_list[bullet.id]) {
-                    new Bullet(bullet.id, bullet.parent_id, bullet.x, bullet.y, 3, bullet.angle);
-                    bullet_layer.addChild(bullet_list[bullet.id].sprite);
-                    // resources.sound_shoot.sound.play();
-                }
-                else {
-                    bullet_list[bullet.id].update(bullet.x, bullet.y);
+                if (bullet.map == current_player.map) {
+                    if (!bullet_list[bullet.id]) {
+                        new Bullet(bullet.id, bullet.parent_id, bullet.x, bullet.y, 3, bullet.angle, bullet.map);
+                        bullet_layer.addChild(bullet_list[bullet.id].sprite);
+                        // resources.sound_shoot.sound.play();
+                    }
+                    else {
+                        bullet_list[bullet.id].update(bullet.x, bullet.y);
+                    }
                 }
             }
 
@@ -488,6 +545,10 @@ loader.load((loader, resources) => {
         }
         document.onmouseup = function (e) {
             socket.emit('input', { key: 'shoot', state: false });
+        }
+
+        document.getElementById("change-map").onclick = function (e) {
+            socket.emit('change-map');
         }
 
         // document.onmousemove = function () {

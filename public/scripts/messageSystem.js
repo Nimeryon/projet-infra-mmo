@@ -1,5 +1,5 @@
 function sendMessage() {
-    let input = document.querySelector(".input-message");
+    let input = document.getElementById("input-message");
     let message = input.value;
     input.value = "";
     if (message != "") {
@@ -8,7 +8,7 @@ function sendMessage() {
 }
 
 function createMessage(id, msg) {
-    let ul = document.querySelector(".messages");
+    let ul = document.getElementById("messages");
     let li = document.createElement("li");
     let p = document.createElement("p");
     p.innerText = `${id}: ${msg}`;

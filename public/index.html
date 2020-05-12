@@ -11,6 +11,7 @@
     <script src="pixi/pixi.min.js"></script>
     <script src="pixi/pixi-particles.min.js"></script>
     <script src="pixi/pixi-sound.js"></script>
+    <!-- <script src="pixi/puxi.min.js"></script> -->
     <script src="jquery/jquery-3.5.1.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -67,13 +68,15 @@
         </div>
     </div>
     <div id="game">
-        <div class="app-chat">
-            <ul class="messages"></ul>
-            <form class="form-messages" onsubmit="return false">
-                <input class="input-message" />
+        <canvas id="app-screen"></canvas>
+        <div id="app-chat">
+            <ul id="messages"></ul>
+            <form id="form-messages" onsubmit="return false">
+                <input id="input-message" />
                 <button onclick=sendMessage()>Envoyer</button>
             </form>
         </div>
+        <button id="change-map">Changer map</button>
         <!-- <canvas id="ctx" style="width: 500px; height: 500px; border: 1px solid black;"></canvas> -->
     </div>
 </body>

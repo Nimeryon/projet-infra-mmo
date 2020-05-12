@@ -49,13 +49,14 @@ var map_size = {
 var server_frameRate = 25;
 
 class Entity {
-    constructor(id, parent_id, x, y) {
+    constructor(id, parent_id, x, y, map) {
         this.id = id;
         this.parent_id = parent_id;
         this.x = x;
         this.y = y;
         this.spdX = 0;
         this.spdY = 0;
+        this.map = map;
     }
 
     updatePosition() {
@@ -78,9 +79,9 @@ class Entity {
 }
 
 class Player extends Entity {
-    constructor(id, parent_id, pseudo, x, y) {
+    constructor(id, parent_id, pseudo, x, y, map) {
         // Hérite de la classe Entity
-        super(id, parent_id, x, y);
+        super(id, parent_id, x, y, map);
 
         this.pseudo = pseudo;
 
@@ -146,7 +147,7 @@ class Player extends Entity {
 
     shoot() {
         let bullet_id = Math.random();
-        bullet_list[bullet_id] = new Bullet(bullet_id, this.id, this.x, this.y, this.mouseAngle);
+        bullet_list[bullet_id] = new Bullet(bullet_id, this.id, this.x, this.y, this.mouseAngle, this.map);
     }
 
     update() {
@@ -160,9 +161,9 @@ class Player extends Entity {
 }
 
 class Bullet extends Entity {
-    constructor(id, parent_id, x, y, angle) {
+    constructor(id, parent_id, x, y, angle, map) {
         // Hérite de la classe Entity
-        super(id, parent_id, x, y);
+        super(id, parent_id, x, y, map);
 
         this.angle = angle;
         this.speed = 12;
@@ -176,7 +177,7 @@ class Bullet extends Entity {
 
     live() {
         for (let i in player_list) {
-            if (player_list[i].id != this.parent_id) {
+            if (player_list[i].id != this.parent_id && this.map == player_list[i].map) {
                 // console.log(this.getDistance({ x: player_list[i].x, y: player_list[i].y }));
                 if (this.getDistance({ x: player_list[i].x, y: player_list[i].y }) < 32) {
                     this.die();
@@ -249,7 +250,8 @@ io.on('connection', function (socket) {
         io.emit('chat message', { id: "Serveur", msg: `${pseudo} vient de se connecter !` });
         socket.id = Math.random();
         socket_list[socket.id] = socket;
-        player_list[socket.id] = new Player(socket.id, false, pseudo, 250, 250);
+        let player_map = ["spawn", "spawn1"][Math.floor(Math.random() * 2)];
+        player_list[socket.id] = new Player(socket.id, false, pseudo, 250, 250, player_map);
         socket.emit('init', {
             id: player_list[socket.id].id,
             x: player_list[socket.id].x,
@@ -258,7 +260,8 @@ io.on('connection', function (socket) {
             maxHP: player_list[socket.id].maxHP,
             score: player_list[socket.id].score,
             moving: player_list[socket.id].moving,
-            direction: player_list[socket.id].direction
+            direction: player_list[socket.id].direction,
+            map: player_list[socket.id].map
         });
 
         socket.on('input', function (data) {
@@ -319,8 +322,14 @@ io.on('connection', function (socket) {
                 }
             }
             else {
-                io.emit('chat message', { id: player_list[socket.id].pseudo, msg: data });
+                io.emit('chat message', { id: `(${player_list[socket.id].map}) ${player_list[socket.id].pseudo}`, msg: data });
             }
+        });
+
+        socket.on('change-map', function () {
+            player_list[socket.id].map = ["spawn", "spawn1"][Math.floor(Math.random() * 2)];
+            player_list[socket.id].x = 250;
+            player_list[socket.id].y = 250;
         });
 
         socket.on('disconnect', function () {
@@ -357,7 +366,8 @@ setInterval(function () {
             hp: player.hp,
             score: player.score,
             moving: player.moving,
-            direction: player.direction
+            direction: player.direction,
+            map: player.map
         });
     }
 
@@ -371,7 +381,8 @@ setInterval(function () {
             parent_id: bullet.parent_id,
             spdX: bullet.spdX,
             spdY: bullet.spdY,
-            angle: bullet.angle
+            angle: bullet.angle,
+            map: bullet.map
         });
     }
 
