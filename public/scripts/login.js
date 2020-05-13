@@ -135,7 +135,7 @@ socket.on('signin answer', function (data) {
 
 // Lancement de la requête pour lancer le jeux
 function sendInit(username) {
-    document.getElementById("game").style.display = "flex";
+    document.getElementById("game").style.display = "block";
     document.getElementById("startMenuWrapper").style.display = "none";
     socket.emit('player ready', username);
 }

@@ -42,10 +42,9 @@ serveur.listen(process.env.PORT || 3000, function () {
 var socket_list = [];
 var player_list = [];
 var bullet_list = [];
-var map_size = {
-    width: 20 * 32 * 3,
-    height: 14 * 32 * 3
-};
+var maps = require('./public/models/maps.json')
+var scale = 3;
+var tile_size = 32;
 var server_frameRate = 25;
 
 class Entity {
@@ -60,11 +59,11 @@ class Entity {
     }
 
     updatePosition() {
-        if (this.x + this.spdX > 0 && this.x + this.spdX < map_size.width) {
+        if (this.x + this.spdX > 0 && this.x + this.spdX < maps[this.map].width * tile_size * scale) {
             this.x += this.spdX;
         }
 
-        if (this.y + this.spdY > 0 && this.y + this.spdY < map_size.height) {
+        if (this.y + this.spdY > 0 && this.y + this.spdY < maps[this.map].height * tile_size * scale) {
             this.y += this.spdY;
         }
     }
@@ -107,7 +106,11 @@ class Player extends Entity {
     updateSpeed() {
         let moving_1;
         let moving_2;
-        if (this.pressingUp) {
+        if (this.pressingUp && this.pressingDown) {
+            this.spdY = 0;
+            moving_1 = false;
+        }
+        else if (this.pressingUp) {
             this.spdY = -this.speed;
             moving_1 = true;
             this.direction = 2;
@@ -122,7 +125,11 @@ class Player extends Entity {
             moving_1 = false;
         }
 
-        if (this.pressingLeft) {
+        if (this.pressingLeft && this.pressingRight) {
+            this.spdX = 0;
+            moving_2 = false;
+        }
+        else if (this.pressingLeft) {
             this.spdX = -this.speed;
             moving_2 = true;
             this.direction = 1;
@@ -251,7 +258,7 @@ io.on('connection', function (socket) {
         socket.id = Math.random();
         socket_list[socket.id] = socket;
         let player_map = ["spawn", "spawn1"][Math.floor(Math.random() * 2)];
-        player_list[socket.id] = new Player(socket.id, false, pseudo, 250, 250, player_map);
+        player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, player_map);
         socket.emit('init', {
             id: player_list[socket.id].id,
             x: player_list[socket.id].x,
@@ -328,8 +335,8 @@ io.on('connection', function (socket) {
 
         socket.on('change-map', function () {
             player_list[socket.id].map = ["spawn", "spawn1"][Math.floor(Math.random() * 2)];
-            player_list[socket.id].x = 250;
-            player_list[socket.id].y = 250;
+            player_list[socket.id].x = maps[player_list[socket.id].map].spawnPoint.x;
+            player_list[socket.id].y = maps[player_list[socket.id].map].spawnPoint.y;
         });
 
         socket.on('disconnect', function () {

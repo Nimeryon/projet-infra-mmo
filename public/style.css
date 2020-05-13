@@ -170,37 +170,28 @@ form button[type="submit"]:hover {
 
 #game {
     display: none;
-    flex-direction: row;
-    justify-content: space-evenly;
 }
 
 #app-screen {
-    max-width: 100%;
-    min-width: 600px;
-    display: block;
-}
+    position: absolute;
+    top: 0;
+    left: 0;
 
-#app-chat {
-    position: relative;
-    padding: 1%;
-    margin: 1%;
-    border: 1px solid black;
-    border-radius: 2%;
-    background-color: lightgray;
-    width: 28%;
     min-width: 400px;
     min-height: 400px;
 }
 
-ul {
-    list-style: none;
-    max-height: 380px;
-    overflow: auto;
-}
+#app-chat {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
 
-li p {
-    text-decoration: none;
-    overflow-wrap: break-word;
+    border: 1px solid black;
+    border-radius: 2%;
+    background-color: rgba(10, 10, 10, 0.2);
+    width: 28%;
+    min-width: 400px;
+    min-height: 400px;
 }
 
 #form-messages {
@@ -213,10 +204,31 @@ li p {
     justify-content: space-between;
 }
 
-#form-messages input {
-    width: 75%;
+#messages {
+    max-height: 380px;
+    padding-left: 10px;
+    overflow: auto;
 }
 
-#form-messages button {
+#messages li p {
+    font-size: 24px;
+    overflow-wrap: break-word;
+}
+
+#input-message {
+    width: 75%;
+    opacity: 30%;
+}
+
+#button-message {
     width: 20%;
+    opacity: 30%;
+}
+
+#input-message:focus~#app-chat {
+    background-color: rgba(10, 10, 10, 0.5);
+}
+
+#input-message:focus~#button-message, #input-message:focus {
+    opacity: 100%;
 }

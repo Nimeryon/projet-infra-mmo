@@ -9,16 +9,16 @@ var app = new PIXI.Application(
     }
 );
 
-const renderer = PIXI.autoDetectRenderer(window.innerWidth, window.innerHeight);
+// const renderer = PIXI.autoDetectRenderer(window.innerWidth, window.innerHeight, document.getElementById("app-screen"));
+document.getElementById("app-screen").style.width = window.innerWidth + "px";
+document.getElementById("app-screen").style.height = window.innerHeight + "px";
 
 window.onresize = function (event) {
     let w = window.innerWidth;
     let h = window.innerHeight;
 
-    renderer.view.style.width = w + "px";
-    renderer.view.style.height = h + "px";
-
-    renderer.resize(w, h);
+    document.getElementById("app-screen").style.width = w + "px";
+    document.getElementById("app-screen").style.height = h + "px";
 }
 
 const scale = 3;
@@ -63,12 +63,15 @@ loader.add('tileset_grass', "sprites/tilesets/grass.png");
 // Execution
 loader.load((loader, resources) => {
     // Global var
+    var setFullScreen = false;
     var current_player = null;
     var player_list = [];
     var bullet_list = [];
+    var maps = $.getJSON("models/maps.json", function (data) {
+        maps = data;
+    });
     var layers = null;
     var map_layer = null;
-    var view_size = [1280, 720];
     var view_x = 0;
     var view_y = 0;
     var keyMap = {
@@ -225,7 +228,7 @@ loader.load((loader, resources) => {
 
     // Function
     function testActiveChat() {
-        let message_input = document.querySelector(".input-message");
+        let message_input = document.getElementById("input-message");
         return document.activeElement != message_input;
     }
 
@@ -322,49 +325,6 @@ loader.load((loader, resources) => {
     }
 
     const tileset = generateTextures(resources['tileset_grass'].texture, 8, 12, 32, 32);
-
-    const maps = {
-        spawn: {
-            width: 20,
-            height: 14,
-            back_layer: [
-                [6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8],
-                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
-                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
-                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
-                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
-                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
-                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
-                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
-                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
-                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
-                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
-                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
-                [14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16],
-                [22, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 24]
-            ]
-        },
-        spawn1: {
-            width: 20,
-            height: 14,
-            back_layer: [
-                [54, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 56],
-                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
-                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
-                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
-                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
-                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
-                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
-                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
-                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
-                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
-                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
-                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
-                [62, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64],
-                [80, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81]
-            ]
-        }
-    }
 
     socket.on('init', function (player) {
         layers = new PIXI.Container();
@@ -467,7 +427,7 @@ loader.load((loader, resources) => {
                 let bullet = packet.bullets[i];
                 if (bullet.map == current_player.map) {
                     if (!bullet_list[bullet.id]) {
-                        new Bullet(bullet.id, bullet.parent_id, bullet.x, bullet.y, 3, bullet.angle, bullet.map);
+                        new Bullet(bullet.id, bullet.parent_id, bullet.x, bullet.y, scale, bullet.angle, bullet.map);
                         bullet_layer.addChild(bullet_list[bullet.id].sprite);
                         // resources.sound_shoot.sound.play();
                     }
@@ -505,19 +465,34 @@ loader.load((loader, resources) => {
                 else if (keyMap[e.keyCode] == "D" || keyMap[e.keyCode] == ">") {
                     socket.emit('input', { key: "right", state: true });
                 }
-            }
 
-            // if (keyMap[e.keyCode] == "Enter") {
-            //     if (document.documentElement.requestFullscreen) {
-            //         document.documentElement.requestFullscreen();
-            //     } else if (document.documentElement.mozRequestFullScreen) {
-            //         document.documentElement.mozRequestFullScreen();
-            //     } else if (document.documentElement.webkitRequestFullscreen) {
-            //         document.documentElement.webkitRequestFullscreen();
-            //     } else if (document.documentElement.msRequestFullscreen) {
-            //         document.documentElement.msRequestFullscreen();
-            //     }
-            // }
+                if (keyMap[e.keyCode] == "Enter") {
+                    if (!setFullScreen) {
+                        if (document.documentElement.requestFullscreen) {
+                            document.documentElement.requestFullscreen();
+                        } else if (document.documentElement.mozRequestFullScreen) {
+                            document.documentElement.mozRequestFullScreen();
+                        } else if (document.documentElement.webkitRequestFullscreen) {
+                            document.documentElement.webkitRequestFullscreen();
+                        } else if (document.documentElement.msRequestFullscreen) {
+                            document.documentElement.msRequestFullscreen();
+                        }
+                        setFullScreen = true;
+                    }
+                    else {
+                        if (document.exitFullscreen) {
+                            document.exitFullscreen();
+                        } else if (document.mozCancelFullScreen) {
+                            document.mozCancelFullScreen();
+                        } else if (document.webkitExitFullscreen) {
+                            document.webkitExitFullscreen();
+                        } else if (document.msExitFullscreen) {
+                            document.msExitFullscreen();
+                        }
+                        setFullScreen = false;
+                    }
+                }
+            }
         }
 
         document.onkeyup = function (e) {
@@ -534,7 +509,9 @@ loader.load((loader, resources) => {
                 socket.emit('input', { key: "right", state: false });
             }
             else if (keyMap[e.keyCode] == "T") {
-                document.getElementsByClassName("input-message")[0].focus();
+                if (testActiveChat()) {
+                    document.getElementById("input-message").focus();
+                }
             }
         }
 
@@ -543,6 +520,34 @@ loader.load((loader, resources) => {
                 socket.emit('input', { key: 'shoot', state: true });
             }
         }
+
+        document.ontouchstart = function (e) {
+            if (!setFullScreen) {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.mozRequestFullScreen) {
+                    document.documentElement.mozRequestFullScreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen();
+                } else if (document.documentElement.msRequestFullscreen) {
+                    document.documentElement.msRequestFullscreen();
+                }
+                setFullScreen = true;
+            }
+            else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                setFullScreen = false;
+            }
+        }
+
         document.onmouseup = function (e) {
             socket.emit('input', { key: 'shoot', state: false });
         }
@@ -550,15 +555,6 @@ loader.load((loader, resources) => {
         document.getElementById("change-map").onclick = function (e) {
             socket.emit('change-map');
         }
-
-        // document.onmousemove = function () {
-        //     let mousePos = app.renderer.plugins.interaction.mouse.global;
-        //     var x = (-current_player.x + mousePos.x) - view_x;
-        //     var y = (-current_player.y + mousePos.y) - view_y;
-
-        //     var angle = Math.atan2(y, x) / Math.PI * 180;
-        //     socket.emit('input', { key: 'mouseAngle', state: angle });
-        // }
 
         var mouseAngleInterval = setInterval(function () {
             let mousePos = app.renderer.plugins.interaction.mouse.global;
