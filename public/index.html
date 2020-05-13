@@ -67,8 +67,8 @@
             </form>
         </div>
     </div>
-    <div id="game">
-        <canvas oncontextmenu="return false" id="app-screen"></canvas>
+    <div id="game" oncontextmenu="return false">
+        <canvas id="app-screen"></canvas>
         <div id="app-chat">
             <ul id="messages"></ul>
             <form id="form-messages" onsubmit="return false">
@@ -76,7 +76,6 @@
                 <button id="button-message" onclick=sendMessage()>Envoyer</button>
             </form>
         </div>
-        <button id="change-map" style="display: none;">Changer map</button>
         <!-- <canvas id="ctx" style="width: 500px; height: 500px; border: 1px solid black;"></canvas> -->
     </div>
 </body>

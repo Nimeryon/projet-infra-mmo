@@ -182,14 +182,17 @@ form button[type="submit"]:hover {
 }
 
 #app-chat {
+    display: none;
     position: absolute;
-    bottom: 20px;
-    right: 20px;
+    bottom: 10px;
+    left: 10px;
 
+    padding: 10px;
     border: 1px solid black;
     border-radius: 2%;
-    background-color: rgba(10, 10, 10, 0.2);
+    background-color: rgba(0, 0, 0, 0.35);
     width: 28%;
+    height: 50%;
     min-width: 400px;
     min-height: 400px;
 }
@@ -205,28 +208,26 @@ form button[type="submit"]:hover {
 }
 
 #messages {
-    max-height: 380px;
+    max-height: 85%;
     padding-left: 10px;
     overflow: auto;
 }
 
 #messages li p {
-    font-size: 24px;
+    margin: 0;
+    padding: 0;
+    font-size: 22px;
     overflow-wrap: break-word;
 }
 
 #input-message {
     width: 75%;
-    opacity: 30%;
+    opacity: 50%;
 }
 
 #button-message {
     width: 20%;
-    opacity: 30%;
-}
-
-#input-message:focus~#app-chat {
-    background-color: rgba(10, 10, 10, 0.5);
+    opacity: 50%;
 }
 
 #input-message:focus~#button-message, #input-message:focus {

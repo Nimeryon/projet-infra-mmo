@@ -257,7 +257,7 @@ io.on('connection', function (socket) {
         io.emit('chat message', { id: "Serveur", msg: `${pseudo} vient de se connecter !` });
         socket.id = Math.random();
         socket_list[socket.id] = socket;
-        let player_map = ["spawn", "spawn1"][Math.floor(Math.random() * 2)];
+        let player_map = ["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)];
         player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, player_map);
         socket.emit('init', {
             id: player_list[socket.id].id,
@@ -334,7 +334,7 @@ io.on('connection', function (socket) {
         });
 
         socket.on('change-map', function () {
-            player_list[socket.id].map = ["spawn", "spawn1"][Math.floor(Math.random() * 2)];
+            player_list[socket.id].map = ["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)];
             player_list[socket.id].x = maps[player_list[socket.id].map].spawnPoint.x;
             player_list[socket.id].y = maps[player_list[socket.id].map].spawnPoint.y;
         });
@@ -355,6 +355,7 @@ io.on('error', function (err) {
 
 setInterval(function () {
     var packet = {
+        timeStamp: Date.now(),
         players: [],
         bullets: []
     };

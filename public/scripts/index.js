@@ -60,6 +60,9 @@ loader.add('tileset_flower', "sprites/tilesets/flower.png");
 loader.add('tileset_light_shadow', "sprites/tilesets/light_shadow.png");
 loader.add('tileset_wall', "sprites/tilesets/wall.png");
 loader.add('tileset_grass', "sprites/tilesets/grass.png");
+// Chargement ui
+loader.add('ui_message', "sprites/ui/message.png");
+loader.add('ui_minus', "sprites/ui/minus.png");
 // Execution
 loader.load((loader, resources) => {
     // Global var
@@ -72,8 +75,10 @@ loader.load((loader, resources) => {
     });
     var layers = null;
     var map_layer = null;
-    var view_x = 0;
-    var view_y = 0;
+    var camera = {
+        view_x: 0,
+        view_y: 0
+    }
     var keyMap = {
         90: "Z",
         81: "Q",
@@ -106,19 +111,19 @@ loader.load((loader, resources) => {
             this.scale = scale;
 
             this.hp = hp;
-            this.maxHP = maxHP
+            this.maxHP = maxHP;
 
             this.hp_text = new PIXI.Text(`HP : ${this.hp}`, { fontSize: 14 });
             this.hp_text.x = this.x - (16 * this.scale / 2);
             this.hp_text.y = this.y - (24 * this.scale);
-            // app.stage.addChild(this.hp_text);
+            app.stage.addChild(this.hp_text);
 
             this.score = score;
 
             this.pseudo = pseudo;
             this.generateSprite(sprite_number);
 
-            this.sprite = createAnimatedSprite(this.player_animation_walk_front, x, y, 1, 0, { x: this.scale, y: this.scale }, 0.1, false);
+            this.sprite = createAnimatedSprite(this.player_animation_walk_front, x, y, this.alpha, 0, { x: this.scale, y: this.scale }, 0.1, false);
             this.sprite.id = id;
             this.sprite.anchor.set(.5);
 
@@ -324,7 +329,7 @@ loader.load((loader, resources) => {
         layers.addChild(map_layer);
     }
 
-    const tileset = generateTextures(resources['tileset_grass'].texture, 8, 12, 32, 32);
+    const tileset = generateTextures(resources['tileset_grass'].texture, 8, 18, 32, 32);
 
     socket.on('init', function (player) {
         layers = new PIXI.Container();
@@ -342,6 +347,45 @@ loader.load((loader, resources) => {
         let UI_layer = new PIXI.Container();
         UI_layer.zIndex = 3;
         layers.addChild(UI_layer);
+
+        // Draw menu
+        let menu_message = createSprite(resources.ui_message.texture, app.screen.width - 24, 24, 1, 0, { x: 1, y: 1 });
+        menu_message.anchor.set(0.5);
+        menu_message.interactive = true;
+        menu_message.buttonMode = true;
+        menu_message.width = 48;
+        menu_message.height = 48;
+        menu_message.on('pointerdown', function (e) {
+            activateChat();
+        });
+        menu_message.on('pointerover', function (e) {
+            menu_message.width = 52;
+            menu_message.height = 52;
+        });
+        menu_message.on('pointerout', function (e) {
+            menu_message.width = 48;
+            menu_message.height = 48;
+        });
+        UI_layer.addChild(menu_message);
+
+        let menu_changemap = createSprite(resources.ui_minus.texture, app.screen.width - 72, 24, 1, 0, { x: 1, y: 1 });
+        menu_changemap.anchor.set(0.5);
+        menu_changemap.interactive = true;
+        menu_changemap.buttonMode = true;
+        menu_changemap.width = 48;
+        menu_changemap.height = 48;
+        menu_changemap.on('pointerdown', function (e) {
+            socket.emit('change-map');
+        });
+        menu_changemap.on('pointerover', function (e) {
+            menu_changemap.width = 52;
+            menu_changemap.height = 52;
+        });
+        menu_changemap.on('pointerout', function (e) {
+            menu_changemap.width = 48;
+            menu_changemap.height = 48;
+        });
+        UI_layer.addChild(menu_changemap);
 
         // Current player
         current_player = player;
@@ -364,37 +408,11 @@ loader.load((loader, resources) => {
                         updateCurrentMap(player.map);
                     }
                     updateCurrentPlayerScore(player.score);
-
-                    if (current_player.x + view_x > app.view.width - 32 * scale * 3) {
-                        view_x = Math.max(
-                            app.view.width - ((maps.spawn.width * 32) * scale),
-                            app.view.width - current_player.x - 32 * scale * 3
-                        );
-                    }
-                    if (current_player.x + view_x < 32 * scale * 3) {
-                        view_x = Math.min(0, -current_player.x + 32 * scale * 3);
-                    }
-                    if (current_player.y + view_y > app.view.height - 32 * scale * 2) {
-                        view_y = Math.max(
-                            app.view.height - ((maps.spawn.height * 32) * scale),
-                            app.view.height - current_player.y - 32 * scale * 2
-                        );
-                    }
-                    if (current_player.y + view_y < 32 * scale * 1.5) {
-                        view_y = Math.min(0, -current_player.y + 32 * scale * 1.5);
-                    }
-
-                    if (app.stage.x != view_x || app.stage.y != view_y) {
-                        app.stage.x = view_x;
-                        UI_layer.x = -view_x;
-                        app.stage.y = view_y;
-                        UI_layer.y = -view_y;
-                    }
                 }
 
                 if (player.map == current_player.map) {
                     if (!player_list[player.id]) {
-                        new Player(player.id, null, player.pseudo, player.x, player.y, scale, player.hp, player.maxHP, player.score, player.sprite_number, player.moving, player.direction, player.map);
+                        player_list[player.id] = new Player(player.id, null, player.pseudo, player.x, player.y, scale, player.hp, player.maxHP, player.score, player.sprite_number, player.moving, player.direction, player.map);
                         player_layer.addChild(player_list[player.id].sprite);
                         player_layer.addChild(player_list[player.id].hp_text);
                     }
@@ -448,6 +466,32 @@ loader.load((loader, resources) => {
                 if (!find) {
                     bullet_list[bullet_id].die();
                 }
+            }
+
+            if (current_player.x + camera.view_x > app.view.width - 32 * scale * 4.5) {
+                camera.view_x = Math.max(
+                    app.view.width - ((maps[current_player.map].width * 32) * scale),
+                    app.view.width - current_player.x - 32 * scale * 4.5
+                );
+            }
+            if (current_player.x + camera.view_x < 32 * scale * 4.5) {
+                camera.view_x = Math.min(0, -current_player.x + 32 * scale * 4.5);
+            }
+            if (current_player.y + camera.view_y > app.view.height - 32 * scale * 3) {
+                camera.view_y = Math.max(
+                    app.view.height - ((maps[current_player.map].height * 32) * scale),
+                    app.view.height - current_player.y - 32 * scale * 3
+                );
+            }
+            if (current_player.y + camera.view_y < 32 * scale * 2.5) {
+                camera.view_y = Math.min(0, -current_player.y + 32 * scale * 2.5);
+            }
+
+            if (app.stage.x != camera.view_x || app.stage.y != camera.view_y) {
+                app.stage.x = camera.view_x;
+                UI_layer.x = -camera.view_x;
+                app.stage.y = camera.view_y;
+                UI_layer.y = -camera.view_y;
             }
         });
 
@@ -510,7 +554,7 @@ loader.load((loader, resources) => {
             }
             else if (keyMap[e.keyCode] == "T") {
                 if (testActiveChat()) {
-                    document.getElementById("input-message").focus();
+                    activateChat();
                 }
             }
         }
@@ -552,14 +596,10 @@ loader.load((loader, resources) => {
             socket.emit('input', { key: 'shoot', state: false });
         }
 
-        document.getElementById("change-map").onclick = function (e) {
-            socket.emit('change-map');
-        }
-
         var mouseAngleInterval = setInterval(function () {
             let mousePos = app.renderer.plugins.interaction.mouse.global;
-            var x = (-current_player.x + mousePos.x) - view_x;
-            var y = (-current_player.y + mousePos.y) - view_y;
+            var x = (-current_player.x + mousePos.x) - camera.view_x;
+            var y = (-current_player.y + mousePos.y) - camera.view_y;
 
             var angle = Math.atan2(y, x) / Math.PI * 180;
             socket.emit('input', { key: 'mouseAngle', state: angle });
