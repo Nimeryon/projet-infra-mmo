@@ -369,23 +369,23 @@ loader.load((loader, resources) => {
     }
 
     function moveView() {
-        if (current_player.x + camera.view_x > app.view.width - tile_size * scale) {
+        if (current_player.x + camera.view_x > app.view.width - tile_size * scale * 4.5) {
             camera.view_x = Math.max(
                 app.view.width - ((maps[current_player.map].width * tile_size) * scale),
-                app.view.width - current_player.x - tile_size * scale
+                app.view.width - current_player.x - tile_size * scale * 4.5
             );
         }
-        if (current_player.x + camera.view_x < tile_size * scale) {
-            camera.view_x = Math.min(0, -current_player.x + tile_size * scale);
+        if (current_player.x + camera.view_x < tile_size * scale * 4.5) {
+            camera.view_x = Math.min(0, -current_player.x + tile_size * scale * 4.5);
         }
-        if (current_player.y + camera.view_y > app.view.height - tile_size * scale) {
+        if (current_player.y + camera.view_y > app.view.height - tile_size * scale * 3) {
             camera.view_y = Math.max(
                 app.view.height - ((maps[current_player.map].height * tile_size) * scale),
-                app.view.height - current_player.y - tile_size * scale
+                app.view.height - current_player.y - tile_size * scale * 3
             );
         }
-        if (current_player.y + camera.view_y < tile_size * scale) {
-            camera.view_y = Math.min(0, -current_player.y + tile_size * scale);
+        if (current_player.y + camera.view_y < tile_size * scale * 2.5) {
+            camera.view_y = Math.min(0, -current_player.y + tile_size * scale * 2.5);
         }
 
         if (app.stage.x != camera.view_x || app.stage.y != camera.view_y) {
