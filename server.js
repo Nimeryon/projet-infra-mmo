@@ -48,28 +48,157 @@ var tile_size = 32;
 var server_frameRate = 25;
 
 class Entity {
-    constructor(id, parent_id, x, y, map) {
+    constructor(id, parent_id, x, y, size, map) {
         this.id = id;
         this.parent_id = parent_id;
         this.x = x;
         this.y = y;
+        this.size = size;
         this.spdX = 0;
         this.spdY = 0;
-        this.map = map;
+        this.changeMap(map);
+        this.calcBounds();
+        this.calcTilePos();
+    }
+
+    changeMap(map) {
+        if (this.map != map) {
+            this.map = map;
+            this.collision_layer = maps[this.map].collision_layer;
+        }
+    }
+
+    calcBounds() {
+        this.bounds = {
+            minX: this.x - this.size.minX,
+            maxX: this.x + this.size.maxX,
+            minY: this.y - this.size.minY,
+            maxY: this.y + this.size.maxY
+        }
+    }
+
+    calcTilePos() {
+        this.tileX = Math.floor(this.x / (tile_size * scale));
+        this.tileY = Math.floor(this.y / (tile_size * scale));
+    }
+
+    getBoundsGrid(tileY, tileX) {
+        let tile = this.collision_layer[tileY][tileX];
+        if (tile == 1) {
+            return {
+                minX: tileX * tile_size * scale,
+                maxX: (tile_size * scale) + (tileX * tile_size * scale),
+                minY: tileY * tile_size * scale,
+                maxY: (tile_size * scale) + (tileY * tile_size * scale)
+            }
+        }
+        return null;
+    }
+
+    testWorldCollision() {
+        let moveSide = true;
+        let moveTopDown = true;
+
+        // Collision with map border
+        if (!(this.bounds.minX + this.spdX > 0 && this.bounds.maxX + this.spdX < maps[this.map].width * tile_size * scale)) {
+            moveSide = false;
+        }
+
+        if (!(this.bounds.minY + this.spdY > 0 && this.bounds.maxY + this.spdY < maps[this.map].height * tile_size * scale)) {
+            moveTopDown = false;
+        }
+
+        return { side: moveSide, topDown: moveTopDown };
+    }
+
+    testCollisionTop() {
+        // side
+        let tileTop = this.tileY > 0 ? this.getBoundsGrid(this.tileY - 1, this.tileX) : null;
+
+        // corner
+        let tileTopLeft = this.tileY > 0 && this.tileX > 0 ? this.getBoundsGrid(this.tileY - 1, this.tileX - 1) : null;
+        let tileTopRight = this.tileY > 0 && this.tileX < (maps[this.map].width - 1) ? this.getBoundsGrid(this.tileY - 1, this.tileX + 1) : null;
+
+
+        // Collision with map object topDown
+        if ((tileTopRight && this.bounds.maxX > tileTopRight.minX && this.bounds.minY + this.spdY < tileTopRight.maxY) ||
+            (tileTop && this.bounds.minY + this.spdY < tileTop.maxY) ||
+            (tileTopLeft && this.bounds.minX < tileTopLeft.maxX && this.bounds.minY + this.spdY < tileTopLeft.maxY)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    testCollisionBottom() {
+        // side
+        let tileBottom = this.tileY < (maps[this.map].height - 1) ? this.getBoundsGrid(this.tileY + 1, this.tileX) : null;
+
+        // corner
+        let tileBottomLeft = this.tileY < (maps[this.map].height - 1) && this.tileX > 0 ? this.getBoundsGrid(this.tileY + 1, this.tileX - 1) : null;
+        let tileBottomRight = this.tileY < (maps[this.map].height - 1) && this.tileX < (maps[this.map].width - 1) ? this.getBoundsGrid(this.tileY + 1, this.tileX + 1) : null;
+
+        // Collision with map object topDown
+        if ((tileBottomRight && this.bounds.maxX > tileBottomRight.minX && this.bounds.maxY + this.spdY > tileBottomRight.minY) ||
+            (tileBottom && this.bounds.maxY + this.spdY > tileBottom.minY) ||
+            (tileBottomLeft && this.bounds.minX < tileBottomLeft.maxX && this.bounds.maxY + this.spdY > tileBottomLeft.minY)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    testCollisionLeft() {
+        // side
+        let tileLeft = this.tileX > 0 ? this.getBoundsGrid(this.tileY, this.tileX - 1) : null;
+
+        // corner
+        let tileTopLeft = this.tileY > 0 && this.tileX > 0 ? this.getBoundsGrid(this.tileY - 1, this.tileX - 1) : null;
+        let tileBottomLeft = this.tileY < (maps[this.map].height - 1) && this.tileX > 0 ? this.getBoundsGrid(this.tileY + 1, this.tileX - 1) : null;
+
+        // Collision with map object side
+        if ((tileTopLeft && this.bounds.minY < tileTopLeft.maxY && this.bounds.minX + this.spdX < tileTopLeft.maxX) ||
+            (tileLeft && this.bounds.minX + this.spdX < tileLeft.maxX) ||
+            (tileBottomLeft && this.bounds.maxY > tileBottomLeft.minY && this.bounds.minX + this.spdX < tileBottomLeft.maxX)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    testCollisionRight() {
+        // side
+        let tileRight = this.tileX < (maps[this.map].width - 1) ? this.getBoundsGrid(this.tileY, this.tileX + 1) : null;
+
+        // corner
+        let tileTopRight = this.tileY > 0 && this.tileX < (maps[this.map].width - 1) ? this.getBoundsGrid(this.tileY - 1, this.tileX + 1) : null;
+        let tileBottomRight = this.tileY < (maps[this.map].height - 1) && this.tileX < (maps[this.map].width - 1) ? this.getBoundsGrid(this.tileY + 1, this.tileX + 1) : null;
+
+        // Collision with map object side
+        if ((tileTopRight && this.bounds.minY < tileTopRight.maxY && this.bounds.maxX + this.spdX > tileTopRight.minX) ||
+            (tileRight && this.bounds.maxX + this.spdX > tileRight.minX) ||
+            (tileBottomRight && this.bounds.maxY > tileBottomRight.minY && this.bounds.maxX + this.spdX > tileBottomRight.minX)) {
+            return false;
+        }
+
+        return true;
     }
 
     updatePosition() {
-        if (this.x + this.spdX > 0 && this.x + this.spdX < maps[this.map].width * tile_size * scale) {
+        let movement = this.testWorldCollision();
+        if (movement.side && this.testCollisionLeft() && this.testCollisionRight()) {
             this.x += this.spdX;
         }
 
-        if (this.y + this.spdY > 0 && this.y + this.spdY < maps[this.map].height * tile_size * scale) {
+        if (movement.topDown && this.testCollisionTop() && this.testCollisionBottom()) {
             this.y += this.spdY;
         }
+        this.calcTilePos();
     }
 
     update() {
         this.updatePosition();
+        this.calcBounds();
     }
 
     getDistance(point) {
@@ -78,9 +207,9 @@ class Entity {
 }
 
 class Player extends Entity {
-    constructor(id, parent_id, pseudo, x, y, map) {
+    constructor(id, parent_id, pseudo, x, y, size, map) {
         // Hérite de la classe Entity
-        super(id, parent_id, x, y, map);
+        super(id, parent_id, x, y, size, map);
 
         this.pseudo = pseudo;
 
@@ -96,6 +225,8 @@ class Player extends Entity {
 
         this.direction = 0;
         this.moving = false;
+
+        this.bound = null;
 
         this.speed = 15;
         this.maxHP = 10;
@@ -154,7 +285,7 @@ class Player extends Entity {
 
     shoot() {
         let bullet_id = Math.random();
-        bullet_list[bullet_id] = new Bullet(bullet_id, this.id, this.x, this.y, this.mouseAngle, this.map);
+        bullet_list[bullet_id] = new Bullet(bullet_id, this.id, this.x, this.y, { minX: 4, minY: 4, maxX: 4, maxY: 4 }, this.mouseAngle, this.map);
     }
 
     update() {
@@ -164,22 +295,42 @@ class Player extends Entity {
         if (this.pressingAttack) {
             this.shoot();
         }
+        this.calcTilePos();
+        this.calcBounds();
     }
 }
 
 class Bullet extends Entity {
-    constructor(id, parent_id, x, y, angle, map) {
+    constructor(id, parent_id, x, y, size, angle, map) {
         // Hérite de la classe Entity
-        super(id, parent_id, x, y, map);
+        super(id, parent_id, x, y, size, map);
 
         this.angle = angle;
-        this.speed = 12;
+        this.speed = 24;
 
         this.spdX = Math.cos(this.angle / 180 * Math.PI) * this.speed;
         this.spdY = Math.sin(this.angle / 180 * Math.PI) * this.speed;
 
-        this.timeToDie = 400 - Math.floor(Math.random() * 100);
+        this.timeToDie = 300 - Math.floor(Math.random() * 100);
         this.timer = 0;
+    }
+
+    updatePosition() {
+        let movement = this.testWorldCollision();
+        if (movement.side && this.testCollisionLeft() && this.testCollisionRight()) {
+            this.x += this.spdX;
+        }
+        else {
+            this.die();
+        }
+
+        if (movement.topDown && this.testCollisionTop() && this.testCollisionBottom()) {
+            this.y += this.spdY;
+        }
+        else {
+            this.die();
+        }
+        this.calcTilePos();
     }
 
     live() {
@@ -258,7 +409,7 @@ io.on('connection', function (socket) {
         socket.id = Math.random();
         socket_list[socket.id] = socket;
         let player_map = ["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)];
-        player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, player_map);
+        player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, { minX: 16, minY: 16, maxX: 16, maxY: 32 }, player_map);
         socket.emit('init', {
             id: player_list[socket.id].id,
             x: player_list[socket.id].x,
@@ -334,18 +485,22 @@ io.on('connection', function (socket) {
         });
 
         socket.on('change-map', function () {
-            player_list[socket.id].map = ["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)];
+            player_list[socket.id].changeMap(["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)]);
             player_list[socket.id].x = maps[player_list[socket.id].map].spawnPoint.x;
             player_list[socket.id].y = maps[player_list[socket.id].map].spawnPoint.y;
         });
 
-        socket.on('disconnect', function () {
-            console.log("Quelqu'un vient de se déconnecter");
-            if (player_list[socket.id]) {
-                io.emit('chat message', { id: "Serveur", msg: `${player_list[socket.id].pseudo} vient de se déconnecter !` });
-            }
-            delete player_list[socket.id];
+        socket.on('player bounds', function (bounds) {
+            player_list[socket.id].bounds = bounds;
         });
+    });
+
+    socket.on('disconnect', function () {
+        console.log("Quelqu'un vient de se déconnecter");
+        if (player_list[socket.id]) {
+            io.emit('chat message', { id: "Serveur", msg: `${player_list[socket.id].pseudo} vient de se déconnecter !` });
+        }
+        delete player_list[socket.id];
     });
 });
 

@@ -170,6 +170,7 @@ form button[type="submit"]:hover {
 
 #game {
     display: none;
+    cursor: url('sprites/ui/cursor.png'), auto;
 }
 
 #app-screen {
@@ -193,8 +194,8 @@ form button[type="submit"]:hover {
     background-color: rgba(0, 0, 0, 0.35);
     width: 28%;
     height: 50%;
-    min-width: 400px;
-    min-height: 400px;
+    width: 400px;
+    height: 400px;
 }
 
 #form-messages {

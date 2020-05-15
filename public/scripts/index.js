@@ -21,8 +21,6 @@ window.onresize = function (event) {
     document.getElementById("app-screen").style.height = h + "px";
 }
 
-const scale = 3;
-
 const loader = new PIXI.Loader();
 // Chargement sprites joueur
 loader.add('player_sprites_01', "sprites/players/spr_player_01.png");
@@ -45,6 +43,7 @@ loader.add('player_sprites_17', "sprites/players/spr_player_17.png");
 loader.add('player_sprites_18', "sprites/players/spr_player_18.png");
 loader.add('player_sprites_19', "sprites/players/spr_player_19.png");
 loader.add('player_sprites_20', "sprites/players/spr_player_20.png");
+loader.add('player_sprite', "sprites/players/player.png");
 // Chargement sprites armes
 loader.add('weapon_sprites_01', "sprites/weapons/spr_weapon_01.png");
 loader.add('weapon_sprites_02', "sprites/weapons/spr_weapon_02.png");
@@ -61,20 +60,21 @@ loader.add('tileset_light_shadow', "sprites/tilesets/light_shadow.png");
 loader.add('tileset_wall', "sprites/tilesets/wall.png");
 loader.add('tileset_grass', "sprites/tilesets/grass.png");
 // Chargement ui
-loader.add('ui_message', "sprites/ui/message.png");
-loader.add('ui_minus', "sprites/ui/minus.png");
+loader.add('ui_menu_elements', "sprites/ui/menu_element.png");
 // Execution
 loader.load((loader, resources) => {
     // Global var
+    var scale = 3;
+    var tile_size = 32;
     var setFullScreen = false;
     var current_player = null;
+    var canShoot = true;
     var player_list = [];
     var bullet_list = [];
     var maps = $.getJSON("models/maps.json", function (data) {
         maps = data;
     });
-    var layers = null;
-    var map_layer = null;
+    var layers, bullet_layer, player_layer, UI_layer, map_layer = null;
     var camera = {
         view_x: 0,
         view_y: 0
@@ -116,7 +116,6 @@ loader.load((loader, resources) => {
             this.hp_text = new PIXI.Text(`HP : ${this.hp}`, { fontSize: 14 });
             this.hp_text.x = this.x - (16 * this.scale / 2);
             this.hp_text.y = this.y - (24 * this.scale);
-            app.stage.addChild(this.hp_text);
 
             this.score = score;
 
@@ -125,7 +124,7 @@ loader.load((loader, resources) => {
 
             this.sprite = createAnimatedSprite(this.player_animation_walk_front, x, y, this.alpha, 0, { x: this.scale, y: this.scale }, 0.1, false);
             this.sprite.id = id;
-            this.sprite.anchor.set(.5);
+            this.sprite.anchor.set(0.5);
 
             // app.stage.addChild(this.sprite);
             player_list[id] = this;
@@ -151,6 +150,7 @@ loader.load((loader, resources) => {
 
             this.hp_text.x = x - (16 * this.scale / 2);
             this.hp_text.y = y - (24 * this.scale);
+            this.hp_text.zIndex = y - (24 * this.scale);
         }
 
         updateSprite(moving, direction) {
@@ -232,11 +232,6 @@ loader.load((loader, resources) => {
     }
 
     // Function
-    function testActiveChat() {
-        let message_input = document.getElementById("input-message");
-        return document.activeElement != message_input;
-    }
-
     function generateTextures(texture, nbr_tile_x, nbr_tile_y, tile_size_x, tile_size_y) {
         let textures = [];
         let frame_count = 0;
@@ -329,63 +324,118 @@ loader.load((loader, resources) => {
         layers.addChild(map_layer);
     }
 
+    function createMenuElements(texture, x, y, scale, scale_hover, alpha, angle, text, command) {
+        let info_text = null;
+        let menu_element_container = new PIXI.Container();
+        let menu_element_bg = createSprite(menu_elements.textures[0], x, y, alpha, angle, scale)
+        menu_element_bg.anchor.set(0.5);
+        let menu_element = createSprite(texture, x, y, alpha, angle, scale);
+        menu_element.anchor.set(0.5);
+        menu_element_container.interactive = true;
+        menu_element_container.buttonMode = true;
+        menu_element_container.cursor = "default";
+        menu_element_container.on('pointerdown', function (e) {
+            menu_element_bg.texture = menu_elements.textures[1];
+        });
+        menu_element_container.on('pointerup', function (e) {
+            command();
+            menu_element_bg.texture = menu_elements.textures[0];
+        });
+        menu_element_container.on('pointerover', function (e) {
+            menu_element.scale.x = scale_hover.x;
+            menu_element.scale.y = scale_hover.y;
+            menu_element_bg.scale.x = scale_hover.x;
+            menu_element_bg.scale.y = scale_hover.y;
+            canShoot = false;
+            info_text = new PIXI.Text(text, { fontSize: 12, fill: 0x000000 });
+            info_text.x = x;
+            info_text.y = y + 32;
+            info_text.anchor.set(0.5);
+            menu_element_container.addChild(info_text);
+        });
+        menu_element_container.on('pointerout', function (e) {
+            menu_element.scale.x = scale.x;
+            menu_element.scale.y = scale.y;
+            menu_element_bg.scale.x = scale.x;
+            menu_element_bg.scale.y = scale.y;
+            menu_element_bg.texture = menu_elements.textures[0];
+            canShoot = true;
+            info_text.destroy();
+        });
+        menu_element_container.addChild(menu_element_bg);
+        menu_element_container.addChild(menu_element);
+        UI_layer.addChild(menu_element_container);
+        return menu_element_container;
+    }
+
+    function moveView() {
+        if (current_player.x + camera.view_x > app.view.width - tile_size * scale) {
+            camera.view_x = Math.max(
+                app.view.width - ((maps[current_player.map].width * tile_size) * scale),
+                app.view.width - current_player.x - tile_size * scale
+            );
+        }
+        if (current_player.x + camera.view_x < tile_size * scale) {
+            camera.view_x = Math.min(0, -current_player.x + tile_size * scale);
+        }
+        if (current_player.y + camera.view_y > app.view.height - tile_size * scale) {
+            camera.view_y = Math.max(
+                app.view.height - ((maps[current_player.map].height * tile_size) * scale),
+                app.view.height - current_player.y - tile_size * scale
+            );
+        }
+        if (current_player.y + camera.view_y < tile_size * scale) {
+            camera.view_y = Math.min(0, -current_player.y + tile_size * scale);
+        }
+
+        if (app.stage.x != camera.view_x || app.stage.y != camera.view_y) {
+            app.stage.x = camera.view_x;
+            UI_layer.x = -camera.view_x;
+            app.stage.y = camera.view_y;
+            UI_layer.y = -camera.view_y;
+        }
+    }
+
     const tileset = generateTextures(resources['tileset_grass'].texture, 8, 18, 32, 32);
+    const menu_elements = generateTextures(resources['ui_menu_elements'].texture, 6, 1, 48, 48);
 
     socket.on('init', function (player) {
+        // Custom cursor
+        app.renderer.plugins.interaction.cursorStyles.default = "url('sprites/ui/cursor.png'), auto";
+
+        // Layers
         layers = new PIXI.Container();
         layers.sortableChildren = true;
         app.stage.addChild(layers);
         changeMapLayer(maps[player.map], tileset.textures, scale);
-        let bullet_layer = new PIXI.Container();
+        bullet_layer = new PIXI.Container();
         bullet_layer.sortableChildren = true;
         bullet_layer.zIndex = 1;
         layers.addChild(bullet_layer);
-        let player_layer = new PIXI.Container();
+        player_layer = new PIXI.Container();
         player_layer.sortableChildren = true;
         player_layer.zIndex = 2;
         layers.addChild(player_layer);
-        let UI_layer = new PIXI.Container();
+        UI_layer = new PIXI.Container();
         UI_layer.zIndex = 3;
         layers.addChild(UI_layer);
 
         // Draw menu
-        let menu_message = createSprite(resources.ui_message.texture, app.screen.width - 24, 24, 1, 0, { x: 1, y: 1 });
-        menu_message.anchor.set(0.5);
-        menu_message.interactive = true;
-        menu_message.buttonMode = true;
-        menu_message.width = 48;
-        menu_message.height = 48;
-        menu_message.on('pointerdown', function (e) {
+        let menu_options = createMenuElements(menu_elements.textures[4], app.screen.width - 24, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "Options", function () {
+            return;
+        });
+
+        let menu_message = createMenuElements(menu_elements.textures[3], app.screen.width - 72, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "(T) Chat", function () {
             activateChat();
         });
-        menu_message.on('pointerover', function (e) {
-            menu_message.width = 52;
-            menu_message.height = 52;
-        });
-        menu_message.on('pointerout', function (e) {
-            menu_message.width = 48;
-            menu_message.height = 48;
-        });
-        UI_layer.addChild(menu_message);
 
-        let menu_changemap = createSprite(resources.ui_minus.texture, app.screen.width - 72, 24, 1, 0, { x: 1, y: 1 });
-        menu_changemap.anchor.set(0.5);
-        menu_changemap.interactive = true;
-        menu_changemap.buttonMode = true;
-        menu_changemap.width = 48;
-        menu_changemap.height = 48;
-        menu_changemap.on('pointerdown', function (e) {
+        let menu_inventory = createMenuElements(menu_elements.textures[5], app.screen.width - 120, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "Inventaire", function () {
+            return;
+        });
+
+        let menu_changemap = createMenuElements(menu_elements.textures[2], app.screen.width - 168, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "Changer de map", function () {
             socket.emit('change-map');
         });
-        menu_changemap.on('pointerover', function (e) {
-            menu_changemap.width = 52;
-            menu_changemap.height = 52;
-        });
-        menu_changemap.on('pointerout', function (e) {
-            menu_changemap.width = 48;
-            menu_changemap.height = 48;
-        });
-        UI_layer.addChild(menu_changemap);
 
         // Current player
         current_player = player;
@@ -468,31 +518,7 @@ loader.load((loader, resources) => {
                 }
             }
 
-            if (current_player.x + camera.view_x > app.view.width - 32 * scale * 4.5) {
-                camera.view_x = Math.max(
-                    app.view.width - ((maps[current_player.map].width * 32) * scale),
-                    app.view.width - current_player.x - 32 * scale * 4.5
-                );
-            }
-            if (current_player.x + camera.view_x < 32 * scale * 4.5) {
-                camera.view_x = Math.min(0, -current_player.x + 32 * scale * 4.5);
-            }
-            if (current_player.y + camera.view_y > app.view.height - 32 * scale * 3) {
-                camera.view_y = Math.max(
-                    app.view.height - ((maps[current_player.map].height * 32) * scale),
-                    app.view.height - current_player.y - 32 * scale * 3
-                );
-            }
-            if (current_player.y + camera.view_y < 32 * scale * 2.5) {
-                camera.view_y = Math.min(0, -current_player.y + 32 * scale * 2.5);
-            }
-
-            if (app.stage.x != camera.view_x || app.stage.y != camera.view_y) {
-                app.stage.x = camera.view_x;
-                UI_layer.x = -camera.view_x;
-                app.stage.y = camera.view_y;
-                UI_layer.y = -camera.view_y;
-            }
+            moveView();
         });
 
         document.onkeydown = function (e) {
@@ -560,7 +586,7 @@ loader.load((loader, resources) => {
         }
 
         document.onmousedown = function (e) {
-            if (testActiveChat()) {
+            if (testActiveChat() && canShoot) {
                 socket.emit('input', { key: 'shoot', state: true });
             }
         }

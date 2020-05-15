@@ -1,11 +1,18 @@
+var chatDisplayed = true;
 function activateChat() {
-    let app_chat = document.getElementById("app-chat");
-    if (app_chat.style.display == "none" || !app_chat.style.display) {
-        app_chat.style.display = "block";
+    if (!chatDisplayed) {
+        $("#app-chat").slideUp("fast");
+        chatDisplayed = true;
     }
     else {
-        app_chat.style.display = "none";
+        $("#app-chat").slideDown("fast");
+        chatDisplayed = false;
     }
+}
+
+function testActiveChat() {
+    let message_input = document.getElementById("input-message");
+    return document.activeElement != message_input;
 }
 
 function sendMessage() {
