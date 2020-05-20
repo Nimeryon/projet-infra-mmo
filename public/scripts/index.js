@@ -21,6 +21,9 @@ window.onresize = function (event) {
     document.getElementById("app-screen").style.height = h + "px";
 }
 
+// Custom cursor
+app.renderer.plugins.interaction.cursorStyles.default = "url('sprites/ui/cursor.png'), auto";
+
 const loader = new PIXI.Loader();
 // Chargement sprites joueur
 loader.add('player_sprites_01', "sprites/players/spr_player_01.png");
@@ -61,6 +64,12 @@ loader.add('tileset_wall', "sprites/tilesets/wall.png");
 loader.add('tileset_grass', "sprites/tilesets/grass.png");
 // Chargement ui
 loader.add('ui_menu_elements', "sprites/ui/menu_element.png");
+loader.add('ui_frame_elements', "sprites/ui/frame.png");
+loader.add('ui_button_icon_elements', "sprites/ui/button_icon.png");
+loader.add('ui_inventory_slots', "sprites/ui/inventory_slot.png");
+loader.add('ui_inventory_slots_2', "sprites/ui/inventory_slot_2.png");
+loader.add('ui_inventory_icons', "sprites/ui/inventory_icon.png");
+
 // Execution
 loader.load((loader, resources) => {
     // Global var
@@ -74,7 +83,7 @@ loader.load((loader, resources) => {
     var maps = $.getJSON("models/maps.json", function (data) {
         maps = data;
     });
-    var layers, bullet_layer, player_layer, UI_layer, map_layer = null;
+    var layers, bullet_layer, player_layer, ui_layer, map_layer = null;
     var camera = {
         view_x: 0,
         view_y: 0
@@ -89,6 +98,7 @@ loader.load((loader, resources) => {
         40: "v",
         39: ">",
         32: "Space",
+        69: "E",
         84: "T",
         13: "Enter"
     };
@@ -249,7 +259,108 @@ loader.load((loader, resources) => {
         }
     }
 
-    function createSprite(texture, x, y, alpha = 1, angle = 0, scale = { x: 1, y: 1 }) {
+    class UIContainer {
+        constructor(x, y, width, height, cmdover = null, cmdout = null, cmddown = null, cmdup = null) {
+            this.container = new PIXI.Container();
+            this.container.x = x - (width * 32 / 2);
+            this.container.y = y - (height * 32 / 2);
+            this.container.alpha = 0;
+            this.container.on('pointerover', function () {
+                canShoot = false;
+                cmdover();
+            });
+            this.container.on('pointerout', function () {
+                canShoot = true;
+                cmdout();
+            });
+            this.container.on('pointerdown', function () {
+                cmddown();
+            });
+            this.container.on('pointerup', function () {
+                cmdup();
+            });
+
+            this.createBackground(width, height);
+
+            this.hide = true;
+            console.log(this.container);
+        }
+
+        createBackground(width, height) {
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    switch (x) {
+                        case 0:
+                            switch (y) {
+                                case 0:
+                                    this.container.addChild(createSprite(menu_frame_elements.textures[3], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 }));
+                                    break;
+
+                                case height - 1:
+                                    this.container.addChild(createSprite(menu_frame_elements.textures[9], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 }));
+                                    break;
+
+                                default:
+                                    this.container.addChild(createSprite(menu_frame_elements.textures[6], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 }));
+                                    break;
+                            }
+                            break;
+
+                        case width - 1:
+                            switch (y) {
+                                case 0:
+                                    this.container.addChild(createSprite(menu_frame_elements.textures[5], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 }));
+                                    break;
+
+                                case height - 1:
+                                    this.container.addChild(createSprite(menu_frame_elements.textures[11], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 }));
+                                    break;
+
+                                default:
+                                    this.container.addChild(createSprite(menu_frame_elements.textures[8], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 }));
+                                    break;
+                            }
+                            break;
+
+                        default:
+                            switch (y) {
+                                case 0:
+                                    this.container.addChild(createSprite(menu_frame_elements.textures[4], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 }));
+                                    break;
+
+                                case height - 1:
+                                    this.container.addChild(createSprite(menu_frame_elements.textures[10], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 }));
+                                    break;
+
+                                default:
+                                    this.container.addChild(createSprite(menu_frame_elements.textures[7], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 }));
+                                    break;
+                            }
+                            break
+                    }
+                }
+            }
+        }
+
+        hideShow() {
+            if (this.hide) {
+                this.container.interactive = true;
+                this.container.buttonMode = true;
+                this.container.alpha = 0.95;
+                this.container.cursor = "default";
+                this.hide = false;
+            }
+            else {
+                this.container.interactive = false;
+                this.container.buttonMode = false;
+                this.container.alpha = 0;
+                this.hide = true;
+                canShoot = true;
+            }
+        }
+    }
+
+    function createSprite(texture, x, y, alpha = 1, angle = 0, scale = { x: 1, y: 1 }, cursor = null) {
         let sprite = new PIXI.Sprite(texture);
         sprite.x = x;
         sprite.y = y;
@@ -257,10 +368,13 @@ loader.load((loader, resources) => {
         sprite.angle = angle;
         sprite.scale.x = scale.x;
         sprite.scale.y = scale.y;
+        if (cursor) {
+            sprite.cursor = cursor;
+        }
         return sprite;
     }
 
-    function createAnimatedSprite(textures, x, y, alpha = 1, angle = 0, scale = { x: 1, y: 1 }, animSpeed = 1, play = true) {
+    function createAnimatedSprite(textures, x, y, alpha = 1, angle = 0, scale = { x: 1, y: 1 }, animSpeed = 1, play = true, cursor = null) {
         let sprite = new PIXI.AnimatedSprite(textures);
         sprite.x = x;
         sprite.y = y;
@@ -269,6 +383,9 @@ loader.load((loader, resources) => {
         sprite.scale.x = scale.x;
         sprite.scale.y = scale.y;
         sprite.animationSpeed = animSpeed;
+        if (cursor) {
+            sprite.cursor = cursor;
+        }
         if (play) {
             sprite.play();
         }
@@ -364,9 +481,35 @@ loader.load((loader, resources) => {
         });
         menu_element_container.addChild(menu_element_bg);
         menu_element_container.addChild(menu_element);
-        UI_layer.addChild(menu_element_container);
+        ui_layer.addChild(menu_element_container);
         return menu_element_container;
     }
+
+    // function makeDragabble(element) {
+    //     let draggable = false;
+    //     element.interactive = true;
+    //     element.buttonMode = true;
+
+    //     element.on('pointerdown', function () {
+    //         draggable = true;
+    //     });
+
+    //     element.on('pointerup', function () {
+    //         draggable = false;
+    //     });
+
+    //     element.on('pointerout', function () {
+    //         draggable = false;
+    //     });
+
+    //     element.on('pointermove', function (event) {
+    //         if (draggable) {
+    //             element.x = 100;
+    //             element.y = 100;
+    //             console.log(element.x, element.y);
+    //         }
+    //     });
+    // }
 
     function moveView() {
         if (current_player.x + camera.view_x > app.view.width - tile_size * scale * 4.5) {
@@ -390,19 +533,20 @@ loader.load((loader, resources) => {
 
         if (app.stage.x != camera.view_x || app.stage.y != camera.view_y) {
             app.stage.x = camera.view_x;
-            UI_layer.x = -camera.view_x;
+            ui_layer.x = -camera.view_x;
             app.stage.y = camera.view_y;
-            UI_layer.y = -camera.view_y;
+            ui_layer.y = -camera.view_y;
         }
     }
 
     const tileset = generateTextures(resources['tileset_grass'].texture, 8, 18, 32, 32);
-    const menu_elements = generateTextures(resources['ui_menu_elements'].texture, 6, 1, 48, 48);
+    const menu_elements = generateTextures(resources['ui_menu_elements'].texture, 7, 1, 48, 48);
+    const menu_frame_elements = generateTextures(resources['ui_frame_elements'].texture, 3, 4, 32, 32);
+    const inventory_slots = generateTextures(resources['ui_inventory_slots'].texture, 7, 3, 40, 40);
+    const inventory_slots_2 = generateTextures(resources['ui_inventory_slots_2'].texture, 3, 9, 38, 38);
+    const inventory_icons = generateTextures(resources['ui_inventory_icons'].texture, 4, 2, 32, 32);
 
     socket.on('init', function (player) {
-        // Custom cursor
-        app.renderer.plugins.interaction.cursorStyles.default = "url('sprites/ui/cursor.png'), auto";
-
         // Layers
         layers = new PIXI.Container();
         layers.sortableChildren = true;
@@ -416,9 +560,17 @@ loader.load((loader, resources) => {
         player_layer.sortableChildren = true;
         player_layer.zIndex = 2;
         layers.addChild(player_layer);
-        UI_layer = new PIXI.Container();
-        UI_layer.zIndex = 3;
-        layers.addChild(UI_layer);
+        ui_layer = new PIXI.Container();
+        ui_layer.zIndex = 3;
+        layers.addChild(ui_layer);
+
+        let ui_inventory = new UIContainer(app.screen.width / 2, app.screen.height / 2, 20, 20,
+            null,
+            null,
+            null,
+            null
+        );
+        ui_layer.addChild(ui_inventory.container);
 
         // Draw menu
         let menu_options = createMenuElements(menu_elements.textures[4], app.screen.width - 24, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "Options", function () {
@@ -429,12 +581,39 @@ loader.load((loader, resources) => {
             activateChat();
         });
 
-        let menu_inventory = createMenuElements(menu_elements.textures[5], app.screen.width - 120, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "Inventaire", function () {
-            return;
+        let menu_inventory = createMenuElements(menu_elements.textures[5], app.screen.width - 120, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "(E) Inventaire", function () {
+            ui_inventory.hideShow();
         });
 
         let menu_changemap = createMenuElements(menu_elements.textures[2], app.screen.width - 168, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "Changer de map", function () {
             socket.emit('change-map');
+        });
+
+        let menu_fullscreen = createMenuElements(menu_elements.textures[6], app.screen.width - 216, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "(Entrée) Plein écran", function () {
+            if (!setFullScreen) {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.mozRequestFullScreen) {
+                    document.documentElement.mozRequestFullScreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen();
+                } else if (document.documentElement.msRequestFullscreen) {
+                    document.documentElement.msRequestFullscreen();
+                }
+                setFullScreen = true;
+            }
+            else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                setFullScreen = false;
+            }
         });
 
         // Current player
@@ -442,7 +621,7 @@ loader.load((loader, resources) => {
         current_player.score_text = new PIXI.Text(`Score : ${current_player.score}`, { fontSize: 24 });
         current_player.score_text.x = 20;
         current_player.score_text.y = 20;
-        UI_layer.addChild(current_player.score_text);
+        ui_layer.addChild(current_player.score_text);
 
         socket.on('update', function (packet) {
             // Joueur
@@ -578,6 +757,11 @@ loader.load((loader, resources) => {
             else if (keyMap[e.keyCode] == "D" || keyMap[e.keyCode] == ">") {
                 socket.emit('input', { key: "right", state: false });
             }
+            else if (keyMap[e.keyCode] == "E") {
+                if (testActiveChat()) {
+                    ui_inventory.hideShow();
+                }
+            }
             else if (keyMap[e.keyCode] == "T") {
                 if (testActiveChat()) {
                     activateChat();
@@ -585,40 +769,13 @@ loader.load((loader, resources) => {
             }
         }
 
-        document.onmousedown = function (e) {
+        document.onpointerdown = function (e) {
             if (testActiveChat() && canShoot) {
                 socket.emit('input', { key: 'shoot', state: true });
             }
         }
 
-        document.ontouchstart = function (e) {
-            if (!setFullScreen) {
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen();
-                } else if (document.documentElement.mozRequestFullScreen) {
-                    document.documentElement.mozRequestFullScreen();
-                } else if (document.documentElement.webkitRequestFullscreen) {
-                    document.documentElement.webkitRequestFullscreen();
-                } else if (document.documentElement.msRequestFullscreen) {
-                    document.documentElement.msRequestFullscreen();
-                }
-                setFullScreen = true;
-            }
-            else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.mozCancelFullScreen) {
-                    document.mozCancelFullScreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
-                }
-                setFullScreen = false;
-            }
-        }
-
-        document.onmouseup = function (e) {
+        document.onpointerup = function (e) {
             socket.emit('input', { key: 'shoot', state: false });
         }
 

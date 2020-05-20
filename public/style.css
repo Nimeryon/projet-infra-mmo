@@ -1,5 +1,7 @@
 body {
     background-color: #FDFBFD;
+    margin: 0;
+    padding: 0;
 }
 
 .loader-wrapper {
@@ -60,16 +62,6 @@ body {
     text-align: center;
     color: white;
     background-color: black;
-}
-
-#color-div {
-    display: flex;
-    flex-direction: row;
-}
-
-#color-div canvas {
-    width: 20px;
-    height: 20px;
 }
 
 #startMenuWrapper {
@@ -173,11 +165,14 @@ form button[type="submit"]:hover {
     cursor: url('sprites/ui/cursor.png'), auto;
 }
 
+::-webkit-scrollbar { 
+    display: none; 
+}
+
 #app-screen {
     position: absolute;
     top: 0;
     left: 0;
-
     min-width: 400px;
     min-height: 400px;
 }
@@ -194,8 +189,6 @@ form button[type="submit"]:hover {
     background-color: rgba(0, 0, 0, 0.35);
     width: 28%;
     height: 50%;
-    width: 400px;
-    height: 400px;
 }
 
 #form-messages {

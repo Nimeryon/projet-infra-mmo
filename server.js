@@ -48,12 +48,13 @@ var tile_size = 32;
 var server_frameRate = 25;
 
 class Entity {
-    constructor(id, parent_id, x, y, size, map) {
+    constructor(id, parent_id, x, y, size, map, speed) {
         this.id = id;
         this.parent_id = parent_id;
         this.x = x;
         this.y = y;
         this.size = size;
+        this.speed = speed;
         this.spdX = 0;
         this.spdY = 0;
         this.changeMap(map);
@@ -95,20 +96,30 @@ class Entity {
         return null;
     }
 
+    testBoundsCollisions(bounds) {
+        if (this.bounds.minX < bounds.maxX && this.bounds.maxX > bounds.minX && this.bounds.maxY > bounds.minY && this.bounds.minY < bounds.maxY) {
+            return true;
+        }
+        return false;
+    }
+
     testWorldCollision() {
-        let moveSide = true;
-        let moveTopDown = true;
-
         // Collision with map border
-        if (!(this.bounds.minX + this.spdX > 0 && this.bounds.maxX + this.spdX < maps[this.map].width * tile_size * scale)) {
-            moveSide = false;
+        if (this.bounds.minX + this.spdX < 0) {
+            this.spdX = 0 - this.bounds.minX;
         }
 
-        if (!(this.bounds.minY + this.spdY > 0 && this.bounds.maxY + this.spdY < maps[this.map].height * tile_size * scale)) {
-            moveTopDown = false;
+        if (this.bounds.maxX + this.spdX > maps[this.map].width * tile_size * scale) {
+            this.spdX = (maps[this.map].width * tile_size * scale) - this.bounds.maxX;
         }
 
-        return { side: moveSide, topDown: moveTopDown };
+        if (this.bounds.minY + this.spdY < 0) {
+            this.spdY = 0 - this.bounds.minY;
+        }
+
+        if (this.bounds.maxY + this.spdY > maps[this.map].height * tile_size * scale) {
+            this.spdY = (maps[this.map].height * tile_size * scale) - this.bounds.maxY;
+        }
     }
 
     testCollisionTop() {
@@ -121,13 +132,20 @@ class Entity {
 
 
         // Collision with map object topDown
-        if ((tileTopRight && this.bounds.maxX > tileTopRight.minX && this.bounds.minY + this.spdY < tileTopRight.maxY) ||
-            (tileTop && this.bounds.minY + this.spdY < tileTop.maxY) ||
-            (tileTopLeft && this.bounds.minX < tileTopLeft.maxX && this.bounds.minY + this.spdY < tileTopLeft.maxY)) {
-            return false;
+        if (tileTopRight && this.bounds.maxX > tileTopRight.minX && this.bounds.minY + this.spdY < tileTopRight.maxY) {
+            this.spdY = tileTopRight.maxY - this.bounds.minY;
+            return;
         }
 
-        return true;
+        if (tileTop && this.bounds.minY + this.spdY < tileTop.maxY) {
+            this.spdY = tileTop.maxY - this.bounds.minY;
+            return;
+        }
+
+        if (tileTopLeft && this.bounds.minX < tileTopLeft.maxX && this.bounds.minY + this.spdY < tileTopLeft.maxY) {
+            this.spdY = tileTopLeft.maxY - this.bounds.minY;
+            return false;
+        }
     }
 
     testCollisionBottom() {
@@ -139,13 +157,20 @@ class Entity {
         let tileBottomRight = this.tileY < (maps[this.map].height - 1) && this.tileX < (maps[this.map].width - 1) ? this.getBoundsGrid(this.tileY + 1, this.tileX + 1) : null;
 
         // Collision with map object topDown
-        if ((tileBottomRight && this.bounds.maxX > tileBottomRight.minX && this.bounds.maxY + this.spdY > tileBottomRight.minY) ||
-            (tileBottom && this.bounds.maxY + this.spdY > tileBottom.minY) ||
-            (tileBottomLeft && this.bounds.minX < tileBottomLeft.maxX && this.bounds.maxY + this.spdY > tileBottomLeft.minY)) {
+        if (tileBottomRight && this.bounds.maxX > tileBottomRight.minX && this.bounds.maxY + this.spdY > tileBottomRight.minY) {
+            this.spdY = tileBottomRight.minY - this.bounds.maxY;
             return false;
         }
 
-        return true;
+        if (tileBottom && this.bounds.maxY + this.spdY > tileBottom.minY) {
+            this.spdY = tileBottom.minY - this.bounds.maxY;
+            return;
+        }
+
+        if (tileBottomLeft && this.bounds.minX < tileBottomLeft.maxX && this.bounds.maxY + this.spdY > tileBottomLeft.minY) {
+            this.spdY = tileBottomLeft.minY - this.bounds.maxY;
+            return false;
+        }
     }
 
     testCollisionLeft() {
@@ -157,13 +182,20 @@ class Entity {
         let tileBottomLeft = this.tileY < (maps[this.map].height - 1) && this.tileX > 0 ? this.getBoundsGrid(this.tileY + 1, this.tileX - 1) : null;
 
         // Collision with map object side
-        if ((tileTopLeft && this.bounds.minY < tileTopLeft.maxY && this.bounds.minX + this.spdX < tileTopLeft.maxX) ||
-            (tileLeft && this.bounds.minX + this.spdX < tileLeft.maxX) ||
-            (tileBottomLeft && this.bounds.maxY > tileBottomLeft.minY && this.bounds.minX + this.spdX < tileBottomLeft.maxX)) {
-            return false;
+        if (tileTopLeft && this.bounds.minY < tileTopLeft.maxY && this.bounds.minX + this.spdX < tileTopLeft.maxX) {
+            this.spdX = tileTopLeft.maxX - this.bounds.minX;
+            return;
         }
 
-        return true;
+        if (tileLeft && this.bounds.minX + this.spdX < tileLeft.maxX) {
+            this.spdX = tileLeft.maxX - this.bounds.minX;
+            return;
+        }
+
+        if (tileBottomLeft && this.bounds.maxY > tileBottomLeft.minY && this.bounds.minX + this.spdX < tileBottomLeft.maxX) {
+            this.spdX = tileBottomLeft.maxX - this.bounds.minX;
+            return;
+        }
     }
 
     testCollisionRight() {
@@ -175,24 +207,32 @@ class Entity {
         let tileBottomRight = this.tileY < (maps[this.map].height - 1) && this.tileX < (maps[this.map].width - 1) ? this.getBoundsGrid(this.tileY + 1, this.tileX + 1) : null;
 
         // Collision with map object side
-        if ((tileTopRight && this.bounds.minY < tileTopRight.maxY && this.bounds.maxX + this.spdX > tileTopRight.minX) ||
-            (tileRight && this.bounds.maxX + this.spdX > tileRight.minX) ||
-            (tileBottomRight && this.bounds.maxY > tileBottomRight.minY && this.bounds.maxX + this.spdX > tileBottomRight.minX)) {
-            return false;
+        if (tileTopRight && this.bounds.minY < tileTopRight.maxY && this.bounds.maxX + this.spdX > tileTopRight.minX) {
+            this.spdX = tileTopRight.minX - this.bounds.maxX;
+            return;
         }
 
-        return true;
+        if (tileRight && this.bounds.maxX + this.spdX > tileRight.minX) {
+            this.spdX = tileRight.minX - this.bounds.maxX;
+            return;
+        }
+
+        if (tileBottomRight && this.bounds.maxY > tileBottomRight.minY && this.bounds.maxX + this.spdX > tileBottomRight.minX) {
+            this.spdX = tileBottomRight.minX - this.bounds.maxX;
+            return;
+        }
     }
 
     updatePosition() {
-        let movement = this.testWorldCollision();
-        if (movement.side && this.testCollisionLeft() && this.testCollisionRight()) {
-            this.x += this.spdX;
-        }
+        this.testWorldCollision();
+        this.testCollisionBottom();
+        this.testCollisionLeft();
+        this.testCollisionRight();
+        this.testCollisionTop();
 
-        if (movement.topDown && this.testCollisionTop() && this.testCollisionBottom()) {
-            this.y += this.spdY;
-        }
+        this.x += this.spdX;
+        this.y += this.spdY;
+
         this.calcTilePos();
     }
 
@@ -207,9 +247,9 @@ class Entity {
 }
 
 class Player extends Entity {
-    constructor(id, parent_id, pseudo, x, y, size, map) {
+    constructor(id, parent_id, pseudo, x, y, size, map, speed) {
         // Hérite de la classe Entity
-        super(id, parent_id, x, y, size, map);
+        super(id, parent_id, x, y, size, map, speed);
 
         this.pseudo = pseudo;
 
@@ -221,14 +261,15 @@ class Player extends Entity {
         this.pressingDown = false;
 
         this.pressingAttack = false;
+        this.timeBtwAttack = 25;
+        this.timer = 0;
+        this.canShoot = true;
         this.mouseAngle = 0;
 
         this.direction = 0;
         this.moving = false;
 
-        this.bound = null;
-
-        this.speed = 15;
+        this.speed = speed;
         this.maxHP = 10;
         this.hp = 10;
         this.score = 0;
@@ -285,28 +326,37 @@ class Player extends Entity {
 
     shoot() {
         let bullet_id = Math.random();
-        bullet_list[bullet_id] = new Bullet(bullet_id, this.id, this.x, this.y, { minX: 4, minY: 4, maxX: 4, maxY: 4 }, this.mouseAngle, this.map);
+        bullet_list[bullet_id] = new Bullet(bullet_id, this.id, this.x, this.y, { minX: 1, minY: 1, maxX: 1, maxY: 1 }, this.mouseAngle, this.map, 24);
     }
 
     update() {
         this.updateSpeed();
         this.updatePosition();
-
-        if (this.pressingAttack) {
-            this.shoot();
+        if (this.moving && this.spdX == 0 && this.spdY == 0) {
+            this.moving = false;
         }
         this.calcTilePos();
         this.calcBounds();
+
+        if (this.pressingAttack && this.canShoot) {
+            this.canShoot = false;
+            this.shoot();
+        }
+
+        if (this.canShoot == false && this.timer++ > this.timeBtwAttack / server_frameRate) {
+            this.canShoot = true;
+            this.timer = 0;
+        }
     }
 }
 
 class Bullet extends Entity {
-    constructor(id, parent_id, x, y, size, angle, map) {
+    constructor(id, parent_id, x, y, size, angle, map, speed) {
         // Hérite de la classe Entity
-        super(id, parent_id, x, y, size, map);
+        super(id, parent_id, x, y, size, map, speed);
 
         this.angle = angle;
-        this.speed = 24;
+        this.speed = speed;
 
         this.spdX = Math.cos(this.angle / 180 * Math.PI) * this.speed;
         this.spdY = Math.sin(this.angle / 180 * Math.PI) * this.speed;
@@ -316,38 +366,39 @@ class Bullet extends Entity {
     }
 
     updatePosition() {
-        let movement = this.testWorldCollision();
-        if (movement.side && this.testCollisionLeft() && this.testCollisionRight()) {
-            this.x += this.spdX;
-        }
-        else {
+        let old_spdX = this.spdX;
+        let old_spdY = this.spdY;
+        this.testWorldCollision();
+        this.testCollisionBottom();
+        this.testCollisionLeft();
+        this.testCollisionRight();
+        this.testCollisionTop();
+
+        if (this.spdX != old_spdX || this.spdY != old_spdY) {
             this.die();
         }
 
-        if (movement.topDown && this.testCollisionTop() && this.testCollisionBottom()) {
-            this.y += this.spdY;
-        }
-        else {
-            this.die();
-        }
+        this.x += this.spdX;
+        this.y += this.spdY;
+
         this.calcTilePos();
     }
 
     live() {
         for (let i in player_list) {
             if (player_list[i].id != this.parent_id && this.map == player_list[i].map) {
-                // console.log(this.getDistance({ x: player_list[i].x, y: player_list[i].y }));
-                if (this.getDistance({ x: player_list[i].x, y: player_list[i].y }) < 32) {
-                    this.die();
+                if (this.testBoundsCollisions(player_list[i].bounds)) {
                     if (player_list[i].hp > 1) {
                         player_list[i].hp--;
                     }
                     else {
+                        player_list[i].score--;
                         player_list[i].hp = player_list[i].maxHP;
-                        player_list[i].x = Math.floor(Math.random() * 1080);
-                        player_list[i].y = Math.floor(Math.random() * 720);
+                        player_list[i].x = maps[player_list[i].map].spawnPoint.x;
+                        player_list[i].y = maps[player_list[i].map].spawnPoint.y;
                         player_list[this.parent_id].score++;
                     }
+                    this.die();
                 }
             }
         }
@@ -409,7 +460,7 @@ io.on('connection', function (socket) {
         socket.id = Math.random();
         socket_list[socket.id] = socket;
         let player_map = ["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)];
-        player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, { minX: 16, minY: 16, maxX: 16, maxY: 32 }, player_map);
+        player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, { minX: 16, minY: 0, maxX: 16, maxY: 46 }, player_map, 12);
         socket.emit('init', {
             id: player_list[socket.id].id,
             x: player_list[socket.id].x,
@@ -488,10 +539,6 @@ io.on('connection', function (socket) {
             player_list[socket.id].changeMap(["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)]);
             player_list[socket.id].x = maps[player_list[socket.id].map].spawnPoint.x;
             player_list[socket.id].y = maps[player_list[socket.id].map].spawnPoint.y;
-        });
-
-        socket.on('player bounds', function (bounds) {
-            player_list[socket.id].bounds = bounds;
         });
     });
 

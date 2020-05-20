@@ -21,7 +21,6 @@ function sendMessage() {
     input.value = "";
     if (message != "") {
         socket.emit('chat message', message);
-        document.getElementById("app-screen").focus();
     }
 }
 

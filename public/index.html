@@ -9,9 +9,10 @@
     <link rel="stylesheet" href="style.css" type="text/css">
 
     <script src="pixi/pixi.min.js"></script>
+    <script src="pixi/filter-kawase-blur.min.js"></script>
+    <script src="pixi/filter-drop-shadow.min.js"></script>
     <script src="pixi/pixi-particles.min.js"></script>
     <script src="pixi/pixi-sound.js"></script>
-    <!-- <script src="pixi/puxi.min.js"></script> -->
     <script src="jquery/jquery-3.5.1.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -30,17 +31,7 @@
         </div>
         <p id="loading-percentage">0%</p>
     </div>
-    <!-- <div id="color-div">
-        <canvas id="1" style="background-color: #060806;"></canvas>
-        <canvas id="2" style="background-color: #FDFBFD;"></canvas>
-        <canvas id="2" style="background-color: #EEE5E9;"></canvas>
-        <canvas id="3" style="background-color: #7C7C7C;"></canvas>
-        <canvas id="3" style="background-color: #92DCE5;"></canvas>
-        <canvas id="5" style="background-color: #BFFCFC;"></canvas>
-        <canvas id="4" style="background-color: #52DEE5;"></canvas>
-        <canvas id="6" style="background-color: #8DFCFC;"></canvas>
-    </div> -->
-    <div id="startMenuWrapper">
+    <content id="startMenuWrapper">
         <div id="login-menu">
             <h2>Connexion</h2>
             <form id="form-login" onsubmit="validateLogin();return false;" onreset="return false">
@@ -66,7 +57,7 @@
                 <button type="button" class="switch-signin-login" onclick=switchLogin()>Déjà membre ?</button>
             </form>
         </div>
-    </div>
+    </content>
     <div id="game" oncontextmenu="return false">
         <canvas id="app-screen"></canvas>
         <div id="app-chat">
