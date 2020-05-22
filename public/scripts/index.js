@@ -250,7 +250,7 @@ loader.load((loader, resources) => {
         }
 
         die() {
-            this.emitter.updateSpawnPos(this.x + camera.view_x, this.y + camera.view_y);
+            this.emitter.updateSpawnPos(this.x, this.y);
             this.emitter.playOnceAndDestroy();
             this.sprite.destroy();
             delete bullet_list[this.id];
