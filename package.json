@@ -1,6 +1,6 @@
 {
   "name": "project-mmo-reboot",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "reboot project mmo",
   "main": "server.js",
   "scripts": {

@@ -69,7 +69,11 @@ loader.add('ui_button_icon_elements', "sprites/ui/button_icon.png");
 loader.add('ui_inventory_slots', "sprites/ui/inventory_slot.png");
 loader.add('ui_inventory_slots_2', "sprites/ui/inventory_slot_2.png");
 loader.add('ui_inventory_icons', "sprites/ui/inventory_icon.png");
-
+// Chargement item
+loader.add('items', "sprites/icons/item.png");
+loader.add('items_2', "sprites/icons/item_2.png");
+// Chargement particules
+loader.add('particle', "sprites/particles/particle.png");
 // Execution
 loader.load((loader, resources) => {
     // Global var
@@ -80,10 +84,14 @@ loader.load((loader, resources) => {
     var canShoot = true;
     var player_list = [];
     var bullet_list = [];
+    var inventory_slots = [];
     var maps = $.getJSON("models/maps.json", function (data) {
         maps = data;
     });
-    var layers, bullet_layer, player_layer, ui_layer, map_layer = null;
+    var particles = $.getJSON("particles/weapon_break.json", function (data) {
+        particles = data;
+    });
+    var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, map_layer = null;
     var camera = {
         view_x: 0,
         view_y: 0
@@ -223,6 +231,12 @@ loader.load((loader, resources) => {
             this.sprite.id = id;
             this.sprite.anchor.set(0.5);
 
+            this.emitter = new PIXI.particles.Emitter(
+                ui_layer,
+                [resources.particle.texture],
+                particles
+            );
+
             bullet_list[id] = this;
         }
 
@@ -236,6 +250,8 @@ loader.load((loader, resources) => {
         }
 
         die() {
+            this.emitter.updateSpawnPos(this.x + camera.view_x, this.y + camera.view_y);
+            this.emitter.playOnceAndDestroy();
             this.sprite.destroy();
             delete bullet_list[this.id];
         }
@@ -265,6 +281,7 @@ loader.load((loader, resources) => {
             this.container.x = x - (width * 32 / 2);
             this.container.y = y - (height * 32 / 2);
             this.container.alpha = 0;
+            this.container.interactiveChildren = false;
             this.container.on('pointerover', function () {
                 canShoot = false;
                 cmdover();
@@ -283,7 +300,6 @@ loader.load((loader, resources) => {
             this.createBackground(width, height);
 
             this.hide = true;
-            console.log(this.container);
         }
 
         createBackground(width, height) {
@@ -342,21 +358,200 @@ loader.load((loader, resources) => {
             }
         }
 
-        hideShow() {
+        hideShow(resetShoot) {
             if (this.hide) {
                 this.container.interactive = true;
                 this.container.buttonMode = true;
+                this.container.interactiveChildren = true;
                 this.container.alpha = 0.95;
                 this.container.cursor = "default";
                 this.hide = false;
             }
             else {
                 this.container.interactive = false;
+                this.container.interactiveChildren = false;
                 this.container.buttonMode = false;
                 this.container.alpha = 0;
                 this.hide = true;
-                canShoot = true;
+                if (resetShoot) {
+                    canShoot = true;
+                }
             }
+        }
+    }
+
+    class InventorySlot {
+        constructor(x, y, textures) {
+            var instance = this;
+            this.textures = textures;
+            this.item = null;
+            this.container = new PIXI.Container();
+            this.container.interactive = true;
+            this.container.buttonMode = true;
+            this.container.cursor = "default";
+            this.container.zIndex = 1;
+            this.bg = createSprite(textures[0], x, y, 1, 0, { x: 1, y: 1 });
+            this.bg.anchor.set(0.5);
+            this.bg.alpha = 0.5;
+            this.container.addChild(this.bg);
+            this.container.on('pointerover', function () {
+                instance.bg.texture = textures[2];
+            });
+            this.container.on('pointerout', function () {
+                instance.bg.texture = textures[0];
+            });
+            this.container.on('pointerdown', function () {
+                instance.bg.texture = textures[1];
+            });
+            this.container.on('pointerup', function () {
+                instance.bg.texture = textures[2];
+            });
+        }
+
+        addItem(item, count) {
+            this.item = new InventoryItem(this, this.bg.x, this.bg.y, item, count);
+            inventory_container.addChild(this.item.item);
+            inventory_container.addChild(this.item.count_text);
+        }
+    }
+
+    class InventoryItem {
+        constructor(parent, x, y, item, count) {
+            var instance = this;
+            this.parent = parent;
+            this.count = count;
+            this.count_text = new PIXI.Text(String(count), {
+                fill: "white",
+                fontFamily: "Verdana",
+                fontSize: 12,
+                fontVariant: "small-caps",
+                lineJoin: "bevel",
+                strokeThickness: 2.5
+            });
+            this.count_text.x = x + 17;
+            this.count_text.y = y;
+            this.count_text.anchor.set(1, 0);
+            this.count_text.zIndex = 2;
+            this.item = createSprite(item_icons.textures[item], x, y, 1, 0, { x: 2, y: 2 });
+            this.item.zIndex = 1;
+            this.item.anchor.set(0.5);
+            this.item.interactive = true;
+            this.item.buttonMode = true;
+            this.item.cursor = "default";
+            this.item.on('pointerdown', function (e) {
+                instance.data = e.data;
+                instance.dragged = true;
+                instance.item.zIndex = 3;
+                instance.count_text.zIndex = 4;
+            });
+            this.item.on('pointerup', function () {
+                if (instance.dragged) {
+                    instance.oldPos = {
+                        x: instance.parent.bg.x,
+                        y: instance.parent.bg.y
+                    }
+                    let changed = false;
+                    for (let i = 0; i < inventory_slots.length; i++) {
+                        if (instance.item.x > inventory_slots[i].bg.x - 19 && instance.item.x < inventory_slots[i].bg.x + 19 && instance.item.y > inventory_slots[i].bg.y - 19 && instance.item.y < inventory_slots[i].bg.y + 19) {
+                            if (inventory_slots[i].item == null && inventory_slots[i].item != instance) {
+                                instance.parent.item = null;
+                                instance.parent.bg.texture = instance.parent.textures[0];
+                                instance.changeSlot(inventory_slots[i]);
+                                instance.parent.bg.texture = instance.parent.textures[2];
+                                changed = true;
+                                break;
+                            }
+                            else if (inventory_slots[i].item != null && inventory_slots[i].item != instance) {
+                                instance.parent.bg.texture = instance.parent.textures[0];
+                                inventory_slots[i].item.changeSlot(instance.parent);
+                                instance.changeSlot(inventory_slots[i]);
+                                instance.parent.bg.texture = instance.parent.textures[2];
+                                changed = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!changed) {
+                        instance.item.x = instance.oldPos.x;
+                        instance.item.y = instance.oldPos.y;
+                        instance.count_text.x = instance.oldPos.x + 17;
+                        instance.count_text.y = instance.oldPos.y;
+                    }
+                    instance.data = null;
+                    instance.dragged = false;
+                    instance.item.zIndex = 1;
+                    instance.count_text.zIndex = 2;
+                }
+            });
+            this.item.on('pointerupoutside', function () {
+                if (instance.dragged) {
+                    instance.oldPos = {
+                        x: instance.parent.bg.x,
+                        y: instance.parent.bg.y
+                    }
+                    let changed = false;
+                    for (let i = 0; i < inventory_slots.length; i++) {
+                        if (instance.item.x > inventory_slots[i].bg.x - 19 && instance.item.x < inventory_slots[i].bg.x + 19 && instance.item.y > inventory_slots[i].bg.y - 19 && instance.item.y < inventory_slots[i].bg.y + 19) {
+                            if (inventory_slots[i].item == null && inventory_slots[i].item != instance) {
+                                instance.parent.item = null;
+                                instance.parent.bg.texture = instance.parent.textures[0];
+                                instance.changeSlot(inventory_slots[i]);
+                                instance.parent.bg.texture = instance.parent.textures[2];
+                                changed = true;
+                                break;
+                            }
+                            else if (inventory_slots[i].item != null && inventory_slots[i].item != instance) {
+                                instance.parent.bg.texture = instance.parent.textures[0];
+                                inventory_slots[i].item.changeSlot(instance.parent);
+                                instance.changeSlot(inventory_slots[i]);
+                                instance.parent.bg.texture = instance.parent.textures[2];
+                                changed = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!changed) {
+                        instance.item.x = instance.oldPos.x;
+                        instance.item.y = instance.oldPos.y;
+                        instance.count_text.x = instance.oldPos.x + 17;
+                        instance.count_text.y = instance.oldPos.y;
+                    }
+                    instance.data = null;
+                    instance.dragged = false;
+                    instance.item.zIndex = 1;
+                    instance.count_text.zIndex = 2;
+                }
+            });
+            this.item.on('pointermove', function () {
+                if (instance.dragged) {
+                    const newPosition = instance.data.getLocalPosition(instance.item.parent);
+                    for (let i = 0; i < inventory_slots.length; i++) {
+                        inventory_slots[i].bg.texture = inventory_slots[i].textures[0];
+                        if (newPosition.x > inventory_slots[i].bg.x - 19 && newPosition.x < inventory_slots[i].bg.x + 19 && newPosition.y > inventory_slots[i].bg.y - 19 && newPosition.y < inventory_slots[i].bg.y + 19) {
+                            inventory_slots[i].bg.texture = inventory_slots[i].textures[2];
+                        }
+                    }
+                    instance.item.x = newPosition.x;
+                    instance.item.y = newPosition.y;
+                    instance.count_text.x = newPosition.x + 17;
+                    instance.count_text.y = newPosition.y;
+                }
+            });
+            this.item.on('pointerover', function () {
+                instance.parent.bg.texture = instance.parent.textures[2];
+            });
+            this.item.on('pointerout', function () {
+                instance.parent.bg.texture = instance.parent.textures[0];
+            });
+        }
+
+        changeSlot(slot) {
+            this.item.x = slot.bg.x;
+            this.item.y = slot.bg.y;
+            this.count_text.x = slot.bg.x + 17;
+            this.count_text.y = slot.bg.y;
+            this.parent = slot;
+            this.parent.item = this;
         }
     }
 
@@ -485,6 +680,97 @@ loader.load((loader, resources) => {
         return menu_element_container;
     }
 
+    function createInventory() {
+        let inventory_slots_index = 0;
+        ui_inventory = new UIContainer(app.screen.width / 2, app.screen.height / 2, 20, 16,
+            function () {
+                return;
+            },
+            function () {
+                return;
+            },
+            function () {
+                return;
+            },
+            function () {
+                return;
+            }
+        );
+        inventory_container = new PIXI.Container();
+        inventory_container.sortableChildren = true;
+        zIndex = 0;
+        inventory_container.x = 64;
+        inventory_container.y = 64;
+        ui_inventory.container.addChild(inventory_container);
+        let width = 9;
+        let height = 11;
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                switch (x) {
+                    case 0:
+                        switch (y) {
+                            case 0:
+                                inventory_slots[inventory_slots_index] = new InventorySlot(38 * x, 38 * y, [ui_inventory_slots_2.textures[0], ui_inventory_slots_2.textures[9], ui_inventory_slots_2.textures[18]]);
+                                inventory_container.addChild(inventory_slots[inventory_slots_index].container);
+                                break;
+
+                            case height:
+                                inventory_slots[inventory_slots_index] = new InventorySlot(38 * x, 38 * y, [ui_inventory_slots_2.textures[6], ui_inventory_slots_2.textures[15], ui_inventory_slots_2.textures[24]]);
+                                inventory_container.addChild(inventory_slots[inventory_slots_index].container);
+                                break;
+
+                            default:
+                                inventory_slots[inventory_slots_index] = new InventorySlot(38 * x, 38 * y, [ui_inventory_slots_2.textures[3], ui_inventory_slots_2.textures[12], ui_inventory_slots_2.textures[21]]);
+                                inventory_container.addChild(inventory_slots[inventory_slots_index].container);
+                                break;
+                        }
+                        break;
+
+                    case width:
+                        switch (y) {
+                            case 0:
+                                inventory_slots[inventory_slots_index] = new InventorySlot(38 * x, 38 * y, [ui_inventory_slots_2.textures[2], ui_inventory_slots_2.textures[11], ui_inventory_slots_2.textures[20]]);
+                                inventory_container.addChild(inventory_slots[inventory_slots_index].container);
+                                break;
+
+                            case height:
+                                inventory_slots[inventory_slots_index] = new InventorySlot(38 * x, 38 * y, [ui_inventory_slots_2.textures[8], ui_inventory_slots_2.textures[17], ui_inventory_slots_2.textures[26]]);
+                                inventory_container.addChild(inventory_slots[inventory_slots_index].container);
+                                break;
+
+                            default:
+                                inventory_slots[inventory_slots_index] = new InventorySlot(38 * x, 38 * y, [ui_inventory_slots_2.textures[5], ui_inventory_slots_2.textures[14], ui_inventory_slots_2.textures[23]]);
+                                inventory_container.addChild(inventory_slots[inventory_slots_index].container);
+                                break;
+                        }
+                        break;
+
+                    default:
+                        switch (y) {
+                            case 0:
+                                inventory_slots[inventory_slots_index] = new InventorySlot(38 * x, 38 * y, [ui_inventory_slots_2.textures[1], ui_inventory_slots_2.textures[10], ui_inventory_slots_2.textures[19]]);
+                                inventory_container.addChild(inventory_slots[inventory_slots_index].container);
+                                break;
+
+                            case height:
+                                inventory_slots[inventory_slots_index] = new InventorySlot(38 * x, 38 * y, [ui_inventory_slots_2.textures[7], ui_inventory_slots_2.textures[16], ui_inventory_slots_2.textures[25]]);
+                                inventory_container.addChild(inventory_slots[inventory_slots_index].container);
+                                break;
+
+                            default:
+                                inventory_slots[inventory_slots_index] = new InventorySlot(38 * x, 38 * y, [ui_inventory_slots_2.textures[4], ui_inventory_slots_2.textures[13], ui_inventory_slots_2.textures[22]]);
+                                inventory_container.addChild(inventory_slots[inventory_slots_index].container);
+                                break;
+                        }
+                        break
+                }
+                inventory_slots_index++;
+            }
+        }
+
+        ui_layer.addChild(ui_inventory.container);
+    }
+
     // function makeDragabble(element) {
     //     let draggable = false;
     //     element.interactive = true;
@@ -542,9 +828,15 @@ loader.load((loader, resources) => {
     const tileset = generateTextures(resources['tileset_grass'].texture, 8, 18, 32, 32);
     const menu_elements = generateTextures(resources['ui_menu_elements'].texture, 7, 1, 48, 48);
     const menu_frame_elements = generateTextures(resources['ui_frame_elements'].texture, 3, 4, 32, 32);
-    const inventory_slots = generateTextures(resources['ui_inventory_slots'].texture, 7, 3, 40, 40);
-    const inventory_slots_2 = generateTextures(resources['ui_inventory_slots_2'].texture, 3, 9, 38, 38);
-    const inventory_icons = generateTextures(resources['ui_inventory_icons'].texture, 4, 2, 32, 32);
+    const ui_inventory_slots = generateTextures(resources['ui_inventory_slots'].texture, 7, 3, 40, 40);
+    const ui_inventory_slots_2 = generateTextures(resources['ui_inventory_slots_2'].texture, 3, 9, 38, 38);
+    const ui_inventory_icons = generateTextures(resources['ui_inventory_icons'].texture, 4, 2, 32, 32);
+    const item_icons_1 = generateTextures(resources['items'].texture, 8, 9, 16, 16);
+    const item_icons_2 = generateTextures(resources['items_2'].texture, 8, 9, 16, 16);
+    const item_icons = {
+        textures: item_icons_1.textures.concat(item_icons_2.textures),
+        nbr_frame: item_icons_1.nbr_frame + item_icons_2.nbr_frame
+    };
 
     socket.on('init', function (player) {
         // Layers
@@ -564,13 +856,11 @@ loader.load((loader, resources) => {
         ui_layer.zIndex = 3;
         layers.addChild(ui_layer);
 
-        let ui_inventory = new UIContainer(app.screen.width / 2, app.screen.height / 2, 20, 20,
-            null,
-            null,
-            null,
-            null
-        );
-        ui_layer.addChild(ui_inventory.container);
+        createInventory();
+
+        for (let i = 0; i < 99; i++) {
+            inventory_slots[i].addItem(Math.floor(Math.random() * 144), Math.floor(Math.random() * 9999));
+        }
 
         // Draw menu
         let menu_options = createMenuElements(menu_elements.textures[4], app.screen.width - 24, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "Options", function () {
@@ -582,7 +872,7 @@ loader.load((loader, resources) => {
         });
 
         let menu_inventory = createMenuElements(menu_elements.textures[5], app.screen.width - 120, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "(E) Inventaire", function () {
-            ui_inventory.hideShow();
+            ui_inventory.hideShow(false);
         });
 
         let menu_changemap = createMenuElements(menu_elements.textures[2], app.screen.width - 168, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "Changer de map", function () {
@@ -759,7 +1049,7 @@ loader.load((loader, resources) => {
             }
             else if (keyMap[e.keyCode] == "E") {
                 if (testActiveChat()) {
-                    ui_inventory.hideShow();
+                    ui_inventory.hideShow(true);
                 }
             }
             else if (keyMap[e.keyCode] == "T") {

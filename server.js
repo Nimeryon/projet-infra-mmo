@@ -6,7 +6,11 @@ const helmet = require('helmet');
 
 // Connection base de donnée
 // const mongojs = require('mongojs');
-// const db = mongojs('192.168.43.87:27017/mmo-project', ['account', 'progress']);
+// const config = require('./config.json');
+// const db = mongojs(`mongodb://${config.pseudo}:${config.mdp}@1897958c-bfe4-4b1b-8108-c813ac5c8b08.mmo-project-3867.mongo.dbs.scalingo.com:38358/mmo-project-3867?replicaSet=mmo-project-3867-rs0&ssl=true`);
+// db.collections(function (err, collections) {
+//     console.log(collections);
+// });
 
 // ==================================================================================================================
 //  ____  ____  ____  _  _  ____  _  _  ____ 
