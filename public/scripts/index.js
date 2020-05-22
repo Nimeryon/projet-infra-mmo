@@ -147,12 +147,6 @@ loader.load((loader, resources) => {
             this.sprite.id = id;
             this.sprite.anchor.set(0.5);
 
-            this.emitter = new PIXI.particles.Emitter(
-                player_layer,
-                [resources.particle.texture],
-                particles_death
-            );
-
             // app.stage.addChild(this.sprite);
             player_list[id] = this;
         }
@@ -226,8 +220,6 @@ loader.load((loader, resources) => {
         }
 
         die() {
-            this.emitter.updateSpawnPos(this.x, this.y);
-            this.emitter.playOnceAndDestroy();
             this.sprite.destroy();
             this.hp_text.destroy();
             delete player_list[this.id];
