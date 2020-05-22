@@ -88,7 +88,10 @@ loader.load((loader, resources) => {
     var maps = $.getJSON("models/maps.json", function (data) {
         maps = data;
     });
-    var particles = $.getJSON("particles/weapon_break.json", function (data) {
+    var particles_weapon = $.getJSON("particles/weapon_break.json", function (data) {
+        particles = data;
+    });
+    var particles_death = $.getJSON("particles/player_death.json", function (data) {
         particles = data;
     });
     var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, map_layer = null;
@@ -143,6 +146,12 @@ loader.load((loader, resources) => {
             this.sprite = createAnimatedSprite(this.player_animation_walk_front, x, y, this.alpha, 0, { x: this.scale, y: this.scale }, 0.1, false);
             this.sprite.id = id;
             this.sprite.anchor.set(0.5);
+
+            this.emitter = new PIXI.particles.Emitter(
+                player_layer,
+                [resources.particle.texture],
+                particles_death
+            );
 
             // app.stage.addChild(this.sprite);
             player_list[id] = this;
@@ -217,6 +226,8 @@ loader.load((loader, resources) => {
         }
 
         die() {
+            this.emitter.updateSpawnPos(this.x, this.y);
+            this.emitter.playOnceAndDestroy();
             this.sprite.destroy();
             this.hp_text.destroy();
             delete player_list[this.id];
@@ -234,7 +245,7 @@ loader.load((loader, resources) => {
             this.emitter = new PIXI.particles.Emitter(
                 bullet_layer,
                 [resources.particle.texture],
-                particles
+                particles_weapon
             );
 
             bullet_list[id] = this;
