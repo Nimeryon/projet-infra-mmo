@@ -232,7 +232,7 @@ loader.load((loader, resources) => {
             this.sprite.anchor.set(0.5);
 
             this.emitter = new PIXI.particles.Emitter(
-                ui_layer,
+                bullet_layer,
                 [resources.particle.texture],
                 particles
             );
