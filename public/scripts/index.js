@@ -89,10 +89,10 @@ loader.load((loader, resources) => {
         maps = data;
     });
     var particles_weapon = $.getJSON("particles/weapon_break.json", function (data) {
-        particles = data;
+        particles_weapon = data;
     });
     var particles_death = $.getJSON("particles/player_death.json", function (data) {
-        particles = data;
+        particles_death = data;
     });
     var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, map_layer = null;
     var camera = {
