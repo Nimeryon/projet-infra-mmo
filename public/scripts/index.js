@@ -278,9 +278,52 @@ loader.load((loader, resources) => {
         }
     }
 
+    class MiniButton {
+        constructor(x, y, color, texture, cmdover = null, cmdout = null, cmddown = null, cmdup = null, text) {
+            var instance = this;
+            this.text = text;
+            this.container = new PIXI.Container();
+            this.container.zIndex = 5;
+            this.container.interactive = true;
+            this.container.buttonMode = true;
+            this.container.cursor = "default";
+            this.container.on('pointerover', function () {
+                instance.bg.texture = instance.textures[1]
+                instance.text_text = new PIXI.Text(instance.text, { fontSize: 12, fill: 0x000000 });
+                instance.text_text.x = instance.container.width / 2;
+                instance.text_text.y = instance.bg.y + 24;
+                instance.text_text.anchor.set(0.5, 0);
+                instance.container.addChild(instance.text_text);
+                cmdover();
+            });
+            this.container.on('pointerout', function () {
+                instance.bg.texture = instance.textures[0]
+                instance.text_text.destroy();
+                cmdout();
+            });
+            this.container.on('pointerdown', function () {
+                instance.bg.texture = instance.textures[2]
+                cmddown();
+            });
+            this.container.on('pointerup', function () {
+                instance.bg.texture = instance.textures[1]
+                cmdup();
+            });
+            this.textures = [button_icons.textures[color], button_icons.textures[color + 8], button_icons.textures[color + 16]];
+            this.bg = createSprite(this.textures[0], 0, 0, 1, 0, { x: 1.5, y: 1.5 });
+            this.bg.anchor.set(0.15);
+            this.icon = createSprite(texture, 0, 0, 1, 0, { x: 1, y: 1 });
+            this.container.addChild(this.bg);
+            this.container.addChild(this.icon);
+            this.container.x = x - (this.container.width / 2) - 3;
+            this.container.y = y - (this.container.height / 2);
+        }
+    }
+
     class UIContainer {
         constructor(x, y, width, height, cmdover = null, cmdout = null, cmddown = null, cmdup = null) {
             this.container = new PIXI.Container();
+            this.container.sortableChildren = true;
             this.container.x = x - (width * 32 / 2);
             this.container.y = y - (height * 32 / 2);
             this.container.alpha = 0;
@@ -416,6 +459,11 @@ loader.load((loader, resources) => {
             inventory_container.addChild(this.item.item);
             inventory_container.addChild(this.item.count_text);
         }
+
+        deleteItem() {
+            this.item.die();
+            this.item = null;
+        }
     }
 
     class InventoryItem {
@@ -423,6 +471,7 @@ loader.load((loader, resources) => {
             var instance = this;
             this.parent = parent;
             this.count = count;
+            this.itemID = item;
             this.count_text = new PIXI.Text(String(count), {
                 fill: "white",
                 fontFamily: "Verdana",
@@ -457,6 +506,11 @@ loader.load((loader, resources) => {
                     for (let i = 0; i < inventory_slots.length; i++) {
                         if (instance.item.x > inventory_slots[i].bg.x - 19 && instance.item.x < inventory_slots[i].bg.x + 19 && instance.item.y > inventory_slots[i].bg.y - 19 && instance.item.y < inventory_slots[i].bg.y + 19) {
                             if (inventory_slots[i].item == null && inventory_slots[i].item != instance) {
+                                socket.emit('update inventory', {
+                                    type: "move",
+                                    slot: inventory_slots.indexOf(instance.parent),
+                                    targetSlot: i
+                                });
                                 instance.parent.item = null;
                                 instance.parent.bg.texture = instance.parent.textures[0];
                                 instance.changeSlot(inventory_slots[i]);
@@ -465,8 +519,18 @@ loader.load((loader, resources) => {
                                 break;
                             }
                             else if (inventory_slots[i].item != null && inventory_slots[i].item != instance) {
+                                socket.emit('update inventory', {
+                                    type: "move",
+                                    slot: inventory_slots.indexOf(instance.parent),
+                                    targetSlot: i
+                                });
                                 instance.parent.bg.texture = instance.parent.textures[0];
-                                inventory_slots[i].item.changeSlot(instance.parent);
+                                if (!instance.changerCount(i)) {
+                                    inventory_slots[i].item.changeSlot(instance.parent);
+                                }
+                                else {
+                                    instance.parent.item = null;
+                                }
                                 instance.changeSlot(inventory_slots[i]);
                                 instance.parent.bg.texture = instance.parent.textures[2];
                                 changed = true;
@@ -496,6 +560,11 @@ loader.load((loader, resources) => {
                     for (let i = 0; i < inventory_slots.length; i++) {
                         if (instance.item.x > inventory_slots[i].bg.x - 19 && instance.item.x < inventory_slots[i].bg.x + 19 && instance.item.y > inventory_slots[i].bg.y - 19 && instance.item.y < inventory_slots[i].bg.y + 19) {
                             if (inventory_slots[i].item == null && inventory_slots[i].item != instance) {
+                                socket.emit('update inventory', {
+                                    type: "move",
+                                    slot: inventory_slots.indexOf(instance.parent),
+                                    targetSlot: i
+                                });
                                 instance.parent.item = null;
                                 instance.parent.bg.texture = instance.parent.textures[0];
                                 instance.changeSlot(inventory_slots[i]);
@@ -504,8 +573,18 @@ loader.load((loader, resources) => {
                                 break;
                             }
                             else if (inventory_slots[i].item != null && inventory_slots[i].item != instance) {
+                                socket.emit('update inventory', {
+                                    type: "move",
+                                    slot: inventory_slots.indexOf(instance.parent),
+                                    targetSlot: i
+                                });
                                 instance.parent.bg.texture = instance.parent.textures[0];
-                                inventory_slots[i].item.changeSlot(instance.parent);
+                                if (!instance.changerCount(i)) {
+                                    inventory_slots[i].item.changeSlot(instance.parent);
+                                }
+                                else {
+                                    instance.parent.item = null;
+                                }
                                 instance.changeSlot(inventory_slots[i]);
                                 instance.parent.bg.texture = instance.parent.textures[2];
                                 changed = true;
@@ -548,6 +627,23 @@ loader.load((loader, resources) => {
             });
         }
 
+        changerCount(targetSlot) {
+            if (this.itemID == inventory_slots[targetSlot].item.itemID) {
+                this.count += inventory_slots[targetSlot].item.count;
+                this.count_text.text = this.count;
+                inventory_slots[targetSlot].deleteItem();
+                return true;
+            }
+            return false;
+        }
+
+        isTargetNull(slot) {
+            if (inventory_slots[slot].item != null) {
+                return true;
+            }
+            return false;
+        }
+
         changeSlot(slot) {
             this.item.x = slot.bg.x;
             this.item.y = slot.bg.y;
@@ -555,6 +651,11 @@ loader.load((loader, resources) => {
             this.count_text.y = slot.bg.y;
             this.parent = slot;
             this.parent.item = this;
+        }
+
+        die() {
+            this.item.destroy();
+            this.count_text.destroy();
         }
     }
 
@@ -699,14 +800,29 @@ loader.load((loader, resources) => {
                 return;
             }
         );
+        let sortButton = new MiniButton(32, 64, 3, button_icons.textures[4],
+            function () {
+                return;
+            },
+            function () {
+                return;
+            },
+            function () {
+                return;
+            },
+            function () {
+                socket.emit('sort inventory');
+            },
+            "Trier");
+        ui_inventory.container.addChild(sortButton.container);
         inventory_container = new PIXI.Container();
         inventory_container.sortableChildren = true;
-        zIndex = 0;
+        inventory_container.zIndex = 0;
         inventory_container.x = 64;
         inventory_container.y = 64;
         ui_inventory.container.addChild(inventory_container);
-        let width = 9;
-        let height = 11;
+        let width = 8;
+        let height = 9;
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 switch (x) {
@@ -834,6 +950,7 @@ loader.load((loader, resources) => {
     const ui_inventory_slots = generateTextures(resources['ui_inventory_slots'].texture, 7, 3, 40, 40);
     const ui_inventory_slots_2 = generateTextures(resources['ui_inventory_slots_2'].texture, 3, 9, 38, 38);
     const ui_inventory_icons = generateTextures(resources['ui_inventory_icons'].texture, 4, 2, 32, 32);
+    const button_icons = generateTextures(resources['ui_button_icon_elements'].texture, 8, 3, 16, 16);
     const item_icons_1 = generateTextures(resources['items'].texture, 8, 9, 16, 16);
     const item_icons_2 = generateTextures(resources['items_2'].texture, 8, 9, 16, 16);
     const item_icons = {
@@ -860,10 +977,6 @@ loader.load((loader, resources) => {
         layers.addChild(ui_layer);
 
         createInventory();
-
-        for (let i = 0; i < 99; i++) {
-            inventory_slots[i].addItem(Math.floor(Math.random() * 144), Math.floor(Math.random() * 9999));
-        }
 
         // Draw menu
         let menu_options = createMenuElements(menu_elements.textures[4], app.screen.width - 24, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "Options", function () {
@@ -915,6 +1028,20 @@ loader.load((loader, resources) => {
         current_player.score_text.x = 20;
         current_player.score_text.y = 20;
         ui_layer.addChild(current_player.score_text);
+
+        for (let i = 0; i < current_player.inventory.length; i++) {
+            current_player.inventory[i] != null ? inventory_slots[i].addItem(current_player.inventory[i][0], current_player.inventory[i][1]) : null;
+        }
+
+        socket.on('update inventory', function (inventory) {
+            current_player.inventory = inventory;
+            for (let i = 0; i < inventory_slots.length; i++) {
+                if (inventory_slots[i].item != null) {
+                    inventory_slots[i].deleteItem();
+                }
+                current_player.inventory[i] != null ? inventory_slots[i].addItem(current_player.inventory[i][0], current_player.inventory[i][1]) : null;
+            }
+        });
 
         socket.on('update', function (packet) {
             // Joueur

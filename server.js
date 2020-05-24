@@ -46,7 +46,9 @@ serveur.listen(process.env.PORT || 3000, function () {
 var socket_list = [];
 var player_list = [];
 var bullet_list = [];
-var maps = require('./public/models/maps.json')
+var maps = require('./public/models/maps.json');
+var items = require('./public/models/items.json');
+var items_type_config = require('./public/models/items_type_config.json');
 var scale = 3;
 var tile_size = 32;
 var server_frameRate = 25;
@@ -277,6 +279,8 @@ class Player extends Entity {
         this.maxHP = 10;
         this.hp = 10;
         this.score = 0;
+
+        this.inventory = new Inventory(8, 9);
     }
 
     updateSpeed() {
@@ -420,6 +424,84 @@ class Bullet extends Entity {
     }
 }
 
+class Inventory {
+    constructor(sizeX, sizeY) {
+        this.inventory = [];
+        for (let i = 0; i < sizeX * sizeY; i++) {
+            this.inventory.push(null);
+        }
+    }
+
+    sort() {
+        for (let slot_index = 0; slot_index < this.inventory.length; slot_index++) {
+            if (!this.isSlotFree(slot_index)) {
+                for (let i = 0; i < this.inventory.length; i++) {
+                    if (!this.isSlotFree(i)) {
+                        if (slot_index != i && this.inventory[slot_index][0] == this.inventory[i][0]) {
+                            this.inventory[slot_index][1] += this.inventory[i][1];
+                            this.inventory[i] = null;
+                        }
+                    }
+                }
+                if (this.getFirstFree() != slot_index) {
+                    [this.inventory[slot_index], this.inventory[this.getFirstFree()]] = [this.inventory[this.getFirstFree()], this.inventory[slot_index]];
+                }
+            }
+        }
+    }
+
+    getLastfree() {
+        for (let i = this.inventory.length - 1; i <= 0; i--) {
+            if (this.inventory[i] == null) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    getFirstFree() {
+        for (let i = 0; i < this.inventory.length; i++) {
+            if (this.inventory[i] == null) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    getItem(itemID) {
+        for (let i = 0; i < this.inventory.length; i++) {
+            if (this.inventory[i][0] == itemID) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    isSlotFree(slot) {
+        if (this.inventory[slot] != null) {
+            return false;
+        }
+        return true;
+    }
+
+    addItem(itemID, count) {
+        let slot = this.getFirstFree();
+        if (slot != -1) {
+            this.inventory[slot] = [itemID, count];
+        }
+    }
+
+    moveItem(slot, targetSlot) {
+        if (!this.isSlotFree(targetSlot)) {
+            if (this.inventory[slot][0] == this.inventory[targetSlot][0]) {
+                this.inventory[slot][1] += this.inventory[targetSlot][1];
+                this.inventory[targetSlot] = null;
+            }
+        }
+        [this.inventory[slot], this.inventory[targetSlot]] = [this.inventory[targetSlot], this.inventory[slot]];
+    }
+}
+
 // Cherche la connexion d'un client
 io.on('connection', function (socket) {
     console.log("Quelqu'un vient de se connecter");
@@ -465,6 +547,9 @@ io.on('connection', function (socket) {
         socket_list[socket.id] = socket;
         let player_map = ["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)];
         player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, { minX: 16, minY: 0, maxX: 16, maxY: 46 }, player_map, 12);
+        for (let i = 0; i < 8 * 9; i++) {
+            player_list[socket.id].inventory.addItem(Math.floor(Math.random() * 144), Math.floor(Math.random() * 9999));
+        }
         socket.emit('init', {
             id: player_list[socket.id].id,
             x: player_list[socket.id].x,
@@ -474,7 +559,8 @@ io.on('connection', function (socket) {
             score: player_list[socket.id].score,
             moving: player_list[socket.id].moving,
             direction: player_list[socket.id].direction,
-            map: player_list[socket.id].map
+            map: player_list[socket.id].map,
+            inventory: player_list[socket.id].inventory.inventory
         });
 
         socket.on('input', function (data) {
@@ -543,6 +629,17 @@ io.on('connection', function (socket) {
             player_list[socket.id].changeMap(["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)]);
             player_list[socket.id].x = maps[player_list[socket.id].map].spawnPoint.x;
             player_list[socket.id].y = maps[player_list[socket.id].map].spawnPoint.y;
+        });
+
+        socket.on('update inventory', function (data) {
+            if (data.type == "move") {
+                player_list[socket.id].inventory.moveItem(data.slot, data.targetSlot);
+            }
+        });
+
+        socket.on('sort inventory', function () {
+            player_list[socket.id].inventory.sort();
+            socket.emit('update inventory', player_list[socket.id].inventory.inventory);
         });
     });
 
