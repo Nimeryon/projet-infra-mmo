@@ -671,7 +671,7 @@ loader.load((loader, resources) => {
         changerCount(targetSlot) {
             if (this.itemID == inventory_slots[targetSlot].item.itemID) {
                 this.count += inventory_slots[targetSlot].item.count;
-                this.count < 10000 ? this.count_text.text = this.count : this.count_text.text = `${this.count / 100}k`;
+                this.text_text.text = this.count < 1000000 ? this.count < 10000 ? this.count : `${Math.floor(this.count / 1000)}k` : `${(this.count / 1000000).toFixed(1)}M`;
                 inventory_slots[targetSlot].deleteItem();
                 return true;
             }
