@@ -150,8 +150,11 @@ loader.load((loader, resources) => {
 
             this.score = score;
 
-            // this.breathing = 1;
-            // this.breathingIn = true;
+            this.canBreath = true;
+            this.breathTimer = 0;
+            this.timeBreath = 100 + Math.floor(Math.random() * 100);
+            this.breathing = 1;
+            this.breathingIn = true;
 
             this.pseudo = pseudo;
             this.generateSprite(sprite_number);
@@ -164,22 +167,34 @@ loader.load((loader, resources) => {
             player_list[id] = this;
         }
 
-        // breath(deltaTime) {
-        //     if (this.breathingIn) {
-        //         this.breathing -= 0.01;
-        //         this.sprite.scale.y -= 0.001 * deltaTime;
-        //         if (this.breathing <= 0) {
-        //             this.breathingIn = false;
-        //         }
-        //     }
-        //     else {
-        //         this.breathing += 0.01;
-        //         this.sprite.scale.y += 0.001 * deltaTime;
-        //         if (this.breathing >= 1) {
-        //             this.breathingIn = true;
-        //         }
-        //     }
-        // }
+        breath(deltaTime) {
+            if (this.canBreath == false && this.breathTimer++ > this.timeBreath * deltaTime) {
+                this.canBreath = true;
+                this.breathTimer = 0;
+            }
+
+            if (this.canBreath) {
+                if (this.breathingIn) {
+                    this.breathing -= 0.02;
+                    this.sprite.scale.y -= 0.003 * deltaTime;
+                    this.sprite.scale.x += 0.0015 * deltaTime;
+                    if (this.breathing <= 0) {
+                        this.breathingIn = false;
+                    }
+                }
+                else {
+                    this.breathing += 0.02;
+                    this.sprite.scale.y += 0.003 * deltaTime;
+                    this.sprite.scale.x -= 0.0015 * deltaTime;
+                    if (this.breathing >= 1) {
+                        this.timeBreath = 100 + Math.floor(Math.random() * 200);
+                        this.canBreath = false;
+                        this.breathingIn = true;
+                    }
+                }
+            }
+
+        }
 
         update(x, y, hp, moving, direction) {
             this.x = x;
@@ -1249,11 +1264,11 @@ loader.load((loader, resources) => {
             moveView();
         });
 
-        // app.ticker.add(function (deltaTime) {
-        //     for (let i in player_list) {
-        //         player_list[i].breath(deltaTime);
-        //     }
-        // });
+        app.ticker.add(function (deltaTime) {
+            for (let i in player_list) {
+                player_list[i].breath(deltaTime);
+            }
+        });
 
         document.onkeydown = function (e) {
             if (testActiveChat()) {
