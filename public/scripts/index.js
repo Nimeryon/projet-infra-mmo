@@ -69,6 +69,8 @@ loader.add('ui_button_icon_elements', "sprites/ui/button_icon.png");
 loader.add('ui_inventory_slots', "sprites/ui/inventory_slot.png");
 loader.add('ui_inventory_slots_2', "sprites/ui/inventory_slot_2.png");
 loader.add('ui_inventory_icons', "sprites/ui/inventory_icon.png");
+loader.add('ui_button_ring', "sprites/ui/button_ui.png");
+loader.add('ui_equipment_icons', "sprites/ui/inventory_icon.png");
 // Chargement item
 loader.add('items', "sprites/icons/item.png");
 loader.add('items_2', "sprites/icons/item_2.png");
@@ -85,6 +87,7 @@ loader.load((loader, resources) => {
     var player_list = [];
     var bullet_list = [];
     var inventory_slots = [];
+    var equipment_slots = [];
     var maps = $.getJSON("models/maps.json", function (data) {
         maps = data;
     });
@@ -94,7 +97,7 @@ loader.load((loader, resources) => {
     var particles_death = $.getJSON("particles/player_death.json", function (data) {
         particles_death = data;
     });
-    var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, map_layer = null;
+    var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, equipment_container, map_layer = null;
     var camera = {
         view_x: 0,
         view_y: 0
@@ -140,6 +143,9 @@ loader.load((loader, resources) => {
 
             this.score = score;
 
+            // this.breathing = 1;
+            // this.breathingIn = true;
+
             this.pseudo = pseudo;
             this.generateSprite(sprite_number);
 
@@ -150,6 +156,23 @@ loader.load((loader, resources) => {
             // app.stage.addChild(this.sprite);
             player_list[id] = this;
         }
+
+        // breath(deltaTime) {
+        //     if (this.breathingIn) {
+        //         this.breathing -= 0.01;
+        //         this.sprite.scale.y -= 0.001 * deltaTime;
+        //         if (this.breathing <= 0) {
+        //             this.breathingIn = false;
+        //         }
+        //     }
+        //     else {
+        //         this.breathing += 0.01;
+        //         this.sprite.scale.y += 0.001 * deltaTime;
+        //         if (this.breathing >= 1) {
+        //             this.breathingIn = true;
+        //         }
+        //     }
+        // }
 
         update(x, y, hp, moving, direction) {
             this.x = x;
@@ -289,9 +312,9 @@ loader.load((loader, resources) => {
             this.container.cursor = "default";
             this.container.on('pointerover', function () {
                 instance.bg.texture = instance.textures[1]
-                instance.text_text = new PIXI.Text(instance.text, { fontSize: 12, fill: 0x000000 });
+                instance.text_text = new PIXI.Text(instance.text, { fontSize: 11, fill: 0x000000 });
                 instance.text_text.x = instance.container.width / 2;
-                instance.text_text.y = instance.bg.y + 24;
+                instance.text_text.y = instance.bg.y + 16;
                 instance.text_text.anchor.set(0.5, 0);
                 instance.container.addChild(instance.text_text);
                 cmdover();
@@ -310,9 +333,13 @@ loader.load((loader, resources) => {
                 cmdup();
             });
             this.textures = [button_icons.textures[color], button_icons.textures[color + 8], button_icons.textures[color + 16]];
-            this.bg = createSprite(this.textures[0], 0, 0, 1, 0, { x: 1.5, y: 1.5 });
-            this.bg.anchor.set(0.15);
-            this.icon = createSprite(texture, 0, 0, 1, 0, { x: 1, y: 1 });
+            this.bgRing = createSprite(resources['ui_button_ring'].texture, 8, 8, 1, 0, { x: 1.1, y: 1.1 });
+            this.bgRing.anchor.set(0.5);
+            this.bg = createSprite(this.textures[0], 8, 8, 1, 0, { x: 1.1, y: 1.1 });
+            this.bg.anchor.set(0.5);
+            this.icon = createSprite(texture, 8, 8, 1, 0, { x: 1, y: 1 });
+            this.icon.anchor.set(0.5);
+            this.container.addChild(this.bgRing);
             this.container.addChild(this.bg);
             this.container.addChild(this.icon);
             this.container.x = x - (this.container.width / 2) - 3;
@@ -321,7 +348,9 @@ loader.load((loader, resources) => {
     }
 
     class UIContainer {
-        constructor(x, y, width, height, cmdover = null, cmdout = null, cmddown = null, cmdup = null) {
+        constructor(x, y, width, height, cmdover = null, cmdout = null, cmddown = null, cmdup = null, changerShoot = true) {
+            var instance = this;
+            this.changerShoot = changerShoot
             this.container = new PIXI.Container();
             this.container.sortableChildren = true;
             this.container.x = x - (width * 32 / 2);
@@ -329,11 +358,15 @@ loader.load((loader, resources) => {
             this.container.alpha = 0;
             this.container.interactiveChildren = false;
             this.container.on('pointerover', function () {
-                canShoot = false;
+                if (instance.changerShoot) {
+                    canShoot = false;
+                }
                 cmdover();
             });
             this.container.on('pointerout', function () {
-                canShoot = true;
+                if (instance.changerShoot) {
+                    canShoot = true;
+                }
                 cmdout();
             });
             this.container.on('pointerdown', function () {
@@ -409,7 +442,7 @@ loader.load((loader, resources) => {
                 this.container.interactive = true;
                 this.container.buttonMode = true;
                 this.container.interactiveChildren = true;
-                this.container.alpha = 0.95;
+                this.container.alpha = 0.9;
                 this.container.cursor = "default";
                 this.hide = false;
             }
@@ -438,7 +471,6 @@ loader.load((loader, resources) => {
             this.container.zIndex = 1;
             this.bg = createSprite(textures[0], x, y, 1, 0, { x: 1, y: 1 });
             this.bg.anchor.set(0.5);
-            this.bg.alpha = 0.5;
             this.container.addChild(this.bg);
             this.container.on('pointerover', function () {
                 instance.bg.texture = textures[2];
@@ -472,7 +504,8 @@ loader.load((loader, resources) => {
             this.parent = parent;
             this.count = count;
             this.itemID = item;
-            this.count_text = new PIXI.Text(String(count), {
+            this.text = this.count < 1000000 ? this.count < 10000 ? this.count : `${Math.floor(this.count / 1000)}k` : `${(this.count / 1000000).toFixed(1)}M`;
+            this.count_text = new PIXI.Text(this.text, {
                 fill: "white",
                 fontFamily: "Verdana",
                 fontSize: 12,
@@ -630,7 +663,7 @@ loader.load((loader, resources) => {
         changerCount(targetSlot) {
             if (this.itemID == inventory_slots[targetSlot].item.itemID) {
                 this.count += inventory_slots[targetSlot].item.count;
-                this.count_text.text = this.count;
+                this.count < 10000 ? this.count_text.text = this.count : this.count_text.text = `${this.count / 100}k`;
                 inventory_slots[targetSlot].deleteItem();
                 return true;
             }
@@ -657,6 +690,51 @@ loader.load((loader, resources) => {
             this.item.destroy();
             this.count_text.destroy();
         }
+    }
+
+    class EquipmentSlot {
+        constructor(x, y, textures, type) {
+            var instance = this;
+            this.textures = textures;
+            this.item = null;
+            this.container = new PIXI.Container();
+            this.container.interactive = true;
+            this.container.buttonMode = true;
+            this.container.cursor = "default";
+            this.container.zIndex = 1;
+            this.bg = createSprite(textures[0], x, y, 1, 0, { x: 1.5, y: 1.5 });
+            this.bg.anchor.set(0.5);
+            this.type = createSprite(ui_inventory_icons.textures[type], x, y, 1, 0, { x: 1.3, y: 1.3 });
+            this.type.anchor.set(0.5);
+            this.container.addChild(this.bg);
+            this.container.addChild(this.type);
+            this.container.on('pointerover', function () {
+                instance.bg.texture = textures[2];
+            });
+            this.container.on('pointerout', function () {
+                instance.bg.texture = textures[0];
+            });
+            this.container.on('pointerdown', function () {
+                instance.bg.texture = textures[1];
+            });
+            this.container.on('pointerup', function () {
+                instance.bg.texture = textures[2];
+            });
+        }
+
+        // addItem(item, count) {
+        //     this.item = new EquipmentItem(this, this.bg.x, this.bg.y, item, count);
+        //     inventory_container.addChild(this.item.item);
+        // }
+
+        // deleteItem() {
+        //     this.item.die();
+        //     this.item = null;
+        // }
+    }
+
+    class EquipmentItem {
+
     }
 
     function createSprite(texture, x, y, alpha = 1, angle = 0, scale = { x: 1, y: 1 }, cursor = null) {
@@ -800,7 +878,7 @@ loader.load((loader, resources) => {
                 return;
             }
         );
-        let sortButton = new MiniButton(32, 64, 3, button_icons.textures[4],
+        let groupButton = new MiniButton(10 * 32 + 24, 34, 3, button_icons.textures[4],
             function () {
                 return;
             },
@@ -811,15 +889,45 @@ loader.load((loader, resources) => {
                 return;
             },
             function () {
-                socket.emit('sort inventory');
+                socket.emit('sort inventory', "groupe");
             },
-            "Trier");
-        ui_inventory.container.addChild(sortButton.container);
+            "Grouper");
+        let sortPlusButton = new MiniButton(10 * 32 + 24, 82, 3, button_icons.textures[12],
+            function () {
+                return;
+            },
+            function () {
+                return;
+            },
+            function () {
+                return;
+            },
+            function () {
+                socket.emit('sort inventory', "plus");
+            },
+            "Trier +");
+        let sortMoinsButton = new MiniButton(10 * 32 + 24, 130, 3, button_icons.textures[13],
+            function () {
+                return;
+            },
+            function () {
+                return;
+            },
+            function () {
+                return;
+            },
+            function () {
+                socket.emit('sort inventory', "moins");
+            },
+            "Trier -");
+        ui_inventory.container.addChild(groupButton.container);
+        ui_inventory.container.addChild(sortMoinsButton.container);
+        ui_inventory.container.addChild(sortPlusButton.container);
         inventory_container = new PIXI.Container();
         inventory_container.sortableChildren = true;
-        inventory_container.zIndex = 0;
-        inventory_container.x = 64;
-        inventory_container.y = 64;
+        inventory_container.zIndex = 1;
+        inventory_container.x = 32;
+        inventory_container.y = 32;
         ui_inventory.container.addChild(inventory_container);
         let width = 8;
         let height = 9;
@@ -885,36 +993,48 @@ loader.load((loader, resources) => {
                 }
                 inventory_slots_index++;
             }
-        }
 
+            equipment_container = new UIContainer(8 * 64, 192, 7, 11,
+                function () {
+                    return;
+                },
+                function () {
+                    return;
+                },
+                function () {
+                    return;
+                },
+                function () {
+                    return;
+                },
+                false
+            );
+            equipment_container.hideShow(true);
+            equipment_container.zIndex = 0;
+            ui_inventory.container.addChild(equipment_container.container);
+            let casque = new EquipmentSlot(128 - 16, 64 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 0);
+            let plastron = new EquipmentSlot(128 - 16, 128 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 1);
+            let ceinture = new EquipmentSlot(128 - 16, 192 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 5);
+            let bottes = new EquipmentSlot(128 - 16, 256 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 6);
+            let arme_1 = new EquipmentSlot(96 - 16, 320 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 4);
+            let arme_2 = new EquipmentSlot(160 - 16, 320 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 4);
+            let bouclier = new EquipmentSlot(192 - 16, 128 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 3);
+            let amulette = new EquipmentSlot(64 - 16, 64 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 2);
+            let accessoire_1 = new EquipmentSlot(64 - 16, 192 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 7);
+            let accessoire_2 = new EquipmentSlot(192 - 16, 192 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 7);
+            equipment_container.container.addChild(casque.container);
+            equipment_container.container.addChild(plastron.container);
+            equipment_container.container.addChild(ceinture.container);
+            equipment_container.container.addChild(bottes.container);
+            equipment_container.container.addChild(arme_1.container);
+            equipment_container.container.addChild(arme_2.container);
+            equipment_container.container.addChild(bouclier.container);
+            equipment_container.container.addChild(amulette.container);
+            equipment_container.container.addChild(accessoire_1.container);
+            equipment_container.container.addChild(accessoire_2.container);
+        }
         ui_layer.addChild(ui_inventory.container);
     }
-
-    // function makeDragabble(element) {
-    //     let draggable = false;
-    //     element.interactive = true;
-    //     element.buttonMode = true;
-
-    //     element.on('pointerdown', function () {
-    //         draggable = true;
-    //     });
-
-    //     element.on('pointerup', function () {
-    //         draggable = false;
-    //     });
-
-    //     element.on('pointerout', function () {
-    //         draggable = false;
-    //     });
-
-    //     element.on('pointermove', function (event) {
-    //         if (draggable) {
-    //             element.x = 100;
-    //             element.y = 100;
-    //             console.log(element.x, element.y);
-    //         }
-    //     });
-    // }
 
     function moveView() {
         if (current_player.x + camera.view_x > app.view.width - tile_size * scale * 4.5) {
@@ -949,6 +1069,7 @@ loader.load((loader, resources) => {
     const menu_frame_elements = generateTextures(resources['ui_frame_elements'].texture, 3, 4, 32, 32);
     const ui_inventory_slots = generateTextures(resources['ui_inventory_slots'].texture, 7, 3, 40, 40);
     const ui_inventory_slots_2 = generateTextures(resources['ui_inventory_slots_2'].texture, 3, 9, 38, 38);
+    const ui_equipment_icons = generateTextures(resources['ui_equipment_icons'].texture, 4, 2, 32, 32);
     const ui_inventory_icons = generateTextures(resources['ui_inventory_icons'].texture, 4, 2, 32, 32);
     const button_icons = generateTextures(resources['ui_button_icon_elements'].texture, 8, 3, 16, 16);
     const item_icons_1 = generateTextures(resources['items'].texture, 8, 9, 16, 16);
@@ -1119,6 +1240,12 @@ loader.load((loader, resources) => {
 
             moveView();
         });
+
+        // app.ticker.add(function (deltaTime) {
+        //     for (let i in player_list) {
+        //         player_list[i].breath(deltaTime);
+        //     }
+        // });
 
         document.onkeydown = function (e) {
             if (testActiveChat()) {

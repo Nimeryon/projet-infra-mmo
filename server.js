@@ -450,6 +450,36 @@ class Inventory {
         }
     }
 
+    sortPlus() {
+        this.sort();
+        for (let slot_index = 0; slot_index < this.inventory.length; slot_index++) {
+            if (!this.isSlotFree(slot_index)) {
+                for (let i = 0; i < this.inventory.length; i++) {
+                    if (!this.isSlotFree(i)) {
+                        if (this.inventory[slot_index][1] > this.inventory[i][1]) {
+                            [this.inventory[i], this.inventory[slot_index]] = [this.inventory[slot_index], this.inventory[i]];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    sortMoins() {
+        this.sort();
+        for (let slot_index = 0; slot_index < this.inventory.length; slot_index++) {
+            if (!this.isSlotFree(slot_index)) {
+                for (let i = 0; i < this.inventory.length; i++) {
+                    if (!this.isSlotFree(i)) {
+                        if (this.inventory[slot_index][1] < this.inventory[i][1]) {
+                            [this.inventory[i], this.inventory[slot_index]] = [this.inventory[slot_index], this.inventory[i]];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     getLastfree() {
         for (let i = this.inventory.length - 1; i <= 0; i--) {
             if (this.inventory[i] == null) {
@@ -548,7 +578,7 @@ io.on('connection', function (socket) {
         let player_map = ["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)];
         player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, { minX: 16, minY: 0, maxX: 16, maxY: 46 }, player_map, 12);
         for (let i = 0; i < 8 * 9; i++) {
-            player_list[socket.id].inventory.addItem(Math.floor(Math.random() * 144), Math.floor(Math.random() * 9999));
+            player_list[socket.id].inventory.addItem(Math.floor(Math.random() * 144), Math.floor(Math.random() * 99999));
         }
         socket.emit('init', {
             id: player_list[socket.id].id,
@@ -637,8 +667,22 @@ io.on('connection', function (socket) {
             }
         });
 
-        socket.on('sort inventory', function () {
-            player_list[socket.id].inventory.sort();
+        socket.on('sort inventory', function (type) {
+            switch (type) {
+                case "groupe":
+                    player_list[socket.id].inventory.sort();
+                    break;
+
+                case "moins":
+                    player_list[socket.id].inventory.sortMoins();
+                    break;
+
+                case "plus":
+                    player_list[socket.id].inventory.sortPlus();
+                    break;
+
+                default: break;
+            }
             socket.emit('update inventory', player_list[socket.id].inventory.inventory);
         });
     });
