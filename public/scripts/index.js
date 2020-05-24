@@ -1,5 +1,7 @@
 PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 
+var ratio = 1080 / 720;
+
 var app = new PIXI.Application(
     {
         width: 1080,
@@ -19,6 +21,11 @@ window.onresize = function (event) {
 
     document.getElementById("app-screen").style.width = w + "px";
     document.getElementById("app-screen").style.height = h + "px";
+
+    let view_ratio_x = 1080 / (h * 1.5);
+    let view_ratio_y = 720 / h;
+    app.view.width = h * 1.5 * view_ratio_x;
+    app.view.height = h * view_ratio_y;
 }
 
 // Custom cursor
@@ -528,6 +535,7 @@ loader.load((loader, resources) => {
                 instance.dragged = true;
                 instance.item.zIndex = 3;
                 instance.count_text.zIndex = 4;
+                instance.parent.bg.texture = instance.parent.textures[1];
             });
             this.item.on('pointerup', function () {
                 if (instance.dragged) {
