@@ -104,7 +104,7 @@ loader.load((loader, resources) => {
     var particles_death = $.getJSON("particles/player_death.json", function (data) {
         particles_death = data;
     });
-    var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, equipment_container, map_layer = null;
+    var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, equipment_container, ui_options, map_layer = null;
     var camera = {
         view_x: 0,
         view_y: 0
@@ -121,6 +121,7 @@ loader.load((loader, resources) => {
         32: "Space",
         69: "E",
         84: "T",
+        79: "O",
         13: "Enter"
     };
 
@@ -885,6 +886,27 @@ loader.load((loader, resources) => {
         return menu_element_container;
     }
 
+    function createOptions() {
+        ui_options = new UIContainer(app.screen.width / 2, app.screen.height / 2, 8, 16,
+            function () {
+                return;
+            },
+            function () {
+                return;
+            },
+            function () {
+                return;
+            },
+            function () {
+                return;
+            }
+        );
+
+
+
+        ui_layer.addChild(ui_options.container);
+    }
+
     function createInventory() {
         let inventory_slots_index = 0;
         ui_inventory = new UIContainer(app.screen.width / 2, app.screen.height / 2, 20, 16,
@@ -1120,11 +1142,15 @@ loader.load((loader, resources) => {
         ui_layer.zIndex = 3;
         layers.addChild(ui_layer);
 
+        createOptions();
         createInventory();
 
         // Draw menu
-        let menu_options = createMenuElements(menu_elements.textures[4], app.screen.width - 24, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "Options", function () {
-            return;
+        let menu_options = createMenuElements(menu_elements.textures[4], app.screen.width - 24, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "(O) Options", function () {
+            if (!ui_inventory.hide) {
+                ui_inventory.hideShow(false);
+            }
+            ui_options.hideShow(false);
         });
 
         let menu_message = createMenuElements(menu_elements.textures[3], app.screen.width - 72, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "(T) Chat", function () {
@@ -1132,6 +1158,9 @@ loader.load((loader, resources) => {
         });
 
         let menu_inventory = createMenuElements(menu_elements.textures[5], app.screen.width - 120, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "(E) Inventaire", function () {
+            if (!ui_options.hide) {
+                ui_options.hideShow(false);
+            }
             ui_inventory.hideShow(false);
         });
 
@@ -1329,7 +1358,18 @@ loader.load((loader, resources) => {
             }
             else if (keyMap[e.keyCode] == "E") {
                 if (testActiveChat()) {
+                    if (!ui_options.hide) {
+                        ui_options.hideShow(true);
+                    }
                     ui_inventory.hideShow(true);
+                }
+            }
+            else if (keyMap[e.keyCode] == "O") {
+                if (testActiveChat()) {
+                    if (!ui_inventory.hide) {
+                        ui_inventory.hideShow(true);
+                    }
+                    ui_options.hideShow(true);
                 }
             }
             else if (keyMap[e.keyCode] == "T") {
