@@ -5,13 +5,9 @@ const io = require('socket.io')(serveur);
 const helmet = require('helmet');
 
 // Connection base de donnée
-// const mongojs = require('mongojs');
-// const config = require('./config.json');
-// const db = mongojs(`mongodb://${config.pseudo}:${config.mdp}@1897958c-bfe4-4b1b-8108-c813ac5c8b08.mmo-project-3867.mongo.dbs.scalingo.com:38358/mmo-project-3867?replicaSet=mmo-project-3867-rs0&ssl=true`);
-// db.collections(function (err, collections) {
-//     console.log(collections);
-// });
-
+const config = require('./config.json');
+const mongojs = require('mongojs');
+const db = mongojs(`mongodb+srv://${config.pseudo}:${config.mdp}@mmo-project-anpkb.mongodb.net/mmo-project?retryWrites=true&w=majority`, ['account']);
 // ==================================================================================================================
 //  ____  ____  ____  _  _  ____  _  _  ____ 
 // / ___)(  __)(  _ \/ )( \(  __)/ )( \(  _ \
@@ -537,38 +533,37 @@ io.on('connection', function (socket) {
     console.log("Quelqu'un vient de se connecter");
 
     socket.on('login request', function (data) {
-        socket.emit('login answer', { state: true, username: data.username });
-        // db.account.find({ username: data.username, password: data.password }, function (err, res) {
-        //     if (err) console.log(err);
+        db.account.find({ username: data.username, password: data.password }, function (err, res) {
+            if (err) console.log(err);
 
-        //     res = res[0];
+            res = res[0];
 
-        //     if (res != null) {
-        //         socket.emit('login answer', { state: true, username: data.username });
-        //         console.log(`utilisateur: ${data.username} vient de se connecter`);
-        //     }
-        //     else {
-        //         socket.emit('login answer', { state: false });
-        //     }
-        // });
+            if (res != null) {
+                socket.emit('login answer', { state: true, username: data.username });
+                console.log(`utilisateur: ${data.username} vient de se connecter`);
+            }
+            else {
+                socket.emit('login answer', { state: false });
+            }
+        });
     });
 
+
     socket.on('signin request', function (data) {
-        socket.emit('signin answer', { state: true, username: data.username });
-        // db.account.find({ username: data.username }, function (err, res) {
-        //     if (err) console.log(err);
+        db.account.find({ username: data.username }, function (err, res) {
+            if (err) console.log(err);
 
-        //     res = res[0];
+            res = res[0];
 
-        //     if (res != null) {
-        //         socket.emit('signin answer', { state: false });
-        //     }
-        //     else {
-        //         db.account.insert({ username: data.username, password: data.password });
-        //         socket.emit('signin answer', { state: true, username: data.username });
-        //         console.log(`utilisateur: ${data.username} vient d'être créé`);
-        //     }
-        // });
+            if (res != null) {
+                socket.emit('signin answer', { state: false });
+            }
+            else {
+                db.account.insertOne({ username: data.username, password: data.password });
+                socket.emit('signin answer', { state: true, username: data.username });
+                console.log(`utilisateur: ${data.username} vient d'être créé`);
+            }
+        });
     });
 
     socket.on('player ready', function (pseudo) {

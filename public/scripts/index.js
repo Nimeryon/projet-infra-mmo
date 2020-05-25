@@ -76,19 +76,28 @@ loader.add('ui_button_icon_elements', "sprites/ui/button_icon.png");
 loader.add('ui_inventory_slots', "sprites/ui/inventory_slot.png");
 loader.add('ui_inventory_slots_2', "sprites/ui/inventory_slot_2.png");
 loader.add('ui_inventory_icons', "sprites/ui/inventory_icon.png");
-loader.add('ui_button_ring', "sprites/ui/button_ui.png");
+loader.add('ui_button_ring', "sprites/ui/button_ring_ui.png");
+loader.add('ui_button', "sprites/ui/button_ui.png");
 loader.add('ui_equipment_icons', "sprites/ui/inventory_icon.png");
+loader.add('ui_checkbox', "sprites/ui/checkbox.png");
 // Chargement item
 loader.add('items', "sprites/icons/item.png");
 loader.add('items_2', "sprites/icons/item_2.png");
 // Chargement particules
 loader.add('particle', "sprites/particles/particle.png");
+loader.add('particle_square', "sprites/particles/particle_square.png");
 // Execution
 loader.load((loader, resources) => {
     // Global var
     var scale = 3;
     var tile_size = 32;
+    var canDoThings = true;
     var setFullScreen = false;
+    var pressingRight = false;
+    var pressingLeft = false;
+    var pressingUp = false;
+    var pressingDown = false;
+    var pressingAttack = false;
     var current_player = null;
     var canShoot = true;
     var player_list = [];
@@ -101,8 +110,8 @@ loader.load((loader, resources) => {
     var particles_weapon = $.getJSON("particles/weapon_break.json", function (data) {
         particles_weapon = data;
     });
-    var particles_death = $.getJSON("particles/player_death.json", function (data) {
-        particles_death = data;
+    var particles_walk = $.getJSON("particles/player_walk.json", function (data) {
+        particles_walk = data;
     });
     var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, equipment_container, ui_options, map_layer = null;
     var camera = {
@@ -153,9 +162,16 @@ loader.load((loader, resources) => {
 
             this.canBreath = true;
             this.breathTimer = 0;
-            this.timeBreath = 100 + Math.floor(Math.random() * 100);
+            this.timeBreath = 300 + Math.floor(Math.random() * 300);
             this.breathing = 1;
             this.breathingIn = true;
+
+            this.emitter = new PIXI.particles.Emitter(
+                player_layer,
+                [resources.particle_square.texture],
+                particles_walk
+            );
+            this.emitter.autoUpdate = true;
 
             this.pseudo = pseudo;
             this.generateSprite(sprite_number);
@@ -164,7 +180,6 @@ loader.load((loader, resources) => {
             this.sprite.id = id;
             this.sprite.anchor.set(0.5);
 
-            // app.stage.addChild(this.sprite);
             player_list[id] = this;
         }
 
@@ -176,19 +191,19 @@ loader.load((loader, resources) => {
 
             if (this.canBreath) {
                 if (this.breathingIn) {
-                    this.breathing -= 0.02;
-                    this.sprite.scale.y -= 0.003 * deltaTime;
+                    this.breathing -= 0.01;
+                    this.sprite.scale.y -= 0.0025 * deltaTime;
                     this.sprite.scale.x += 0.0015 * deltaTime;
                     if (this.breathing <= 0) {
                         this.breathingIn = false;
                     }
                 }
                 else {
-                    this.breathing += 0.02;
-                    this.sprite.scale.y += 0.003 * deltaTime;
+                    this.breathing += 0.01;
+                    this.sprite.scale.y += 0.0025 * deltaTime;
                     this.sprite.scale.x -= 0.0015 * deltaTime;
                     if (this.breathing >= 1) {
-                        this.timeBreath = 100 + Math.floor(Math.random() * 200);
+                        this.timeBreath = 300 + Math.floor(Math.random() * 300);
                         this.canBreath = false;
                         this.breathingIn = true;
                     }
@@ -207,6 +222,18 @@ loader.load((loader, resources) => {
 
             this.updateHP(hp, this.x, this.y);
             this.updateSprite(moving, direction);
+
+            if (this.moving) {
+                this.emitter.updateSpawnPos(this.x - 8, this.y + 32);
+                if (!this.emitter.emit) {
+                    this.emitter.emit = true;
+                }
+            }
+            else {
+                if (this.emitter.emit) {
+                    this.emitter.emit = false;
+                }
+            }
         }
 
         updateHP(hp, x, y) {
@@ -273,7 +300,7 @@ loader.load((loader, resources) => {
     }
 
     class Bullet extends Entity {
-        constructor(id, parent_id, x, y, scale, angle, map) {
+        constructor(id, parent_id, x, y, scale, angle, map, emitter) {
             super(id, parent_id, x, y, map);
 
             this.sprite = createSprite(resources.weapon_sprites_02.texture, x, y, 1, angle + 45, { x: scale, y: scale });
@@ -306,21 +333,255 @@ loader.load((loader, resources) => {
         }
     }
 
-    // Function
-    function generateTextures(texture, nbr_tile_x, nbr_tile_y, tile_size_x, tile_size_y) {
-        let textures = [];
-        let frame_count = 0;
-        for (let y = 0; y < nbr_tile_y; y++) {
-            for (let x = 0; x < nbr_tile_x; x++) {
-                textures[frame_count] = new PIXI.Texture(texture,
-                    new PIXI.Rectangle(x * tile_size_x, y * tile_size_y, tile_size_x, tile_size_y)
-                );
-                frame_count++;
+    class CheckBox {
+        constructor(x, y, checked, cmdover = null, cmdout = null, cmddown = null, cmdup = null, cmdckeck = null, cmduncheck = null) {
+            var instance = this;
+            this.cmdckeck = cmdckeck;
+            this.cmduncheck = cmduncheck;
+            this.checked = checked;
+            this.checkboxs = [];
+            this.container = new PIXI.Container();
+            this.container.zIndex = 5;
+            this.container.interactive = true;
+            this.container.buttonMode = true;
+            this.container.cursor = "default";
+            this.container.sortableChildren = true;
+            this.container.x = x;
+            this.container.y = y;
+            this.container.on('pointerover', function () {
+                instance.overed = true;
+                if (instance.checked) {
+                    instance.bg.texture = ui_checkbox.textures[3];
+                }
+                else {
+                    instance.bg.texture = ui_checkbox.textures[2];
+                }
+
+                if (cmdover != null) {
+                    cmdover();
+                }
+            });
+            this.container.on('pointerout', function () {
+                instance.overed = false;
+                if (instance.checked) {
+                    instance.bg.texture = ui_checkbox.textures[1];
+                }
+                else {
+                    instance.bg.texture = ui_checkbox.textures[0];
+                }
+
+                if (cmdout != null) {
+                    cmdout();
+                }
+            });
+            this.container.on('pointerdown', function () {
+                if (cmddown != null) {
+                    cmddown();
+                }
+            });
+            this.container.on('pointerup', function () {
+                if (instance.checked) {
+                    instance.uncheck();
+                }
+                else {
+                    instance.check();
+                }
+
+                if (cmdup != null) {
+                    cmdup();
+                }
+            });
+
+            if (this.checked) {
+                this.bg = createSprite(ui_checkbox.textures[1], 0, 0, 1, 0, { x: 1.25, y: 1.25 });
+            }
+            else {
+                this.bg = createSprite(ui_checkbox.textures[0], 0, 0, 1, 0, { x: 1.25, y: 1.25 });
+            }
+            this.bg.anchor.set(0.5);
+            this.container.addChild(this.bg);
+        }
+
+        check() {
+            this.checked = true;
+            if (this.cmdckeck) {
+                this.cmdckeck();
+            }
+            if (this.overed) {
+                this.bg.texture = ui_checkbox.textures[3];
+            }
+            else {
+                this.bg.texture = ui_checkbox.textures[1];
+            }
+            for (let i = 0; i < this.checkboxs.length; i++) {
+                if (this.checkboxs[i].checked) {
+                    this.checkboxs[i].uncheck(true);
+                }
             }
         }
-        return {
-            textures: textures,
-            nbr_frame: frame_count
+
+        uncheck(force = false) {
+            if (force || this.checkboxs.length < 1) {
+                this.checked = false;
+                if (this.cmduncheck) {
+                    this.cmduncheck();
+                }
+                if (this.overed) {
+                    this.bg.texture = ui_checkbox.textures[2];
+                }
+                else {
+                    this.bg.texture = ui_checkbox.textures[0];
+                }
+            }
+        }
+
+        addCheckbox(checkbox) {
+            this.checkboxs.push(checkbox);
+        }
+    }
+
+    class SquareButton {
+        constructor(x, y, texture, text, cmdover = null, cmdout = null, cmddown = null, cmdup = null) {
+            var instance = this;
+            this.text = text;
+            this.container = new PIXI.Container();
+            this.container.zIndex = 5;
+            this.container.interactive = true;
+            this.container.buttonMode = true;
+            this.container.cursor = "default";
+            this.container.sortableChildren = true;
+            this.container.x = x;
+            this.container.y = y;
+            this.container.on('pointerover', function () {
+                instance.bg.scale.x = 1.1;
+                instance.bg.scale.y = 1.1;
+                instance.texture.scale.x = 1.1;
+                instance.texture.scale.y = 1.1;
+                instance.text_text = new PIXI.Text(instance.text, { fontSize: 11, fill: 0x000000 });
+                instance.text_text.y = 24;
+                instance.text_text.anchor.set(0.5, 0);
+                instance.container.addChild(instance.text_text);
+                if (cmdover != null) {
+                    cmdover();
+                }
+            });
+            this.container.on('pointerout', function () {
+                instance.bg.scale.x = 1;
+                instance.bg.scale.y = 1;
+                instance.texture.scale.x = 1;
+                instance.texture.scale.y = 1;
+                instance.text_text.destroy();
+                if (cmdout != null) {
+                    cmdout();
+                }
+            });
+            this.container.on('pointerdown', function () {
+                instance.bg.texture = menu_elements.textures[1];
+                if (cmddown != null) {
+                    cmddown();
+                }
+            });
+            this.container.on('pointerup', function () {
+                instance.bg.texture = menu_elements.textures[0];
+                if (cmdup != null) {
+                    cmdup();
+                }
+            });
+            this.bg = createSprite(menu_elements.textures[0], 0, 0, 1, 0, { x: 1, y: 1 });
+            this.bg.anchor.set(0.5);
+            this.bg.zIndex = 0;
+            this.container.addChild(this.bg);
+            this.texture = createSprite(menu_elements.textures[texture], 0, 0, 1, 0, { x: 1, y: 1 });
+            this.texture.anchor.set(0.5);
+            this.texture.zIndex = 1;
+            this.container.addChild(this.texture);
+        }
+    }
+
+    class Button {
+        constructor(x, y, text, width, cmdover = null, cmdout = null, cmddown = null, cmdup = null) {
+            var instance = this;
+            this.container = new PIXI.Container();
+            this.container.zIndex = 5;
+            this.container.interactive = true;
+            this.container.buttonMode = true;
+            this.container.cursor = "default";
+            this.container.sortableChildren = true;
+            this.container.x = x;
+            this.container.y = y;
+            this.container.on('pointerover', function () {
+                for (let i = 0; i < instance.bgs.length; i++) {
+                    instance.bgs[i].sprite.texture = instance.bgs[i].textures[1];
+                }
+                if (cmdover != null) {
+                    cmdover();
+                }
+            });
+            this.container.on('pointerout', function () {
+                for (let i = 0; i < instance.bgs.length; i++) {
+                    instance.bgs[i].sprite.texture = instance.bgs[i].textures[0];
+                }
+                if (cmdout != null) {
+                    cmdout();
+                }
+            });
+            this.container.on('pointerdown', function () {
+                for (let i = 0; i < instance.bgs.length; i++) {
+                    instance.bgs[i].sprite.texture = instance.bgs[i].textures[2];
+                }
+                if (cmddown != null) {
+                    cmddown();
+                }
+            });
+            this.container.on('pointerup', function () {
+                for (let i = 0; i < instance.bgs.length; i++) {
+                    instance.bgs[i].sprite.texture = instance.bgs[i].textures[1];
+                }
+                if (cmdup != null) {
+                    cmdup();
+                }
+            });
+            this.bgs = [];
+            for (let x = 0; x < width; x++) {
+                if (x == 0) {
+                    this.bgs[x] = {
+                        sprite: createSprite(ui_button.textures[0], (x * 40) - (40 * width / 2 - 20), 0, 1, 0, { x: 1, y: 1.2 }),
+                        textures: [ui_button.textures[0], ui_button.textures[3], ui_button.textures[6]]
+                    }
+                    this.bgs[x].sprite.anchor.set(0.5);
+                    this.bgs[x].sprite.zIndex = 0;
+                    this.container.addChild(this.bgs[x].sprite);
+                }
+                else if (x == width - 1) {
+                    this.bgs[x] = {
+                        sprite: createSprite(ui_button.textures[2], (x * 40) - (40 * width / 2 - 20), 0, 1, 0, { x: 1, y: 1.2 }),
+                        textures: [ui_button.textures[2], ui_button.textures[5], ui_button.textures[8]]
+                    }
+                    this.bgs[x].sprite.anchor.set(0.5);
+                    this.bgs[x].sprite.zIndex = 0;
+                    this.container.addChild(this.bgs[x].sprite);
+                }
+                else {
+                    this.bgs[x] = {
+                        sprite: createSprite(ui_button.textures[1], (x * 40) - (40 * width / 2 - 20), 0, 1, 0, { x: 1, y: 1.2 }),
+                        textures: [ui_button.textures[1], ui_button.textures[4], ui_button.textures[7]]
+                    }
+                    this.bgs[x].sprite.anchor.set(0.5);
+                    this.bgs[x].sprite.zIndex = 0;
+                    this.container.addChild(this.bgs[x].sprite);
+                }
+            }
+            this.text = new PIXI.Text(text, {
+                fill: "white",
+                fontFamily: "Verdana",
+                fontSize: 18,
+                fontVariant: "small-caps",
+                lineJoin: "bevel",
+                strokeThickness: 2.5
+            });
+            this.text.anchor.set(0.5);
+            this.text.zIndex = 1;
+            this.container.addChild(this.text);
         }
     }
 
@@ -340,20 +601,28 @@ loader.load((loader, resources) => {
                 instance.text_text.y = instance.bg.y + 16;
                 instance.text_text.anchor.set(0.5, 0);
                 instance.container.addChild(instance.text_text);
-                cmdover();
+                if (cmdover != null) {
+                    cmdover();
+                }
             });
             this.container.on('pointerout', function () {
                 instance.bg.texture = instance.textures[0]
                 instance.text_text.destroy();
-                cmdout();
+                if (cmdout != null) {
+                    cmdout();
+                }
             });
             this.container.on('pointerdown', function () {
                 instance.bg.texture = instance.textures[2]
-                cmddown();
+                if (cmddown != null) {
+                    cmddown();
+                }
             });
             this.container.on('pointerup', function () {
                 instance.bg.texture = instance.textures[1]
-                cmdup();
+                if (cmdup != null) {
+                    cmdup();
+                }
             });
             this.textures = [button_icons.textures[color], button_icons.textures[color + 8], button_icons.textures[color + 16]];
             this.bgRing = createSprite(resources['ui_button_ring'].texture, 8, 8, 1, 0, { x: 1.1, y: 1.1 });
@@ -371,9 +640,7 @@ loader.load((loader, resources) => {
     }
 
     class UIContainer {
-        constructor(x, y, width, height, cmdover = null, cmdout = null, cmddown = null, cmdup = null, changerShoot = true) {
-            var instance = this;
-            this.changerShoot = changerShoot
+        constructor(x, y, width, height, cmdover = null, cmdout = null, cmddown = null, cmdup = null) {
             this.container = new PIXI.Container();
             this.container.sortableChildren = true;
             this.container.x = x - (width * 32 / 2);
@@ -381,22 +648,24 @@ loader.load((loader, resources) => {
             this.container.alpha = 0;
             this.container.interactiveChildren = false;
             this.container.on('pointerover', function () {
-                if (instance.changerShoot) {
-                    canShoot = false;
+                if (cmdover != null) {
+                    cmdover();
                 }
-                cmdover();
             });
             this.container.on('pointerout', function () {
-                if (instance.changerShoot) {
-                    canShoot = true;
+                if (cmdout != null) {
+                    cmdout();
                 }
-                cmdout();
             });
             this.container.on('pointerdown', function () {
-                cmddown();
+                if (cmddown != null) {
+                    cmddown();
+                }
             });
             this.container.on('pointerup', function () {
-                cmdup();
+                if (cmdup != null) {
+                    cmdup();
+                }
             });
 
             this.createBackground(width, height);
@@ -460,7 +729,7 @@ loader.load((loader, resources) => {
             }
         }
 
-        hideShow(resetShoot) {
+        hideShow(cmd = null) {
             if (this.hide) {
                 this.container.interactive = true;
                 this.container.buttonMode = true;
@@ -475,8 +744,8 @@ loader.load((loader, resources) => {
                 this.container.buttonMode = false;
                 this.container.alpha = 0;
                 this.hide = true;
-                if (resetShoot) {
-                    canShoot = true;
+                if (cmd != null) {
+                    cmd();
                 }
             }
         }
@@ -606,6 +875,7 @@ loader.load((loader, resources) => {
                     instance.item.zIndex = 1;
                     instance.count_text.zIndex = 2;
                 }
+                instance.parent.bg.texture = instance.parent.textures[2];
             });
             this.item.on('pointerupoutside', function () {
                 if (instance.dragged) {
@@ -643,7 +913,7 @@ loader.load((loader, resources) => {
                                     instance.parent.item = null;
                                 }
                                 instance.changeSlot(inventory_slots[i]);
-                                instance.parent.bg.texture = instance.parent.textures[2];
+                                instance.parent.bg.texture = instance.parent.textures[1];
                                 changed = true;
                                 break;
                             }
@@ -660,6 +930,7 @@ loader.load((loader, resources) => {
                     instance.item.zIndex = 1;
                     instance.count_text.zIndex = 2;
                 }
+                instance.parent.bg.texture = instance.parent.textures[0];
             });
             this.item.on('pointermove', function () {
                 if (instance.dragged) {
@@ -687,7 +958,7 @@ loader.load((loader, resources) => {
         changerCount(targetSlot) {
             if (this.itemID == inventory_slots[targetSlot].item.itemID) {
                 this.count += inventory_slots[targetSlot].item.count;
-                this.text_text.text = this.count < 1000000 ? this.count < 10000 ? this.count : `${Math.floor(this.count / 1000)}k` : `${(this.count / 1000000).toFixed(1)}M`;
+                this.count_text.text = this.count < 1000000 ? this.count < 10000 ? this.count : `${Math.floor(this.count / 1000)}k` : `${(this.count / 1000000).toFixed(1)}M`;
                 inventory_slots[targetSlot].deleteItem();
                 return true;
             }
@@ -745,20 +1016,28 @@ loader.load((loader, resources) => {
                 instance.bg.texture = textures[2];
             });
         }
-
-        // addItem(item, count) {
-        //     this.item = new EquipmentItem(this, this.bg.x, this.bg.y, item, count);
-        //     inventory_container.addChild(this.item.item);
-        // }
-
-        // deleteItem() {
-        //     this.item.die();
-        //     this.item = null;
-        // }
     }
 
     class EquipmentItem {
 
+    }
+
+    // Function
+    function generateTextures(texture, nbr_tile_x, nbr_tile_y, tile_size_x, tile_size_y) {
+        let textures = [];
+        let frame_count = 0;
+        for (let y = 0; y < nbr_tile_y; y++) {
+            for (let x = 0; x < nbr_tile_x; x++) {
+                textures[frame_count] = new PIXI.Texture(texture,
+                    new PIXI.Rectangle(x * tile_size_x, y * tile_size_y, tile_size_x, tile_size_y)
+                );
+                frame_count++;
+            }
+        }
+        return {
+            textures: textures,
+            nbr_frame: frame_count
+        }
     }
 
     function createSprite(texture, x, y, alpha = 1, angle = 0, scale = { x: 1, y: 1 }, cursor = null) {
@@ -842,125 +1121,165 @@ loader.load((loader, resources) => {
         layers.addChild(map_layer);
     }
 
-    function createMenuElements(texture, x, y, scale, scale_hover, alpha, angle, text, command) {
-        let info_text = null;
-        let menu_element_container = new PIXI.Container();
-        let menu_element_bg = createSprite(menu_elements.textures[0], x, y, alpha, angle, scale)
-        menu_element_bg.anchor.set(0.5);
-        let menu_element = createSprite(texture, x, y, alpha, angle, scale);
-        menu_element.anchor.set(0.5);
-        menu_element_container.interactive = true;
-        menu_element_container.buttonMode = true;
-        menu_element_container.cursor = "default";
-        menu_element_container.on('pointerdown', function (e) {
-            menu_element_bg.texture = menu_elements.textures[1];
-        });
-        menu_element_container.on('pointerup', function (e) {
-            command();
-            menu_element_bg.texture = menu_elements.textures[0];
-        });
-        menu_element_container.on('pointerover', function (e) {
-            menu_element.scale.x = scale_hover.x;
-            menu_element.scale.y = scale_hover.y;
-            menu_element_bg.scale.x = scale_hover.x;
-            menu_element_bg.scale.y = scale_hover.y;
-            canShoot = false;
-            info_text = new PIXI.Text(text, { fontSize: 12, fill: 0x000000 });
-            info_text.x = x;
-            info_text.y = y + 32;
-            info_text.anchor.set(0.5);
-            menu_element_container.addChild(info_text);
-        });
-        menu_element_container.on('pointerout', function (e) {
-            menu_element.scale.x = scale.x;
-            menu_element.scale.y = scale.y;
-            menu_element_bg.scale.x = scale.x;
-            menu_element_bg.scale.y = scale.y;
-            menu_element_bg.texture = menu_elements.textures[0];
-            canShoot = true;
-            info_text.destroy();
-        });
-        menu_element_container.addChild(menu_element_bg);
-        menu_element_container.addChild(menu_element);
-        ui_layer.addChild(menu_element_container);
-        return menu_element_container;
-    }
-
     function createOptions() {
         ui_options = new UIContainer(app.screen.width / 2, app.screen.height / 2, 8, 16,
             function () {
-                return;
+                canShoot = false;
             },
             function () {
-                return;
+                canShoot = true;
             },
-            function () {
-                return;
-            },
-            function () {
-                return;
-            }
-        );
+            null, null);
 
+        let test_check = new CheckBox(ui_options.container.width / 2 - 10, ui_options.container.height / 2 - 120, true, null, null, null, null, null, null);
+        ui_options.container.addChild(test_check.container);
+        let test_check_2 = new CheckBox(ui_options.container.width / 2 + 10, ui_options.container.height / 2 - 120, false, null, null, null, null, null, null);
+        ui_options.container.addChild(test_check_2.container);
+        test_check.addCheckbox(test_check_2);
+        test_check_2.addCheckbox(test_check);
 
+        let test_check_3 = new CheckBox(ui_options.container.width / 2, ui_options.container.height / 2 - 160, true, null, null, null, null, null, null);
+        ui_options.container.addChild(test_check_3.container);
+
+        let test_button_1 = new Button(ui_options.container.width / 2, ui_options.container.height / 2 - 80, "Test", 2, null, null, null, null);
+        ui_options.container.addChild(test_button_1.container);
+
+        let test_button_2 = new Button(ui_options.container.width / 2, ui_options.container.height / 2 - 40, "Test", 3, null, null, null, null);
+        ui_options.container.addChild(test_button_2.container);
+
+        let test_button_3 = new Button(ui_options.container.width / 2, ui_options.container.height / 2, "Test", 4, null, null, null, null);
+        ui_options.container.addChild(test_button_3.container);
+
+        let test_button_4 = new Button(ui_options.container.width / 2, ui_options.container.height / 2 + 40, "Test", 5, null, null, null, null);
+        ui_options.container.addChild(test_button_4.container);
+
+        let test_button_5 = new Button(ui_options.container.width / 2, ui_options.container.height / 2 + 80, "Test", 6, null, null, null, null);
+        ui_options.container.addChild(test_button_5.container);
 
         ui_layer.addChild(ui_options.container);
+    }
+
+    function createMenuButtons() {
+        let menu_options = new SquareButton(app.screen.width - 24, 24, 4, "(O) Options",
+            function () {
+                canShoot = false;
+            },
+            function () {
+                canShoot = true;
+            },
+            null,
+            function () {
+                if (!ui_inventory.hide) {
+                    ui_inventory.hideShow();
+                }
+                ui_options.hideShow();
+            }
+        );
+        ui_layer.addChild(menu_options.container);
+
+        let menu_message = new SquareButton(app.screen.width - 72, 24, 3, "(T) Chat",
+            function () {
+                canShoot = false;
+            },
+            function () {
+                canShoot = true;
+            },
+            null,
+            function () {
+                activateChat();
+            }
+        );
+        ui_layer.addChild(menu_message.container);
+
+        let menu_inventory = new SquareButton(app.screen.width - 120, 24, 5, "(E) Inventaire",
+            function () {
+                canShoot = false;
+            },
+            function () {
+                canShoot = true;
+            },
+            null,
+            function () {
+                if (!ui_options.hide) {
+                    ui_options.hideShow();
+                }
+                ui_inventory.hideShow();
+            }
+        );
+        ui_layer.addChild(menu_inventory.container);
+
+        let menu_changemap = new SquareButton(app.screen.width - 168, 24, 2, "Changer de map",
+            function () {
+                canShoot = false;
+            },
+            function () {
+                canShoot = true;
+            },
+            null,
+            function () {
+                socket.emit('change-map');
+            }
+        );
+        ui_layer.addChild(menu_changemap.container);
+
+        let menu_fullscreen = new SquareButton(app.screen.width - 216, 24, 6, "(Entrée) Plein écran",
+            function () {
+                canShoot = false;
+            },
+            function () {
+                canShoot = true;
+            },
+            null,
+            function () {
+                if (!setFullScreen) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen();
+                    } else if (document.documentElement.mozRequestFullScreen) {
+                        document.documentElement.mozRequestFullScreen();
+                    } else if (document.documentElement.webkitRequestFullscreen) {
+                        document.documentElement.webkitRequestFullscreen();
+                    } else if (document.documentElement.msRequestFullscreen) {
+                        document.documentElement.msRequestFullscreen();
+                    }
+                    setFullScreen = true;
+                }
+                else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.mozCancelFullScreen) {
+                        document.mozCancelFullScreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                    setFullScreen = false;
+                }
+            }
+        );
+        ui_layer.addChild(menu_fullscreen.container);
     }
 
     function createInventory() {
         let inventory_slots_index = 0;
         ui_inventory = new UIContainer(app.screen.width / 2, app.screen.height / 2, 20, 16,
             function () {
-                return;
+                canShoot = false;
             },
             function () {
-                return;
-            },
-            function () {
-                return;
-            },
-            function () {
-                return;
-            }
-        );
-        let groupButton = new MiniButton(10 * 32 + 24, 34, 3, button_icons.textures[4],
-            function () {
-                return;
-            },
-            function () {
-                return;
-            },
-            function () {
-                return;
-            },
+                canShoot = true;
+            }, null, null);
+        let groupButton = new MiniButton(10 * 32 + 24, 34, 3, button_icons.textures[4], null, null, null,
             function () {
                 socket.emit('sort inventory', "groupe");
             },
             "Grouper");
-        let sortPlusButton = new MiniButton(10 * 32 + 24, 82, 3, button_icons.textures[12],
-            function () {
-                return;
-            },
-            function () {
-                return;
-            },
-            function () {
-                return;
-            },
+        let sortPlusButton = new MiniButton(10 * 32 + 24, 82, 3, button_icons.textures[12], null, null, null,
             function () {
                 socket.emit('sort inventory', "plus");
             },
             "Trier +");
-        let sortMoinsButton = new MiniButton(10 * 32 + 24, 130, 3, button_icons.textures[13],
-            function () {
-                return;
-            },
-            function () {
-                return;
-            },
-            function () {
-                return;
-            },
+        let sortMoinsButton = new MiniButton(10 * 32 + 24, 130, 3, button_icons.textures[13], null, null, null,
             function () {
                 socket.emit('sort inventory', "moins");
             },
@@ -1039,22 +1358,8 @@ loader.load((loader, resources) => {
                 inventory_slots_index++;
             }
 
-            equipment_container = new UIContainer(8 * 64, 192, 7, 11,
-                function () {
-                    return;
-                },
-                function () {
-                    return;
-                },
-                function () {
-                    return;
-                },
-                function () {
-                    return;
-                },
-                false
-            );
-            equipment_container.hideShow(true);
+            equipment_container = new UIContainer(8 * 64, 192, 7, 11, null, null, null, null);
+            equipment_container.hideShow();
             equipment_container.zIndex = 0;
             ui_inventory.container.addChild(equipment_container.container);
             let casque = new EquipmentSlot(128 - 16, 64 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 0);
@@ -1112,6 +1417,8 @@ loader.load((loader, resources) => {
     const tileset = generateTextures(resources['tileset_grass'].texture, 8, 18, 32, 32);
     const menu_elements = generateTextures(resources['ui_menu_elements'].texture, 7, 1, 48, 48);
     const menu_frame_elements = generateTextures(resources['ui_frame_elements'].texture, 3, 4, 32, 32);
+    const ui_checkbox = generateTextures(resources['ui_checkbox'].texture, 2, 2, 14, 14);
+    const ui_button = generateTextures(resources['ui_button'].texture, 3, 3, 40, 29);
     const ui_inventory_slots = generateTextures(resources['ui_inventory_slots'].texture, 7, 3, 40, 40);
     const ui_inventory_slots_2 = generateTextures(resources['ui_inventory_slots_2'].texture, 3, 9, 38, 38);
     const ui_equipment_icons = generateTextures(resources['ui_equipment_icons'].texture, 4, 2, 32, 32);
@@ -1144,56 +1451,7 @@ loader.load((loader, resources) => {
 
         createOptions();
         createInventory();
-
-        // Draw menu
-        let menu_options = createMenuElements(menu_elements.textures[4], app.screen.width - 24, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "(O) Options", function () {
-            if (!ui_inventory.hide) {
-                ui_inventory.hideShow(false);
-            }
-            ui_options.hideShow(false);
-        });
-
-        let menu_message = createMenuElements(menu_elements.textures[3], app.screen.width - 72, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "(T) Chat", function () {
-            activateChat();
-        });
-
-        let menu_inventory = createMenuElements(menu_elements.textures[5], app.screen.width - 120, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "(E) Inventaire", function () {
-            if (!ui_options.hide) {
-                ui_options.hideShow(false);
-            }
-            ui_inventory.hideShow(false);
-        });
-
-        let menu_changemap = createMenuElements(menu_elements.textures[2], app.screen.width - 168, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "Changer de map", function () {
-            socket.emit('change-map');
-        });
-
-        let menu_fullscreen = createMenuElements(menu_elements.textures[6], app.screen.width - 216, 24, { x: 1, y: 1 }, { x: 1.1, y: 1.1 }, 1, 0, "(Entrée) Plein écran", function () {
-            if (!setFullScreen) {
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen();
-                } else if (document.documentElement.mozRequestFullScreen) {
-                    document.documentElement.mozRequestFullScreen();
-                } else if (document.documentElement.webkitRequestFullscreen) {
-                    document.documentElement.webkitRequestFullscreen();
-                } else if (document.documentElement.msRequestFullscreen) {
-                    document.documentElement.msRequestFullscreen();
-                }
-                setFullScreen = true;
-            }
-            else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.mozCancelFullScreen) {
-                    document.mozCancelFullScreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
-                }
-                setFullScreen = false;
-            }
-        });
+        createMenuButtons();
 
         // Current player
         current_player = player;
@@ -1299,19 +1557,23 @@ loader.load((loader, resources) => {
             }
         });
 
-        document.onkeydown = function (e) {
-            if (testActiveChat()) {
+        window.addEventListener('keydown', function (e) {
+            if (canDoThings && testActiveChat()) {
                 if (keyMap[e.keyCode] == "Z" || keyMap[e.keyCode] == "^") {
                     socket.emit('input', { key: "up", state: true });
+                    pressingUp = true;
                 }
                 else if (keyMap[e.keyCode] == "S" || keyMap[e.keyCode] == "v") {
                     socket.emit('input', { key: "down", state: true });
+                    pressingDown = true;
                 }
                 else if (keyMap[e.keyCode] == "Q" || keyMap[e.keyCode] == "<") {
                     socket.emit('input', { key: "left", state: true });
+                    pressingLeft = true;
                 }
                 else if (keyMap[e.keyCode] == "D" || keyMap[e.keyCode] == ">") {
                     socket.emit('input', { key: "right", state: true });
+                    pressingRight = true;
                 }
 
                 if (keyMap[e.keyCode] == "Enter") {
@@ -1341,35 +1603,49 @@ loader.load((loader, resources) => {
                     }
                 }
             }
-        }
+        });
 
-        document.onkeyup = function (e) {
+        window.addEventListener('keyup', function (e) {
             if (keyMap[e.keyCode] == "Z" || keyMap[e.keyCode] == "^") {
                 socket.emit('input', { key: "up", state: false });
+                pressingUp = false;
             }
             else if (keyMap[e.keyCode] == "S" || keyMap[e.keyCode] == "v") {
                 socket.emit('input', { key: "down", state: false });
+                pressingDown = false;
             }
             else if (keyMap[e.keyCode] == "Q" || keyMap[e.keyCode] == "<") {
                 socket.emit('input', { key: "left", state: false });
+                pressingLeft = false;
             }
             else if (keyMap[e.keyCode] == "D" || keyMap[e.keyCode] == ">") {
                 socket.emit('input', { key: "right", state: false });
+                pressingRight = false;
             }
             else if (keyMap[e.keyCode] == "E") {
                 if (testActiveChat()) {
                     if (!ui_options.hide) {
-                        ui_options.hideShow(true);
+                        ui_options.hideShow();
+                        ui_inventory.hideShow();
                     }
-                    ui_inventory.hideShow(true);
+                    else {
+                        ui_inventory.hideShow(function () {
+                            canShoot = true;
+                        });
+                    }
                 }
             }
             else if (keyMap[e.keyCode] == "O") {
                 if (testActiveChat()) {
                     if (!ui_inventory.hide) {
-                        ui_inventory.hideShow(true);
+                        ui_inventory.hideShow();
+                        ui_options.hideShow();
                     }
-                    ui_options.hideShow(true);
+                    else {
+                        ui_options.hideShow(function () {
+                            canShoot = true;
+                        });
+                    }
                 }
             }
             else if (keyMap[e.keyCode] == "T") {
@@ -1377,17 +1653,41 @@ loader.load((loader, resources) => {
                     activateChat();
                 }
             }
-        }
+        });
 
-        document.onpointerdown = function (e) {
-            if (testActiveChat() && canShoot) {
+        window.addEventListener('pointerdown', function (e) {
+            if (canDoThings && testActiveChat() && canShoot) {
                 socket.emit('input', { key: 'shoot', state: true });
+                pressingAttack = true;
             }
-        }
+        });
 
-        document.onpointerup = function (e) {
+        window.addEventListener('pointerup', function (e) {
             socket.emit('input', { key: 'shoot', state: false });
-        }
+            pressingAttack = false;
+        });
+
+        document.addEventListener('pointerenter', function (e) {
+            canDoThings = true;
+        });
+
+        document.addEventListener('pointerleave', function (e) {
+            canDoThings = false;
+            socket.emit('input', { key: "right", state: false });
+            pressingRight = false;
+
+            socket.emit('input', { key: "left", state: false });
+            pressingLeft = false;
+
+            socket.emit('input', { key: "up", state: false });
+            pressingUp = false;
+
+            socket.emit('input', { key: "down", state: false });
+            pressingDown = false;
+
+            socket.emit('input', { key: 'shoot', state: false });
+            pressingAttack = false;
+        });
 
         var mouseAngleInterval = setInterval(function () {
             let mousePos = app.renderer.plugins.interaction.mouse.global;
