@@ -13,6 +13,7 @@
     <script src="pixi/filter-drop-shadow.min.js"></script>
     <script src="pixi/pixi-particles.min.js"></script>
     <script src="pixi/pixi-sound.js"></script>
+    <script src="pixi/pixi.textinput.min.js"></script>
     <script src="jquery/jquery-3.5.1.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -43,9 +44,9 @@
         <div id="login-menu">
             <h2>Connexion</h2>
             <form id="form-login" onsubmit="validateLogin();return false;" onreset="return false">
-                <input type="text" placeholder="Nom d'utilisateur" id="username" />
+                <input type="text" placeholder="Nom d'utilisateur" id="username" required />
                 <p id="username-error"></p>
-                <input type="password" placeholder="Mot de passe" id="password" />
+                <input type="password" placeholder="Mot de passe" id="password" required />
                 <p id="password-error"></p>
                 <button type="submit">JOUER</button>
                 <button type="button" class="switch-signin-login" onclick=switchSignin()>Nouveau joueur ?</button>
@@ -54,12 +55,16 @@
         <div id="signin-menu">
             <h2>Inscription</h2>
             <form id="form-signin" onsubmit="validateCreation();return false;" onreset="return false">
-                <input type="text" placeholder="Nom d'utilisateur" id="username-signin" onchange=testUsername() />
+                <input type="email" placeholder="Email" id="email-signin" onchange=testEmail() required />
+                <p id="email-signin-error"></p>
+                <input type="text" placeholder="Nom d'utilisateur" id="username-signin" onchange=testUsername()
+                    required />
                 <p id="username-signin-error"></p>
-                <input type="password" placeholder="Mot de passe" id="password-signin" onchange=testPassword() />
+                <input type="password" placeholder="Mot de passe" id="password-signin" onchange=testPassword()
+                    required />
                 <p id="password-signin-error"></p>
                 <input type="password" placeholder="Confirmation mot de passe" id="password-signin-2"
-                    onchange=testPassword2() />
+                    onchange=testPassword2() required />
                 <p id="password-signin-2-error"></p>
                 <button type="submit">JOUER</button>
                 <button type="button" class="switch-signin-login" onclick=switchLogin()>Déjà membre ?</button>

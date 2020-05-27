@@ -550,7 +550,7 @@ io.on('connection', function (socket) {
 
 
     socket.on('signin request', function (data) {
-        db.account.find({ username: data.username }, function (err, res) {
+        db.account.find({ $or: [{ email: data.email }, { username: data.username }] }, function (err, res) {
             if (err) console.log(err);
 
             res = res[0];
@@ -559,7 +559,7 @@ io.on('connection', function (socket) {
                 socket.emit('signin answer', { state: false });
             }
             else {
-                db.account.insertOne({ username: data.username, password: data.password });
+                db.account.insertOne({ email: data.email, username: data.username, password: data.password });
                 socket.emit('signin answer', { state: true, username: data.username });
                 console.log(`utilisateur: ${data.username} vient d'être créé`);
             }

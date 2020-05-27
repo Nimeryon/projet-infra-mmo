@@ -64,34 +64,104 @@ body {
     background-color: black;
 }
 
+nav {
+    width: 100%;
+    height: 60px;
+    background-color: #4B4D4B;
+    box-shadow: 3px 3px 3px 3px black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+nav ul {
+    width: 30%;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 24px;
+    text-align: center;
+    list-style: none;
+}
+
+nav ul li a {
+    margin: 20px;
+    color: #EDE7D9;
+    text-decoration: none;
+}
+
+nav ul li a:hover {
+    text-decoration: underline;
+}
+
 #startMenuWrapper {
-    width: 50%;
     margin-left: auto;
     margin-right: auto;
+}
+
+#startMenuWrapper h2 {
+    color: #EDE7D9;
+    font-size: 24px;
+    padding: 0;
+    margin: 0;
+    margin-bottom: 2%;
 }
 
 #login-menu {
     display: block;
     text-align: center;
-    min-width: 400px;
     width: 70%;
-    padding: 5%;
-    margin: auto;
-    background: #EEE5E9;
-    border: 2px solid #060806;
-    border-radius: 10px;
+    padding: 2%;
+    margin-top: 5%;
+    margin-left: auto;
+    margin-right: auto;
+    background: #4B4D4B;
+    border-radius: 3px;
+    box-shadow: 1px 1px 2px 1px black;
+}
+
+#login-menu:hover {
+    box-shadow: 3px 3px 2px 1px black;
 }
 
 #signin-menu {
     display: none;
     text-align: center;
-    min-width: 400px;
     width: 70%;
-    padding: 5%;
-    margin: auto;
-    background: #EEE5E9;
-    border: 2px solid #060806;
-    border-radius: 10px;
+    padding: 2%;
+    margin-top: 5%;
+    margin-left: auto;
+    margin-right: auto;
+    background: #4B4D4B;
+    border-radius: 3px;
+    box-shadow: 1px 1px 2px 1px black;
+}
+
+#signin-menu:hover {
+    box-shadow: 3px 3px 2px 1px black;
+}
+
+@media (min-width: 800px) {
+    #login-menu {
+        width: 50%;
+    }    
+
+    #signin-menu {
+        width: 50%;
+    }    
+}
+
+@media (min-width: 1000px) {
+    #login-menu {
+        width: 35%;
+    }    
+
+    #signin-menu {
+        width: 35%;
+    }    
 }
 
 #form-login {
@@ -104,20 +174,19 @@ body {
     flex-direction: column;
 }
 
-form input[type="password"], form input[type="text"], form button[type="submit"] {
+form input[type="password"], form input[type="text"], form button[type="submit"], form input[type="email"] {
     padding: 2%;
     
     color: #333;
     background: #FDFBFD;
 
-    border: 1px solid #7C7C7C;
     border-radius: 5px;
 
     outline: 0;
 }
 
 form p {
-    margin-bottom: 5%;
+    margin-bottom: 3%;
     color: red;
 }
 
@@ -129,8 +198,6 @@ form button[type="submit"] {
     padding: 2%;
     
     color: #333;
-
-    border: 1px solid #ccc;
     border-radius: 5px;
 
     outline: 0;
@@ -147,7 +214,6 @@ form input[type="password"]:hover, form input[type="text"]:hover {
 
 form input[type="password"]:focus, form input[type="text"]:focus {
     background-color: #ccc;
-    border: 1px solid #aaa;
 }
 
 form button[type="submit"] {

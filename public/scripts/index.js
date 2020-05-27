@@ -22,9 +22,9 @@ window.onresize = function (event) {
     document.getElementById("app-screen").style.width = w + "px";
     document.getElementById("app-screen").style.height = h + "px";
 
-    let view_ratio_x = 1080 / (h * 1.5);
+    let view_ratio_x = 1080 / w;
     let view_ratio_y = 720 / h;
-    app.view.width = h * 1.5 * view_ratio_x;
+    app.view.width = w * view_ratio_x;
     app.view.height = h * view_ratio_y;
 }
 
@@ -72,14 +72,16 @@ loader.add('tileset_grass', "sprites/tilesets/grass.png");
 // Chargement ui
 loader.add('ui_menu_elements', "sprites/ui/menu_element.png");
 loader.add('ui_frame_elements', "sprites/ui/frame.png");
+loader.add('ui_empty_frame_elements', "sprites/ui/frame_empty.png");
 loader.add('ui_button_icon_elements', "sprites/ui/button_icon.png");
 loader.add('ui_inventory_slots', "sprites/ui/inventory_slot.png");
 loader.add('ui_inventory_slots_2', "sprites/ui/inventory_slot_2.png");
 loader.add('ui_inventory_icons', "sprites/ui/inventory_icon.png");
 loader.add('ui_button_ring', "sprites/ui/button_ring_ui.png");
 loader.add('ui_button', "sprites/ui/button_ui.png");
-loader.add('ui_equipment_icons', "sprites/ui/inventory_icon.png");
 loader.add('ui_checkbox', "sprites/ui/checkbox.png");
+loader.add('ui_slider_parts', "sprites/ui/slider_parts.png");
+loader.add('ui_slider_head', "sprites/ui/slider_head.png");
 // Chargement item
 loader.add('items', "sprites/icons/item.png");
 loader.add('items_2', "sprites/icons/item_2.png");
@@ -92,6 +94,7 @@ loader.load((loader, resources) => {
     var scale = 3;
     var tile_size = 32;
     var canDoThings = true;
+    var pointer_clicked = false;
     var setFullScreen = false;
     var pressingRight = false;
     var pressingLeft = false;
@@ -113,7 +116,7 @@ loader.load((loader, resources) => {
     var particles_walk = $.getJSON("particles/player_walk.json", function (data) {
         particles_walk = data;
     });
-    var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, equipment_container, ui_options, map_layer = null;
+    var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, equipment_container, ui_options, mobile_controll_layer, map_layer = null;
     var camera = {
         view_x: 0,
         view_y: 0
@@ -333,6 +336,308 @@ loader.load((loader, resources) => {
         }
     }
 
+    class SliderHorizontal {
+        constructor(x, y, width, min, max, step, value, color, cmdover = null, cmdout = null, cmddown = null, cmdup = null, cmdchange = null) {
+            var instance = this;
+            this.cmdchange = cmdchange;
+            this.minX = -(24 * width / 2 - 31);
+            this.maxX = 24 * width / 2 - 31;
+            this.range = 2 * this.maxX;
+            this.min = min;
+            this.max = max;
+            this.valueRange = this.max - this.min;
+            this.value = value;
+            this.step = step;
+            this.container = new PIXI.Container();
+            this.container.zIndex = 5;
+            this.container.interactive = true;
+            this.container.buttonMode = true;
+            this.container.cursor = "default";
+            this.container.sortableChildren = true;
+            this.container.x = x;
+            this.container.y = y;
+            this.container.on('pointerover', function (e) {
+                if (cmdover != null) {
+                    cmdover();
+                }
+            });
+            this.container.on('pointerout', function (e) {
+                if (cmdout != null) {
+                    cmdout();
+                }
+            });
+            this.container.on('pointerdown', function (e) {
+                instance.clicked = true;
+                if (cmddown != null) {
+                    cmddown();
+                }
+            });
+            this.container.on('pointerup', function (e) {
+                if (instance.clicked) {
+                    const newPosition = e.data.getLocalPosition(instance.container);
+                    if (newPosition.x > instance.minX && newPosition.x < instance.maxX) {
+                        instance.head.x = newPosition.x;
+                        instance.value = Math.floor(instance.valueRange * (((100 / instance.range * instance.head.x) / 100) + 0.5));
+                    }
+                    instance.change();
+                    if (cmdup != null) {
+                        cmdup();
+                    }
+                }
+                instance.clicked = false;
+            });
+            this.container.on('pointerupoutside', function () {
+                instance.clicked = false;
+            });
+            this.bgs = [];
+            for (let i = 0; i < width; i++) {
+                if (i == 0) {
+                    this.bgs[i] = createSprite(ui_slider_parts.textures[1], (24 * i) - (24 * width / 2 - 12), 0, 1, 0, { x: 1, y: 1 });
+                    this.bgs[i].anchor.set(0.5);
+                    this.container.addChild(this.bgs[i]);
+
+                    this.minusButton = new MiniButton((24 * i) - (24 * width / 2 - 12) + 4, 0, color, button_icons.textures[13], null, null, null, function () {
+                        if (instance.value - instance.step > instance.min) {
+                            instance.value -= instance.step;
+                        }
+                        else {
+                            instance.value = instance.min;
+                        }
+                        instance.head.x = instance.range * ((100 / instance.valueRange * instance.value) / 100) - instance.maxX;
+                        instance.change();
+                    }, "", false);
+                    this.container.addChild(this.minusButton.container);
+                }
+                else if (i == width - 1) {
+                    this.bgs[i] = createSprite(ui_slider_parts.textures[5], (24 * i) - (24 * width / 2 - 12), 0, 1, 0, { x: 1, y: 1 });
+                    this.bgs[i].anchor.set(0.5);
+                    this.container.addChild(this.bgs[i]);
+
+                    this.plusButton = new MiniButton((24 * i) - (24 * width / 2 - 12) + 4, 0, color, button_icons.textures[12], null, null, null, function () {
+                        if (instance.value + instance.step < instance.max) {
+                            instance.value += instance.step;
+                        }
+                        else {
+                            instance.value = instance.max;
+                        }
+                        instance.head.x = instance.range * ((100 / instance.valueRange * instance.value) / 100) - instance.maxX;
+                        instance.change();
+                    }, "", false);
+                    this.container.addChild(this.plusButton.container);
+                }
+                else {
+                    this.bgs[i] = createSprite(ui_slider_parts.textures[3], (24 * i) - (24 * width / 2 - 12), 0, 1, 0, { x: 1, y: 1 });
+                    this.bgs[i].anchor.set(0.5);
+                    this.container.addChild(this.bgs[i]);
+                }
+            }
+            this.head = createSprite(ui_slider_head.textures[0], this.range * ((100 / this.valueRange * this.value) / 100) - this.maxX, 0, 1, -90, { x: 1.1, y: 1.1 });
+            this.head.anchor.set(0.5);
+            this.head.interactive = true;
+            this.head.buttonMode = true;
+            this.head.cursor = "default";
+            this.head.on('pointerdown', function (e) {
+                instance.clicked = true;
+                instance.data = e.data;
+                instance.dragged = true;
+            });
+            this.head.on('pointermove', function () {
+                if (instance.dragged) {
+                    const newPosition = instance.data.getLocalPosition(instance.head.parent);
+                    if (newPosition.x > instance.maxX) {
+                        instance.head.x = instance.maxX;
+                    }
+                    else if (newPosition.x < instance.minX) {
+                        instance.head.x = instance.minX;
+                    }
+                    else {
+                        instance.head.x = newPosition.x;
+                    }
+                    instance.value = Math.floor(instance.valueRange * (((100 / instance.range * instance.head.x) / 100) + 0.5));
+                    instance.change();
+                }
+            });
+            this.head.on('pointerup', function () {
+                if (instance.clicked) {
+                    instance.data = null;
+                    instance.dragged = false;
+                }
+                instance.clicked = false;
+            });
+            this.head.on('pointerupoutside', function () {
+                instance.data = null;
+                instance.dragged = false;
+                instance.clicked = false;
+            });
+            this.head.on('pointerover', function () {
+                instance.head.scale.x = 1.2;
+                instance.head.scale.y = 1.2;
+            });
+            this.head.on('pointerout', function () {
+                instance.head.scale.x = 1.1;
+                instance.head.scale.y = 1.1;
+            });
+            this.container.addChild(this.head);
+        }
+
+        change() {
+            if (this.cmdchange != null) {
+                this.cmdchange(this.value);
+            }
+        }
+    }
+
+    class SliderVertical {
+        constructor(x, y, height, min, max, step, value, color, cmdover = null, cmdout = null, cmddown = null, cmdup = null, cmdchange = null) {
+            var instance = this;
+            this.cmdchange = cmdchange;
+            this.minY = -(24 * height / 2 - 31);
+            this.maxY = 24 * height / 2 - 31;
+            this.range = 2 * this.maxY;
+            this.min = min;
+            this.max = max;
+            this.valueRange = this.max - this.min;
+            this.value = value;
+            this.step = step;
+            this.container = new PIXI.Container();
+            this.container.zIndex = 5;
+            this.container.interactive = true;
+            this.container.buttonMode = true;
+            this.container.cursor = "default";
+            this.container.sortableChildren = true;
+            this.container.x = x;
+            this.container.y = y;
+            this.container.on('pointerover', function (e) {
+                if (cmdover != null) {
+                    cmdover();
+                }
+            });
+            this.container.on('pointerout', function (e) {
+                if (cmdout != null) {
+                    cmdout();
+                }
+            });
+            this.container.on('pointerdown', function (e) {
+                instance.clicked = true;
+                if (cmddown != null) {
+                    cmddown();
+                }
+            });
+            this.container.on('pointerup', function (e) {
+                if (instance.clicked) {
+                    const newPosition = e.data.getLocalPosition(instance.container);
+                    if (newPosition.y > instance.minY && newPosition.y < instance.maxY) {
+                        instance.head.y = newPosition.y;
+                        instance.value = Math.floor(instance.valueRange * (((100 / instance.range * instance.head.y) / 100) + 0.5));
+                    }
+                    instance.change();
+                    if (cmdup != null) {
+                        cmdup();
+                    }
+                }
+                instance.clicked = false;
+            });
+            this.container.on('pointerupoutside', function () {
+                instance.clicked = false;
+            });
+            this.bgs = [];
+            for (let i = 0; i < height; i++) {
+                if (i == 0) {
+                    this.bgs[i] = createSprite(ui_slider_parts.textures[0], 0, (24 * i) - (24 * height / 2 - 12), 1, 0, { x: 1, y: 1 });
+                    this.bgs[i].anchor.set(0.5);
+                    this.container.addChild(this.bgs[i]);
+
+                    this.minusButton = new MiniButton(4, (24 * i) - (24 * height / 2 - 12), color, button_icons.textures[13], null, null, null, function () {
+                        if (instance.value - instance.step > instance.min) {
+                            instance.value -= instance.step;
+                        }
+                        else {
+                            instance.value = instance.min;
+                        }
+                        instance.head.y = instance.range * ((100 / instance.valueRange * instance.value) / 100) - instance.maxY;
+                        instance.change();
+                    }, "", false);
+                    this.container.addChild(this.minusButton.container);
+                }
+                else if (i == height - 1) {
+                    this.bgs[i] = createSprite(ui_slider_parts.textures[4], 0, (24 * i) - (24 * height / 2 - 12), 1, 0, { x: 1, y: 1 });
+                    this.bgs[i].anchor.set(0.5);
+                    this.container.addChild(this.bgs[i]);
+
+                    this.plusButton = new MiniButton(4, (24 * i) - (24 * height / 2 - 12), color, button_icons.textures[12], null, null, null, function () {
+                        if (instance.value + instance.step < instance.max) {
+                            instance.value += instance.step;
+                        }
+                        else {
+                            instance.value = instance.max;
+                        }
+                        instance.head.y = instance.range * ((100 / instance.valueRange * instance.value) / 100) - instance.maxY;
+                        instance.change();
+                    }, "", false);
+                    this.container.addChild(this.plusButton.container);
+                }
+                else {
+                    this.bgs[i] = createSprite(ui_slider_parts.textures[2], 0, (24 * i) - (24 * height / 2 - 12), 1, 0, { x: 1, y: 1 });
+                    this.bgs[i].anchor.set(0.5);
+                    this.container.addChild(this.bgs[i]);
+                }
+            }
+            this.head = createSprite(ui_slider_head.textures[0], 0, instance.range * ((100 / instance.valueRange * instance.value) / 100) - instance.maxY, 1, 0, { x: 1.1, y: 1.1 });
+            this.head.anchor.set(0.5);
+            this.head.interactive = true;
+            this.head.buttonMode = true;
+            this.head.cursor = "default";
+            this.head.on('pointerdown', function (e) {
+                instance.clicked = true;
+                instance.data = e.data;
+                instance.dragged = true;
+            });
+            this.head.on('pointermove', function () {
+                if (instance.dragged) {
+                    const newPosition = instance.data.getLocalPosition(instance.head.parent);
+                    if (newPosition.y > instance.maxY) {
+                        instance.head.y = instance.maxY;
+                    }
+                    else if (newPosition.y < instance.minY) {
+                        instance.head.y = instance.minY;
+                    }
+                    else {
+                        instance.head.y = newPosition.y;
+                    }
+                    instance.value = Math.floor(instance.valueRange * (((100 / instance.range * instance.head.y) / 100) + 0.5));
+                    instance.change();
+                }
+            });
+            this.head.on('pointerup', function () {
+                if (instance.clicked) {
+                    instance.data = null;
+                    instance.dragged = false;
+                }
+                instance.clicked = false;
+            });
+            this.head.on('pointerupoutside', function () {
+                instance.data = null;
+                instance.dragged = false;
+                instance.clicked = false;
+            });
+            this.head.on('pointerover', function () {
+                instance.head.scale.x = 1.2;
+                instance.head.scale.y = 1.2;
+            });
+            this.head.on('pointerout', function () {
+                instance.head.scale.x = 1.1;
+                instance.head.scale.y = 1.1;
+            });
+            this.container.addChild(this.head);
+        }
+
+        change() {
+            if (this.cmdchange != null) {
+                this.cmdchange(this.value);
+            }
+        }
+    }
+
     class CheckBox {
         constructor(x, y, checked, cmdover = null, cmdout = null, cmddown = null, cmdup = null, cmdckeck = null, cmduncheck = null) {
             var instance = this;
@@ -375,21 +680,28 @@ loader.load((loader, resources) => {
                 }
             });
             this.container.on('pointerdown', function () {
+                instance.clicked = true;
                 if (cmddown != null) {
                     cmddown();
                 }
             });
             this.container.on('pointerup', function () {
-                if (instance.checked) {
-                    instance.uncheck();
-                }
-                else {
-                    instance.check();
-                }
+                if (instance.clicked) {
+                    if (instance.checked) {
+                        instance.uncheck();
+                    }
+                    else {
+                        instance.check();
+                    }
 
-                if (cmdup != null) {
-                    cmdup();
+                    if (cmdup != null) {
+                        cmdup();
+                    }
                 }
+                instance.clicked = false;
+            });
+            this.container.on('pointerupoutside', function () {
+                instance.clicked = false;
             });
 
             if (this.checked) {
@@ -441,7 +753,7 @@ loader.load((loader, resources) => {
     }
 
     class SquareButton {
-        constructor(x, y, texture, text, cmdover = null, cmdout = null, cmddown = null, cmdup = null) {
+        constructor(x, y, texture, text, force = false, cmdover = null, cmdout = null, cmddown = null, cmdup = null) {
             var instance = this;
             this.text = text;
             this.container = new PIXI.Container();
@@ -476,16 +788,29 @@ loader.load((loader, resources) => {
                 }
             });
             this.container.on('pointerdown', function () {
+                instance.clicked = true;
                 instance.bg.texture = menu_elements.textures[1];
                 if (cmddown != null) {
                     cmddown();
                 }
             });
             this.container.on('pointerup', function () {
-                instance.bg.texture = menu_elements.textures[0];
-                if (cmdup != null) {
-                    cmdup();
+                if (instance.clicked) {
+                    instance.bg.texture = menu_elements.textures[0];
+                    if (cmdup != null) {
+                        cmdup();
+                    }
                 }
+                instance.clicked = false;
+            });
+            this.container.on('pointerupoutside', function () {
+                instance.bg.texture = menu_elements.textures[0];
+                if (force) {
+                    if (cmdup != null) {
+                        cmdup();
+                    }
+                }
+                instance.clicked = false;
             });
             this.bg = createSprite(menu_elements.textures[0], 0, 0, 1, 0, { x: 1, y: 1 });
             this.bg.anchor.set(0.5);
@@ -526,6 +851,7 @@ loader.load((loader, resources) => {
                 }
             });
             this.container.on('pointerdown', function () {
+                instance.clicked = true;
                 for (let i = 0; i < instance.bgs.length; i++) {
                     instance.bgs[i].sprite.texture = instance.bgs[i].textures[2];
                 }
@@ -534,12 +860,18 @@ loader.load((loader, resources) => {
                 }
             });
             this.container.on('pointerup', function () {
-                for (let i = 0; i < instance.bgs.length; i++) {
-                    instance.bgs[i].sprite.texture = instance.bgs[i].textures[1];
+                if (instance.clicked) {
+                    for (let i = 0; i < instance.bgs.length; i++) {
+                        instance.bgs[i].sprite.texture = instance.bgs[i].textures[1];
+                    }
+                    if (cmdup != null) {
+                        cmdup();
+                    }
                 }
-                if (cmdup != null) {
-                    cmdup();
-                }
+                instance.clicked = false;
+            });
+            this.container.on('pointerupoutside', function () {
+                instance.clicked = false;
             });
             this.bgs = [];
             for (let x = 0; x < width; x++) {
@@ -586,7 +918,7 @@ loader.load((loader, resources) => {
     }
 
     class MiniButton {
-        constructor(x, y, color, texture, cmdover = null, cmdout = null, cmddown = null, cmdup = null, text) {
+        constructor(x, y, color, texture, cmdover = null, cmdout = null, cmddown = null, cmdup = null, text, ring = true) {
             var instance = this;
             this.text = text;
             this.container = new PIXI.Container();
@@ -613,25 +945,35 @@ loader.load((loader, resources) => {
                 }
             });
             this.container.on('pointerdown', function () {
+                instance.clicked = true;
                 instance.bg.texture = instance.textures[2]
                 if (cmddown != null) {
                     cmddown();
                 }
             });
             this.container.on('pointerup', function () {
-                instance.bg.texture = instance.textures[1]
-                if (cmdup != null) {
-                    cmdup();
+                if (instance.clicked) {
+                    instance.bg.texture = instance.textures[1]
+                    if (cmdup != null) {
+                        cmdup();
+                    }
                 }
+                instance.clicked = false;
             });
+            this.container.on('pointerupoutside', function () {
+                instance.clicked = false;
+            });
+
             this.textures = [button_icons.textures[color], button_icons.textures[color + 8], button_icons.textures[color + 16]];
-            this.bgRing = createSprite(resources['ui_button_ring'].texture, 8, 8, 1, 0, { x: 1.1, y: 1.1 });
-            this.bgRing.anchor.set(0.5);
+            if (ring) {
+                this.bgRing = createSprite(resources['ui_button_ring'].texture, 8, 8, 1, 0, { x: 1.1, y: 1.1 });
+                this.bgRing.anchor.set(0.5);
+                this.container.addChild(this.bgRing);
+            }
             this.bg = createSprite(this.textures[0], 8, 8, 1, 0, { x: 1.1, y: 1.1 });
             this.bg.anchor.set(0.5);
             this.icon = createSprite(texture, 8, 8, 1, 0, { x: 1, y: 1 });
             this.icon.anchor.set(0.5);
-            this.container.addChild(this.bgRing);
             this.container.addChild(this.bg);
             this.container.addChild(this.icon);
             this.container.x = x - (this.container.width / 2) - 3;
@@ -639,8 +981,123 @@ loader.load((loader, resources) => {
         }
     }
 
+    class ScrollableContainer {
+        constructor(x, y, width, height, sliderHeight, cmdover = null, cmdout = null, cmddown = null, cmdup = null) {
+            var instance = this;
+            this.ui = new UIContainer(x, y, width, height, 1, cmdover, cmdout, cmddown, cmdup);
+            this.ui.hideShow();
+            this.container = this.ui.container;
+
+            this.childCount = 0;
+
+            this.mask = new PIXI.Sprite(PIXI.Texture.WHITE);
+            this.mask.zIndex = 1
+            this.mask.width = this.container.width;
+            this.mask.height = this.container.height;
+            this.container.addChild(this.mask);
+            this.container.mask = this.mask;
+
+            this.slider = new SliderVertical(this.container.width - 16, this.container.height / 2, sliderHeight, 0, 100, 1, 0, 1, null, null, null, null, function (value) {
+                console.log(instance.mask.getBounds());
+                instance.insideContainer.y = -((instance.insideContainer.getBounds().height - (instance.mask.getBounds().height - 12)) * (value / 100));
+            });
+            this.slider.zIndex = 5;
+            this.container.addChild(this.slider.container);
+
+            this.insideContainer = new PIXI.Container();
+            this.insideContainer.x = 0;
+            this.insideContainer.y = 0;
+            this.insideContainer.zIndex = 3;
+            this.container.addChild(this.insideContainer);
+
+            this.createBackground(width, height);
+        }
+
+        addChild(child) {
+            this.childCount++;
+            this.insideContainer.addChild(child);
+        }
+
+        createBackground(width, height) {
+            let sprite_mask;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    switch (x) {
+                        case 0:
+                            switch (y) {
+                                case 0:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[3], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    this.container.addChild(sprite_mask);
+                                    break;
+
+                                case height - 1:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[9], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    this.container.addChild(sprite_mask);
+                                    break;
+
+                                default:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[6], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    this.container.addChild(sprite_mask);
+                                    break;
+                            }
+                            break;
+
+                        case width - 1:
+                            switch (y) {
+                                case 0:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[5], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    this.container.addChild(sprite_mask);
+                                    break;
+
+                                case height - 1:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[11], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    this.container.addChild(sprite_mask);
+                                    break;
+
+                                default:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[8], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    this.container.addChild(sprite_mask);
+                                    break;
+                            }
+                            break;
+
+                        default:
+                            switch (y) {
+                                case 0:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[4], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    this.container.addChild(sprite_mask);
+                                    break;
+
+                                case height - 1:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[10], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    this.container.addChild(sprite_mask);
+                                    break;
+
+                                default:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[7], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    this.container.addChild(sprite_mask);
+                                    break;
+                            }
+                            break
+                    }
+                }
+            }
+        }
+    }
+
     class UIContainer {
-        constructor(x, y, width, height, cmdover = null, cmdout = null, cmddown = null, cmdup = null) {
+        constructor(x, y, width, height, alpha, cmdover = null, cmdout = null, cmddown = null, cmdup = null) {
+            var instance = this;
+            this.alpha = alpha;
             this.container = new PIXI.Container();
             this.container.sortableChildren = true;
             this.container.x = x - (width * 32 / 2);
@@ -658,14 +1115,21 @@ loader.load((loader, resources) => {
                 }
             });
             this.container.on('pointerdown', function () {
+                instance.clicked = true;
                 if (cmddown != null) {
                     cmddown();
                 }
             });
             this.container.on('pointerup', function () {
-                if (cmdup != null) {
-                    cmdup();
+                if (instance.clicked) {
+                    if (cmdup != null) {
+                        cmdup();
+                    }
                 }
+                instance.clicked = false;
+            });
+            this.container.on('pointerupoutside', function () {
+                instance.clicked = false;
             });
 
             this.createBackground(width, height);
@@ -734,7 +1198,7 @@ loader.load((loader, resources) => {
                 this.container.interactive = true;
                 this.container.buttonMode = true;
                 this.container.interactiveChildren = true;
-                this.container.alpha = 0.9;
+                this.container.alpha = this.alpha;
                 this.container.cursor = "default";
                 this.hide = false;
             }
@@ -771,10 +1235,17 @@ loader.load((loader, resources) => {
                 instance.bg.texture = textures[0];
             });
             this.container.on('pointerdown', function () {
+                instance.clicked = true;
                 instance.bg.texture = textures[1];
             });
             this.container.on('pointerup', function () {
-                instance.bg.texture = textures[2];
+                if (instance.clicked) {
+                    instance.bg.texture = textures[2];
+                }
+                instance.clicked = false;
+            });
+            this.container.on('pointerupoutside', function () {
+                instance.clicked = false;
             });
         }
 
@@ -816,6 +1287,7 @@ loader.load((loader, resources) => {
             this.item.buttonMode = true;
             this.item.cursor = "default";
             this.item.on('pointerdown', function (e) {
+                instance.clicked = true;
                 instance.data = e.data;
                 instance.dragged = true;
                 instance.item.zIndex = 3;
@@ -823,61 +1295,65 @@ loader.load((loader, resources) => {
                 instance.parent.bg.texture = instance.parent.textures[1];
             });
             this.item.on('pointerup', function () {
-                if (instance.dragged) {
-                    instance.oldPos = {
-                        x: instance.parent.bg.x,
-                        y: instance.parent.bg.y
-                    }
-                    let changed = false;
-                    for (let i = 0; i < inventory_slots.length; i++) {
-                        if (instance.item.x > inventory_slots[i].bg.x - 19 && instance.item.x < inventory_slots[i].bg.x + 19 && instance.item.y > inventory_slots[i].bg.y - 19 && instance.item.y < inventory_slots[i].bg.y + 19) {
-                            if (inventory_slots[i].item == null && inventory_slots[i].item != instance) {
-                                socket.emit('update inventory', {
-                                    type: "move",
-                                    slot: inventory_slots.indexOf(instance.parent),
-                                    targetSlot: i
-                                });
-                                instance.parent.item = null;
-                                instance.parent.bg.texture = instance.parent.textures[0];
-                                instance.changeSlot(inventory_slots[i]);
-                                instance.parent.bg.texture = instance.parent.textures[2];
-                                changed = true;
-                                break;
-                            }
-                            else if (inventory_slots[i].item != null && inventory_slots[i].item != instance) {
-                                socket.emit('update inventory', {
-                                    type: "move",
-                                    slot: inventory_slots.indexOf(instance.parent),
-                                    targetSlot: i
-                                });
-                                instance.parent.bg.texture = instance.parent.textures[0];
-                                if (!instance.changerCount(i)) {
-                                    inventory_slots[i].item.changeSlot(instance.parent);
-                                }
-                                else {
+                if (instance.clicked) {
+                    if (instance.dragged) {
+                        instance.oldPos = {
+                            x: instance.parent.bg.x,
+                            y: instance.parent.bg.y
+                        }
+                        let changed = false;
+                        for (let i = 0; i < inventory_slots.length; i++) {
+                            if (instance.item.x > inventory_slots[i].bg.x - 19 && instance.item.x < inventory_slots[i].bg.x + 19 && instance.item.y > inventory_slots[i].bg.y - 19 && instance.item.y < inventory_slots[i].bg.y + 19) {
+                                if (inventory_slots[i].item == null && inventory_slots[i].item != instance) {
+                                    socket.emit('update inventory', {
+                                        type: "move",
+                                        slot: inventory_slots.indexOf(instance.parent),
+                                        targetSlot: i
+                                    });
                                     instance.parent.item = null;
+                                    instance.parent.bg.texture = instance.parent.textures[0];
+                                    instance.changeSlot(inventory_slots[i]);
+                                    instance.parent.bg.texture = instance.parent.textures[2];
+                                    changed = true;
+                                    break;
                                 }
-                                instance.changeSlot(inventory_slots[i]);
-                                instance.parent.bg.texture = instance.parent.textures[2];
-                                changed = true;
-                                break;
+                                else if (inventory_slots[i].item != null && inventory_slots[i].item != instance) {
+                                    socket.emit('update inventory', {
+                                        type: "move",
+                                        slot: inventory_slots.indexOf(instance.parent),
+                                        targetSlot: i
+                                    });
+                                    instance.parent.bg.texture = instance.parent.textures[0];
+                                    if (!instance.changerCount(i)) {
+                                        inventory_slots[i].item.changeSlot(instance.parent);
+                                    }
+                                    else {
+                                        instance.parent.item = null;
+                                    }
+                                    instance.changeSlot(inventory_slots[i]);
+                                    instance.parent.bg.texture = instance.parent.textures[2];
+                                    changed = true;
+                                    break;
+                                }
                             }
                         }
+                        if (!changed) {
+                            instance.item.x = instance.oldPos.x;
+                            instance.item.y = instance.oldPos.y;
+                            instance.count_text.x = instance.oldPos.x + 17;
+                            instance.count_text.y = instance.oldPos.y;
+                        }
+                        instance.data = null;
+                        instance.dragged = false;
+                        instance.item.zIndex = 1;
+                        instance.count_text.zIndex = 2;
                     }
-                    if (!changed) {
-                        instance.item.x = instance.oldPos.x;
-                        instance.item.y = instance.oldPos.y;
-                        instance.count_text.x = instance.oldPos.x + 17;
-                        instance.count_text.y = instance.oldPos.y;
-                    }
-                    instance.data = null;
-                    instance.dragged = false;
-                    instance.item.zIndex = 1;
-                    instance.count_text.zIndex = 2;
+                    instance.parent.bg.texture = instance.parent.textures[2];
                 }
-                instance.parent.bg.texture = instance.parent.textures[2];
+                instance.clicked = false;
             });
             this.item.on('pointerupoutside', function () {
+                instance.clicked = false;
                 if (instance.dragged) {
                     instance.oldPos = {
                         x: instance.parent.bg.x,
@@ -1010,10 +1486,14 @@ loader.load((loader, resources) => {
                 instance.bg.texture = textures[0];
             });
             this.container.on('pointerdown', function () {
+                instance.clicked = true;
                 instance.bg.texture = textures[1];
             });
             this.container.on('pointerup', function () {
-                instance.bg.texture = textures[2];
+                if (instance.clicked) {
+                    instance.bg.texture = textures[2];
+                }
+                instance.clicked = false;
             });
         }
     }
@@ -1121,8 +1601,133 @@ loader.load((loader, resources) => {
         layers.addChild(map_layer);
     }
 
+    function createMobileControll() {
+        mobile_controll_layer = new UIContainer(2.5 * 32, app.screen.height - 2.5 * 32, 5, 4, 0.85,
+            function () {
+                canShoot = false;
+            },
+            function () {
+                canShoot = true;
+            },
+            null, null);
+        ui_layer.addChild(mobile_controll_layer.container);
+
+        let left = new SquareButton(mobile_controll_layer.container.width / 2 - 48, mobile_controll_layer.container.height / 2 + 24, 9, "", false,
+            function () {
+                if (pointer_clicked && canDoThings && testActiveChat()) {
+                    left.bg.texture = menu_elements.textures[1];
+                    socket.emit('input', { key: 'left', state: true });
+                    pressingLeft = true;
+                    canShoot = false;
+                }
+            },
+            function () {
+                left.bg.texture = menu_elements.textures[0];
+                socket.emit('input', { key: "left", state: false });
+                pressingLeft = false;
+                canShoot = true;
+            },
+            function () {
+                if (canDoThings && testActiveChat()) {
+                    socket.emit('input', { key: 'left', state: true });
+                    pressingLeft = true;
+                    canShoot = false;
+                }
+            },
+            function () {
+                socket.emit('input', { key: "left", state: false });
+                pressingLeft = false;
+                canShoot = true;
+            });
+        let right = new SquareButton(mobile_controll_layer.container.width / 2 + 48, mobile_controll_layer.container.height / 2 + 24, 7, "", false,
+            function () {
+                if (pointer_clicked && canDoThings && testActiveChat()) {
+                    right.bg.texture = menu_elements.textures[1];
+                    socket.emit('input', { key: 'right', state: true });
+                    pressingRight = true;
+                    canShoot = false;
+                }
+            },
+            function () {
+                right.bg.texture = menu_elements.textures[0];
+                socket.emit('input', { key: "right", state: false });
+                pressingRight = false;
+                canShoot = true;
+            },
+            function () {
+                if (canDoThings && testActiveChat()) {
+                    socket.emit('input', { key: 'right', state: true });
+                    pressingRight = true;
+                    canShoot = false;
+                }
+            },
+            function () {
+                socket.emit('input', { key: "right", state: false });
+                pressingRight = false;
+                canShoot = true;
+            });
+        let up = new SquareButton(mobile_controll_layer.container.width / 2, mobile_controll_layer.container.height / 2 - 24, 8, "", true,
+            function () {
+                if (pointer_clicked && canDoThings && testActiveChat()) {
+                    up.bg.texture = menu_elements.textures[1];
+                    socket.emit('input', { key: 'up', state: true });
+                    pressingUp = true;
+                    canShoot = false;
+                }
+            },
+            function () {
+                up.bg.texture = menu_elements.textures[0];
+                socket.emit('input', { key: "up", state: false });
+                pressingUp = false;
+                canShoot = true;
+            },
+            function () {
+                if (canDoThings && testActiveChat()) {
+                    socket.emit('input', { key: 'up', state: true });
+                    pressingUp = true;
+                    canShoot = false;
+                }
+            },
+            function () {
+                socket.emit('input', { key: "up", state: false });
+                pressingUp = false;
+                canShoot = true;
+            });
+        let down = new SquareButton(mobile_controll_layer.container.width / 2, mobile_controll_layer.container.height / 2 + 24, 10, "", true,
+            function () {
+                if (pointer_clicked && canDoThings && testActiveChat()) {
+                    down.bg.texture = menu_elements.textures[1];
+                    socket.emit('input', { key: 'down', state: true });
+                    pressingDown = true;
+                    canShoot = false;
+                }
+            },
+            function () {
+                down.bg.texture = menu_elements.textures[0];
+                socket.emit('input', { key: "down", state: false });
+                pressingDown = false;
+                canShoot = true;
+            },
+            function () {
+                if (canDoThings && testActiveChat()) {
+                    socket.emit('input', { key: 'down', state: true });
+                    pressingDown = true;
+                    canShoot = false;
+                }
+            },
+            function () {
+                socket.emit('input', { key: "down", state: false });
+                pressingDown = false;
+                canShoot = true;
+            });
+        mobile_controll_layer.container.addChild(left.container);
+        mobile_controll_layer.container.addChild(right.container);
+        mobile_controll_layer.container.addChild(up.container);
+        mobile_controll_layer.container.addChild(down.container);
+    }
+
     function createOptions() {
-        ui_options = new UIContainer(app.screen.width / 2, app.screen.height / 2, 8, 16,
+        ui_options = new UIContainer(app.screen.width / 2, app.screen.height / 2, 8, 16, 1,
             function () {
                 canShoot = false;
             },
@@ -1131,36 +1736,34 @@ loader.load((loader, resources) => {
             },
             null, null);
 
-        let test_check = new CheckBox(ui_options.container.width / 2 - 10, ui_options.container.height / 2 - 120, true, null, null, null, null, null, null);
-        ui_options.container.addChild(test_check.container);
-        let test_check_2 = new CheckBox(ui_options.container.width / 2 + 10, ui_options.container.height / 2 - 120, false, null, null, null, null, null, null);
-        ui_options.container.addChild(test_check_2.container);
-        test_check.addCheckbox(test_check_2);
-        test_check_2.addCheckbox(test_check);
+        let mobile_controll_check = new CheckBox(ui_options.container.width / 2 - 74, ui_options.container.height / 2, false, null, null, null, null,
+            function () {
+                mobile_controll_layer.hideShow();
+            },
+            function () {
+                mobile_controll_layer.hideShow();
+            }
+        );
+        ui_options.container.addChild(mobile_controll_check.container);
 
-        let test_check_3 = new CheckBox(ui_options.container.width / 2, ui_options.container.height / 2 - 160, true, null, null, null, null, null, null);
-        ui_options.container.addChild(test_check_3.container);
-
-        let test_button_1 = new Button(ui_options.container.width / 2, ui_options.container.height / 2 - 80, "Test", 2, null, null, null, null);
-        ui_options.container.addChild(test_button_1.container);
-
-        let test_button_2 = new Button(ui_options.container.width / 2, ui_options.container.height / 2 - 40, "Test", 3, null, null, null, null);
-        ui_options.container.addChild(test_button_2.container);
-
-        let test_button_3 = new Button(ui_options.container.width / 2, ui_options.container.height / 2, "Test", 4, null, null, null, null);
-        ui_options.container.addChild(test_button_3.container);
-
-        let test_button_4 = new Button(ui_options.container.width / 2, ui_options.container.height / 2 + 40, "Test", 5, null, null, null, null);
-        ui_options.container.addChild(test_button_4.container);
-
-        let test_button_5 = new Button(ui_options.container.width / 2, ui_options.container.height / 2 + 80, "Test", 6, null, null, null, null);
-        ui_options.container.addChild(test_button_5.container);
+        let mobile_controll_text = new PIXI.Text("Contrôle pour mobile", {
+            fill: "white",
+            fontFamily: "Verdana",
+            fontSize: 12,
+            fontVariant: "small-caps",
+            lineJoin: "bevel",
+            strokeThickness: 2.5
+        });
+        mobile_controll_text.x = ui_options.container.width / 2 + 10;
+        mobile_controll_text.y = ui_options.container.height / 2;
+        mobile_controll_text.anchor.set(0.5);
+        ui_options.container.addChild(mobile_controll_text);
 
         ui_layer.addChild(ui_options.container);
     }
 
     function createMenuButtons() {
-        let menu_options = new SquareButton(app.screen.width - 24, 24, 4, "(O) Options",
+        let menu_options = new SquareButton(app.screen.width - 24, 24, 4, "(O) Options", false,
             function () {
                 canShoot = false;
             },
@@ -1177,7 +1780,7 @@ loader.load((loader, resources) => {
         );
         ui_layer.addChild(menu_options.container);
 
-        let menu_message = new SquareButton(app.screen.width - 72, 24, 3, "(T) Chat",
+        let menu_message = new SquareButton(app.screen.width - 72, 24, 3, "(T) Chat", false,
             function () {
                 canShoot = false;
             },
@@ -1191,7 +1794,7 @@ loader.load((loader, resources) => {
         );
         ui_layer.addChild(menu_message.container);
 
-        let menu_inventory = new SquareButton(app.screen.width - 120, 24, 5, "(E) Inventaire",
+        let menu_inventory = new SquareButton(app.screen.width - 120, 24, 5, "(E) Inventaire", false,
             function () {
                 canShoot = false;
             },
@@ -1208,7 +1811,7 @@ loader.load((loader, resources) => {
         );
         ui_layer.addChild(menu_inventory.container);
 
-        let menu_changemap = new SquareButton(app.screen.width - 168, 24, 2, "Changer de map",
+        let menu_changemap = new SquareButton(app.screen.width - 168, 24, 2, "Changer de map", false,
             function () {
                 canShoot = false;
             },
@@ -1222,7 +1825,7 @@ loader.load((loader, resources) => {
         );
         ui_layer.addChild(menu_changemap.container);
 
-        let menu_fullscreen = new SquareButton(app.screen.width - 216, 24, 6, "(Entrée) Plein écran",
+        let menu_fullscreen = new SquareButton(app.screen.width - 216, 24, 6, "(Entrée) Plein écran", false,
             function () {
                 canShoot = false;
             },
@@ -1262,7 +1865,7 @@ loader.load((loader, resources) => {
 
     function createInventory() {
         let inventory_slots_index = 0;
-        ui_inventory = new UIContainer(app.screen.width / 2, app.screen.height / 2, 20, 16,
+        ui_inventory = new UIContainer(app.screen.width / 2, app.screen.height / 2, 20, 16, 1,
             function () {
                 canShoot = false;
             },
@@ -1358,7 +1961,7 @@ loader.load((loader, resources) => {
                 inventory_slots_index++;
             }
 
-            equipment_container = new UIContainer(8 * 64, 192, 7, 11, null, null, null, null);
+            equipment_container = new UIContainer(8 * 64, 192, 7, 11, 1, null, null, null, null);
             equipment_container.hideShow();
             equipment_container.zIndex = 0;
             ui_inventory.container.addChild(equipment_container.container);
@@ -1415,13 +2018,15 @@ loader.load((loader, resources) => {
     }
 
     const tileset = generateTextures(resources['tileset_grass'].texture, 8, 18, 32, 32);
-    const menu_elements = generateTextures(resources['ui_menu_elements'].texture, 7, 1, 48, 48);
+    const menu_elements = generateTextures(resources['ui_menu_elements'].texture, 11, 1, 48, 48);
     const menu_frame_elements = generateTextures(resources['ui_frame_elements'].texture, 3, 4, 32, 32);
+    const menu_empty_frame_elements = generateTextures(resources['ui_empty_frame_elements'].texture, 3, 4, 32, 32);
     const ui_checkbox = generateTextures(resources['ui_checkbox'].texture, 2, 2, 14, 14);
     const ui_button = generateTextures(resources['ui_button'].texture, 3, 3, 40, 29);
+    const ui_slider_parts = generateTextures(resources['ui_slider_parts'].texture, 2, 3, 24, 24);
+    const ui_slider_head = generateTextures(resources['ui_slider_head'].texture, 1, 1, 12, 15);
     const ui_inventory_slots = generateTextures(resources['ui_inventory_slots'].texture, 7, 3, 40, 40);
     const ui_inventory_slots_2 = generateTextures(resources['ui_inventory_slots_2'].texture, 3, 9, 38, 38);
-    const ui_equipment_icons = generateTextures(resources['ui_equipment_icons'].texture, 4, 2, 32, 32);
     const ui_inventory_icons = generateTextures(resources['ui_inventory_icons'].texture, 4, 2, 32, 32);
     const button_icons = generateTextures(resources['ui_button_icon_elements'].texture, 8, 3, 16, 16);
     const item_icons_1 = generateTextures(resources['items'].texture, 8, 9, 16, 16);
@@ -1449,6 +2054,7 @@ loader.load((loader, resources) => {
         ui_layer.zIndex = 3;
         layers.addChild(ui_layer);
 
+        createMobileControll();
         createOptions();
         createInventory();
         createMenuButtons();
@@ -1656,6 +2262,7 @@ loader.load((loader, resources) => {
         });
 
         window.addEventListener('pointerdown', function (e) {
+            pointer_clicked = true;
             if (canDoThings && testActiveChat() && canShoot) {
                 socket.emit('input', { key: 'shoot', state: true });
                 pressingAttack = true;
@@ -1663,6 +2270,7 @@ loader.load((loader, resources) => {
         });
 
         window.addEventListener('pointerup', function (e) {
+            pointer_clicked = false;
             socket.emit('input', { key: 'shoot', state: false });
             pressingAttack = false;
         });
@@ -1672,6 +2280,7 @@ loader.load((loader, resources) => {
         });
 
         document.addEventListener('pointerleave', function (e) {
+            pointer_clicked = false;
             canDoThings = false;
             socket.emit('input', { key: "right", state: false });
             pressingRight = false;
@@ -1690,7 +2299,7 @@ loader.load((loader, resources) => {
         });
 
         var mouseAngleInterval = setInterval(function () {
-            let mousePos = app.renderer.plugins.interaction.mouse.global;
+            let mousePos = app.renderer.plugins.interaction.eventData.data.global;
             var x = (-current_player.x + mousePos.x) - camera.view_x;
             var y = (-current_player.y + mousePos.y) - camera.view_y;
 
@@ -1701,12 +2310,12 @@ loader.load((loader, resources) => {
 });
 
 loader.onProgress.add(e => {
-    // console.log(Math.ceil(e.progress));
     document.getElementById("loading-percentage").innerText = `${Math.ceil(e.progress)}%`
 });
 
 loader.onComplete.add(e => {
     $(".loader-wrapper").fadeOut("slow");
+    $("nav").fadeIn("fast");
 });
 
 app.loader.onError.add((error) => console.error(error));
