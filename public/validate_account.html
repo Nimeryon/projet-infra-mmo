@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <title>Kingdom of Nalleor</title>
+    <meta name="description" content="Kingdom of Nalleor account validation">
+    <meta charset="utf_8">
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, '\\$&');
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+
+        var socket = io();
+        let hash = getParameterByName("hash");
+        if (hash && hash.length == 128) {
+            socket.emit('account validation', hash);
+        }
+        window.location.replace("./");
+    </script> -->
+</head>
+
+</html>

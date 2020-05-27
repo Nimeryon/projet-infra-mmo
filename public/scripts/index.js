@@ -1746,6 +1746,9 @@ loader.load((loader, resources) => {
         );
         ui_options.container.addChild(mobile_controll_check.container);
 
+        let test_scroll = new ScrollableContainer(ui_options.container.width / 2, ui_options.container.height / 2 + 32, 7, 6, 7, null, null, null, null, null);
+        ui_options.container.addChild(test_scroll.container);
+
         let mobile_controll_text = new PIXI.Text("Contrôle pour mobile", {
             fill: "white",
             fontFamily: "Verdana",
