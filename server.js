@@ -572,7 +572,7 @@ function sendMail(email, hash, pseudo) {
 
     let mailOptions = {
         from: config.email,
-        to: config.email,
+        to: email,
         subject: 'Bienvenue dans Kingdom of Nalleor',
         html: html
     };
