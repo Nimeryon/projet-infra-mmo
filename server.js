@@ -2,12 +2,21 @@ const express = require('express');
 const app = express();
 const session = require('express-session');
 const mongoStore = require('connect-mongo')(session);
-const uuid = require('uuid/v4');
 const serveur = require('http').createServer(app);
 const io = require('socket.io')(serveur);
 const helmet = require('helmet');
 const config = require('./config.json');
 const bodyParser = require('body-parser');
+
+// Generate String
+function getRandomString(length) {
+    var randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var result = '';
+    for (var i = 0; i < length; i++) {
+        result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+    }
+    return result;
+}
 
 // Mail
 const nodemailer = require('nodemailer');
@@ -256,8 +265,8 @@ app.route('/signin')
                 });
             }
             else {
-                let activationHash = uuid();
-                let token = uuid();
+                let activationHash = getRandomString(128);
+                let token = getRandomString(128);
                 db.account.insertOne({ email: email, username: username, password: password, active: false, activationHash: activationHash, token: token });
                 sendMail(email, activationHash, username);
                 req.session.token = token;
