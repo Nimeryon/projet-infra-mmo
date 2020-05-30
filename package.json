@@ -12,10 +12,14 @@
   },
   "author": "Nimeryon",
   "dependencies": {
+    "body-parser": "^1.19.0",
+    "connect-mongo": "^3.2.0",
     "express": "^4.17.1",
+    "express-session": "^1.17.1",
     "helmet": "^3.22.0",
     "mongojs": "^3.1.0",
     "nodemailer": "^6.4.6",
-    "socket.io": "^2.3.0"
+    "socket.io": "^2.3.0",
+    "uuid": "^8.1.0"
   }
 }

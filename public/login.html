@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <title>Kingdom of Nalleor</title>
+    <meta name="description" content="Kingdom of Nalleor login-menu">
+    <meta charset="utf_8">
+
+    <link rel="stylesheet" href="style.css" type="text/css">
+
+    <script src="jquery/jquery-3.5.1.min.js"></script>
+    <script src="scripts/login.js"></script>
+    <script src="scripts/sha256.js"></script>
+    <script src="scripts/get.js"></script>
+</head>
+
+<body onload="getAlert();">
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/login">Connexion</a></li>
+                <li><a href="/">Accueil</a></li>
+                <li><a href="/signin">Insciption</a></li>
+            </ul>
+        </nav>
+    </header>
+    <content id="startMenuWrapper">
+        <div id="login-menu">
+            <h2>Connexion</h2>
+            <form id="form-login" onsubmit="loginformvalidation(); return false;">
+                <p id="error"></p>
+                <input type="text" placeholder="Nom d'utilisateur" id="username" name="username" required />
+                <input type="password" placeholder="Mot de passe" id="password" name="password" required />
+                <button type="submit">CONNEXION</button>
+            </form>
+        </div>
+    </content>
+</body>
+
+</html>

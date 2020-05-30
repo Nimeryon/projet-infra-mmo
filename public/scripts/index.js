@@ -107,14 +107,29 @@ loader.load((loader, resources) => {
     var bullet_list = [];
     var inventory_slots = [];
     var equipment_slots = [];
-    var maps = $.getJSON("models/maps.json", function (data) {
-        maps = data;
+    var maps;
+    $.ajax({
+        async: false,
+        url: "models/maps.json",
+        success: function (data) {
+            maps = data;
+        }
     });
-    var particles_weapon = $.getJSON("particles/weapon_break.json", function (data) {
-        particles_weapon = data;
+    var particles_weapon;
+    $.ajax({
+        async: false,
+        url: "particles/weapon_break.json",
+        success: function (data) {
+            particles_weapon = data;
+        }
     });
-    var particles_walk = $.getJSON("particles/player_walk.json", function (data) {
-        particles_walk = data;
+    var particles_walk;
+    $.ajax({
+        async: false,
+        url: "particles/player_walk.json",
+        success: function (data) {
+            particles_walk = data;
+        }
     });
     var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, equipment_container, ui_options, mobile_controll_layer, map_layer = null;
     var camera = {
@@ -871,6 +886,9 @@ loader.load((loader, resources) => {
                 instance.clicked = false;
             });
             this.container.on('pointerupoutside', function () {
+                for (let i = 0; i < instance.bgs.length; i++) {
+                    instance.bgs[i].sprite.texture = instance.bgs[i].textures[0];
+                }
                 instance.clicked = false;
             });
             this.bgs = [];
@@ -913,6 +931,8 @@ loader.load((loader, resources) => {
             });
             this.text.anchor.set(0.5);
             this.text.zIndex = 1;
+            this.text.x = 0;
+            this.text.y = -2;
             this.container.addChild(this.text);
         }
     }
@@ -1746,9 +1766,6 @@ loader.load((loader, resources) => {
         );
         ui_options.container.addChild(mobile_controll_check.container);
 
-        let test_scroll = new ScrollableContainer(ui_options.container.width / 2, ui_options.container.height / 2 + 32, 7, 6, 7, null, null, null, null, null);
-        ui_options.container.addChild(test_scroll.container);
-
         let mobile_controll_text = new PIXI.Text("Contrôle pour mobile", {
             fill: "white",
             fontFamily: "Verdana",
@@ -1761,6 +1778,11 @@ loader.load((loader, resources) => {
         mobile_controll_text.y = ui_options.container.height / 2;
         mobile_controll_text.anchor.set(0.5);
         ui_options.container.addChild(mobile_controll_text);
+
+        let button_quit = new Button(ui_options.container.width / 2, ui_options.container.height - 32, "Quitter", 5, null, null, null, function () {
+            window.location = "/";
+        });
+        ui_options.container.addChild(button_quit.container);
 
         ui_layer.addChild(ui_options.container);
     }
@@ -2302,13 +2324,20 @@ loader.load((loader, resources) => {
         });
 
         var mouseAngleInterval = setInterval(function () {
-            let mousePos = app.renderer.plugins.interaction.eventData.data.global;
+            let mousePos;
+            if (app.renderer.plugins.interaction.eventData.data) {
+                mousePos = app.renderer.plugins.interaction.eventData.data.global;
+            }
+            else {
+                mousePos = { x: 0, y: 0 };
+            }
+
             var x = (-current_player.x + mousePos.x) - camera.view_x;
             var y = (-current_player.y + mousePos.y) - camera.view_y;
 
             var angle = Math.atan2(y, x) / Math.PI * 180;
             socket.emit('input', { key: 'mouseAngle', state: angle });
-        }, 1000 / 30);
+        }, 1000 / 15);
     });
 });
 
@@ -2318,7 +2347,8 @@ loader.onProgress.add(e => {
 
 loader.onComplete.add(e => {
     $(".loader-wrapper").fadeOut("slow");
-    $("nav").fadeIn("fast");
+    $("#game").show();
+    socket.emit("player ready");
 });
 
 app.loader.onError.add((error) => console.error(error));

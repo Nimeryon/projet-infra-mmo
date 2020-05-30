@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <title>Kingdom of Nalleor</title>
+    <meta name="description" content="Kingdom of Nalleor Game">
+    <meta charset="utf_8">
+
+    <link rel="stylesheet" href="game.css" type="text/css">
+
+    <script src="jquery/jquery-3.5.1.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+    </script>
+    <script src="pixi/pixi.min.js"></script>
+    <script src="pixi/filter-kawase-blur.min.js"></script>
+    <script src="pixi/filter-drop-shadow.min.js"></script>
+    <script src="pixi/pixi-particles.min.js"></script>
+    <script src="pixi/pixi-sound.js"></script>
+    <script src="pixi/pixi.textinput.min.js"></script>
+    <script src="scripts/get.js"></script>
+    <script src="scripts/messageSystem.js"></script>
+    <script src="scripts/login.js"></script>
+    <script src="scripts/sha256.js"></script>
+    <script src="scripts/index.js" defer></script>
+</head>
+
+<body onload="getAlert()">
+    <div class="loader-wrapper">
+        <div class="loading-cube">
+            <div class="loading-cube-inner"></div>
+        </div>
+        <p id="loading-percentage">0%</p>
+    </div>
+    <div id="game" oncontextmenu="return false">
+        <canvas id="app-screen"></canvas>
+        <div id="app-chat">
+            <ul id="messages"></ul>
+            <form id="form-messages" onsubmit="return false">
+                <input id="input-message" />
+                <button id="button-message" onclick=sendMessage()>Envoyer</button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -3,30 +3,29 @@
 
 <head>
     <title>Kingdom of Nalleor</title>
-    <meta name="description" content="Kingdom of Nalleor Welcome page">
+    <meta name="description" content="Kingdom of Nalleor Game">
     <meta charset="utf_8">
 
     <link rel="stylesheet" href="style.css" type="text/css">
 
-
-    <script src="jquery/jquery-3.5.1.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         var socket = io();
     </script>
-    <script src="scripts/accueil.js" defer></script>
+    <script src="jquery/jquery-3.5.1.min.js"></script>
+    <script src="scripts/get.js"></script>
+    <script src="scripts/accueil.js"></script>
 </head>
 
-<body onload="socket.emit('welcome');">
+<body onload="get(); socket.emit('welcome');">
     <header>
         <nav>
-            <ul>
-                <li><a href="jeu.html">Jeu</a></li>
-                <li><a href="index.html">Accueil</a></li>
-                <li><a href="blog.html">Blog</a></li>
-            </ul>
+            <ul id="link"></ul>
         </nav>
     </header>
+    <div id="buttons">
+        <button id="play-button" onclick="getGame()">JOUER</button>
+    </div>
     <div id="infos">
         <span id="nbr-player"></span>
     </div>

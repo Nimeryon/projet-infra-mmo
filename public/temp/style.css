@@ -2,6 +2,7 @@ body {
     background-color: #333;
     margin: 0;
     padding: 0;
+    min-width: 300px;
 }
 
 nav {
@@ -38,45 +39,35 @@ nav ul li a:hover {
     text-decoration: underline;
 }
 
-.article {
-    width: 60%;
-    margin-left: auto;
-    margin-right: auto;
-    background-color: #4B4D4B;
-    padding: 15px;
+#infos {
     display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    color: #EDE7D9;
-    margin-bottom: 2%;
-    border-radius: 2px;
-    box-shadow: 1px 1px 2px 1px black;
+    flex-direction: column;
+    justify-content: center;
 }
 
-.article:hover {
+#nbr-player {
+    margin: 15px;
+    text-align: center;
+    color: #EDE7D9;
+}
+
+#buttons {
+    margin: 5%;
+    display: flex;
+    justify-content: center;
+}
+
+#play-button {
+    border: none;
+    width: 33%;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 1px 1px 2px 1px black;
+    background-color: #4B4D4B;
+    color: #EDE7D9;
+}
+
+#play-button:hover {
+    border: none;
     box-shadow: 3px 3px 2px 1px black;
 }
-
-.text {
-    width: 45%;
-}
-
-.titre-date {
-    padding: 5px;
-}
-
-.titre-date h2 {
-    font-size: 32px;
-    text-decoration: underline;
-    margin: 0;
-    padding: 0;
-}
-
-.titre-date span {
-    font-size: 12px;
-}
-
-img {
-    width: 45%;
-}
-
