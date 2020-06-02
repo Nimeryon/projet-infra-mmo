@@ -113,7 +113,6 @@ app.route('/validate_account')
         if (req.query.hash) {
             db.account.updateOne({ activationHash: req.query.hash }, { $set: { active: true }, $unset: { "activationHash": "" } }, function (err, res) {
                 if (err) console.log(err);
-                req.session.alert = 'Votre compte a été activé avec succés';
             });
         }
         res.redirect('/');
@@ -148,6 +147,17 @@ app.route('/game')
         }
     });
 
+app.route('/create_article')
+    .get(function (req, res) {
+        const { token } = req.session;
+        if (token) {
+            res.sendFile(__dirname + '/public/create_article.html');
+        }
+        else {
+            res.redirect('/');
+        }
+    });
+
 app.route('/profil')
     .get(function (req, res) {
         const { token } = req.session;
@@ -156,6 +166,55 @@ app.route('/profil')
         }
         else {
             res.redirect('/');
+        }
+    });
+
+app.route('/newusername')
+    .post(function (req, res) {
+        const { token } = req.session;
+        const { username, password } = req.body;
+        if (token) {
+            db.account.findOne({ token: token, password: password }, function (err, data) {
+                if (err) console.log(err);
+
+                if (data) {
+                    db.account.findOne({ username: username }, function (err, data) {
+                        if (err) console.log(err);
+
+                        if (data) {
+                            res.send({
+                                error: "Ce nom d'utilisateur est déjà utilisé"
+                            });
+                        }
+                        else {
+                            db.account.updateOne({ token: token, password: password }, { $set: { username: username } }, function (err, data) {
+                                if (err) console.log(err);
+
+                                if (data) {
+                                    res.send({
+                                        alert: `Votre nom d'utilisateur a été changé pour ${username}`
+                                    });
+                                }
+                                else {
+                                    res.send({
+                                        alert: "Une erreur est survenue, veuillez réessayer plus tard"
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+                else {
+                    res.send({
+                        error: "Le mot de passe saisi est incorrect"
+                    });
+                }
+            });
+        }
+        else {
+            res.send({
+                redirect: "/login"
+            });
         }
     });
 
@@ -176,7 +235,6 @@ app.route('/login')
 
             if (data) {
                 req.session.token = data.token;
-                req.session.username = data.username;
                 res.send({
                     redirect: "/"
                 });
@@ -239,7 +297,7 @@ app.route('/signin')
 
 app.route('/logout')
     .get(function (req, res) {
-        const { token, username } = req.session;
+        const { token } = req.session;
         if (token) {
             req.session.destroy(function (err) {
                 if (err) {
@@ -247,7 +305,7 @@ app.route('/logout')
                 }
             });
 
-            console.log(`utilisateur: ${username} vient de se déconnecter`);
+            console.log(`utilisateur: quelqu'un vient de se déconnecter`);
             res.clearCookie('sid');
             res.redirect('/');
         }
@@ -785,40 +843,43 @@ io.on('connection', function (socket) {
 
     socket.on('getNav', function () {
         const { token } = socket.request.session;
-        if (token) {
-            socket.emit('nav', [
-                [
-                    "/",
-                    "Accueil"
-                ],
-                [
-                    "/profil",
-                    socket.request.session.username
-                ],
-                [
-                    "/logout",
-                    "Déconnexion"
+        db.account.findOne({ token: token }, function (err, data) {
+            if (err) console.log(err);
+            if (token) {
+                socket.emit('nav', [
+                    [
+                        "/",
+                        "Accueil"
+                    ],
+                    [
+                        "/profil",
+                        data.username
+                    ],
+                    [
+                        "/logout",
+                        "Déconnexion"
+                    ]
                 ]
-            ]
-            );
-        }
-        else {
-            socket.emit('nav', [
-                [
-                    "/login",
-                    "Connexion"
-                ],
-                [
-                    "/",
-                    "Accueil"
-                ],
-                [
-                    "/signin",
-                    "Inscription"
+                );
+            }
+            else {
+                socket.emit('nav', [
+                    [
+                        "/login",
+                        "Connexion"
+                    ],
+                    [
+                        "/",
+                        "Accueil"
+                    ],
+                    [
+                        "/signin",
+                        "Inscription"
+                    ]
                 ]
-            ]
-            );
-        }
+                );
+            }
+        })
     });
 
     socket.on('getGame', function () {
@@ -842,25 +903,28 @@ io.on('connection', function (socket) {
     });
 
     socket.on('player ready', function () {
-        let pseudo = socket.request.session.username;
-        io.emit('chat message', { id: "Serveur", msg: `${pseudo} vient de se connecter !` });
-        let player_map = ["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)];
-        player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, { minX: 16, minY: 0, maxX: 16, maxY: 46 }, player_map, 12);
-        for (let i = 0; i < 8 * 9; i++) {
-            player_list[socket.id].inventory.addItem(Math.floor(Math.random() * 144), Math.floor(Math.random() * 99999));
-        }
-        io.emit('nombre users', getPlayerCount());
-        socket.emit('init', {
-            id: player_list[socket.id].id,
-            x: player_list[socket.id].x,
-            y: player_list[socket.id].y,
-            hp: player_list[socket.id].hp,
-            maxHP: player_list[socket.id].maxHP,
-            score: player_list[socket.id].score,
-            moving: player_list[socket.id].moving,
-            direction: player_list[socket.id].direction,
-            map: player_list[socket.id].map,
-            inventory: player_list[socket.id].inventory.inventory
+        db.account.findOne({ token: socket.request.session.token }, function (err, data) {
+            if (err) console.log(err);
+            let pseudo = data.username;
+            io.emit('chat message', { id: "Serveur", msg: `${pseudo} vient de se connecter !` });
+            let player_map = ["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)];
+            player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, { minX: 16, minY: 0, maxX: 16, maxY: 46 }, player_map, 12);
+            for (let i = 0; i < 8 * 9; i++) {
+                player_list[socket.id].inventory.addItem(Math.floor(Math.random() * 144), Math.floor(Math.random() * 99999));
+            }
+            io.emit('nombre users', getPlayerCount());
+            socket.emit('init', {
+                id: player_list[socket.id].id,
+                x: player_list[socket.id].x,
+                y: player_list[socket.id].y,
+                hp: player_list[socket.id].hp,
+                maxHP: player_list[socket.id].maxHP,
+                score: player_list[socket.id].score,
+                moving: player_list[socket.id].moving,
+                direction: player_list[socket.id].direction,
+                map: player_list[socket.id].map,
+                inventory: player_list[socket.id].inventory.inventory
+            });
         });
 
         socket.on('input', function (data) {

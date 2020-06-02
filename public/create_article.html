@@ -10,19 +10,21 @@
     <link rel="stylesheet" href="nav.css" type="text/css">
     <link rel="stylesheet" href="create_article_style.css" type="text/css">
 
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+    </script>
     <script src="jquery/jquery-3.5.1.min.js"></script>
+    <script src="scripts/get.js"></script>
     <script src="ckeditor/ckeditor.js"></script>
-    <script src="article.js" defer></script>
+    <script src="scripts/article.js" defer></script>
 
 </head>
 
-<body>
+<body onload="get();">
     <header>
         <nav>
-            <ul>
-                <li><a href="index.html">Jeu</a></li>
-                <li><a href="blog.html">Blog</a></li>
-            </ul>
+            <ul id="link"></ul>
         </nav>
     </header>
     <content>
@@ -36,7 +38,6 @@
             </div>
         </form>
     </content>
-
 </body>
 
 </html>
