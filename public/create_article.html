@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <title>MMO Project Reboot</title>
+    <meta name="description" content="SoloGame testing">
+    <meta charset="utf_8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="nav.css" type="text/css">
+    <link rel="stylesheet" href="create_article_style.css" type="text/css">
+
+    <script src="jquery/jquery-3.5.1.min.js"></script>
+    <script src="ckeditor/ckeditor.js"></script>
+    <script src="article.js" defer></script>
+
+</head>
+
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Jeu</a></li>
+                <li><a href="blog.html">Blog</a></li>
+            </ul>
+        </nav>
+    </header>
+    <content>
+        <form onsubmit="newArticle();return false;">
+            <div id="title-div">
+                <input id="title" placeholder="Titre">
+            </div>
+            <div class="editor"></div>
+            <div id="submit">
+                <button class="add-article" type="submit">Ajouter l'article</button>
+            </div>
+        </form>
+    </content>
+
+</body>
+
+</html>

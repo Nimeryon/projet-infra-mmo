@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <title>Kingdom of Nalleor</title>
+    <meta name="description" content="Kingdom of Nalleor Game">
+    <meta charset="utf_8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="nav.css" type="text/css">
+    <link rel="stylesheet" href="profil.css" type="text/css">
+
+    <script src="jquery/jquery-3.5.1.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+    </script>
+    <script src="scripts/get.js"></script>
+    <script src="scripts/profil.js"></script>
+</head>
+
+<body onload="get();">
+    <header>
+        <nav>
+            <ul id="link"></ul>
+        </nav>
+    </header>
+    <div id="bloc">
+        <div id="upper-div">
+            <div id="gauche">
+                <div id="bloc-image">
+                    <img id="avatar">
+                    <button id="change-avatar" onclick="">Changer d'avatar</button>
+                </div>
+            </div>
+            <div id="droite">
+                <div id="username">
+                    <span class="title">Nom d'utilisateur</span>
+                    <span class="visuel"></span>
+                    <div id="form-username">
+                        <form onsubmit="usernameformvalidation(); return false;">
+                            <p id="error"></p>
+                            <input type="text" placeholder="Nouveau nom d'utilisateur" class="new-username"
+                                name="new-username" required>
+                            <input type="password" placeholder="Mot de passe" class="password" name="password" required>
+                            <button class="validate" type="submit">Valider</button>
+                        </form>
+                    </div>
+                    <button id="change-username" onclick="hideShow('change-username');">Changer mon nom
+                        d'utilisateur</button>
+                </div>
+                <div id="email">
+                    <span class="title">Email</span>
+                    <span class="visuel"></span>
+                    <div id="form-mail">
+                        <form onsubmit="mailformvalidation(); return false;">
+                            <p id="error"></p>
+                            <input type="email" placeholder="Nouveau mail" class="new-mail" name="new-mail" required>
+                            <input type="password" placeholder="Mot de passe" class="password" name="password" required>
+                            <button class="validate" type="submit">Valider</button>
+                        </form>
+                    </div>
+                    <button id="change-mail" onclick="hideShow('change-mail');">Changer mon mail</button>
+                </div>
+                <div id="password">
+                    <div id="form-password">
+                        <form onsubmit="passwordformvalidation(); return false;">
+                            <p id="error"></p>
+                            <input type="password" placeholder="Ancien mot de passe" class="password" name="password"
+                                required>
+                            <input type="password" placeholder="Nouveau Mot de passe" class="new-password"
+                                name="new-password" required>
+                            <input type="password" placeholder="Confirmation nouveau mot de passe"
+                                class="new-password-2" name="
+                                new-password-2" required>
+                            <button class="validate" type="submit">Valider</button>
+                        </form>
+                    </div>
+                    <button id="change-password" onclick="hideShow('change-password');">Changer mon mot de
+                        passe</button>
+                </div>
+            </div>
+        </div>
+        <div id="button">
+            <button id="delete-account">Supprimer mon compte</button>
+            <div id="center">
+                <button class="validate">Retour accueil</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

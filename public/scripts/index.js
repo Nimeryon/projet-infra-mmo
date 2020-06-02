@@ -54,6 +54,45 @@ loader.add('player_sprites_18', "sprites/players/spr_player_18.png");
 loader.add('player_sprites_19', "sprites/players/spr_player_19.png");
 loader.add('player_sprites_20', "sprites/players/spr_player_20.png");
 loader.add('player_sprite', "sprites/players/player.png");
+// Custom character builder
+// Body
+for (let color = 1; color < 11; color++) {
+    loader.add(`player_sprite_body_male_${String(color).padStart(2, '0')}`, `sprites/players/bodyparts/male/body_${String(color).padStart(2, '0')}.png`);
+    loader.add(`player_sprite_body_female_${String(color).padStart(2, '0')}`, `sprites/players/bodyparts/female/body_${String(color).padStart(2, '0')}.png`);
+    // Oreilles
+    loader.add(`player_sprite_ear_${String(color).padStart(2, '0')}`, `sprites/players/bodyparts/ears/ears_${String(color).padStart(2, '0')}.png`);
+}
+// Hair / Backhair male
+for (let color = 0; color < 1; color++) {
+    for (let type = 1; type < 18; type++) {
+        loader.add(`player_sprite_male_hair1_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/male/hair/male_hair1_${color}_${String(type).padStart(2, '0')}.png`);
+        loader.add(`player_sprite_male_hair2_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/male/hair/male_hair2_${color}_${String(type).padStart(2, '0')}.png`);
+    }
+    for (let type = 1; type < 19; type++) {
+        loader.add(`player_sprite_male_backhair1_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/male/backhair/male_backhair1_${color}_${String(type).padStart(2, '0')}.png`);
+        loader.add(`player_sprite_male_backhair2_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/male/backhair/male_backhair2_${color}_${String(type).padStart(2, '0')}.png`);
+    }
+}
+// Hair / Backhair female
+for (let color = 0; color < 1; color++) {
+    for (let type = 1; type < 16; type++) {
+        loader.add(`player_sprite_female_hair1_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/female/hair/female_hair1_${color}_${String(type).padStart(2, '0')}.png`);
+        loader.add(`player_sprite_female_hair2_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/female/hair/female_hair2_${color}_${String(type).padStart(2, '0')}.png`);
+    }
+    for (let type = 1; type < 21; type++) {
+        loader.add(`player_sprite_female_backhair1_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/female/backhair/female_backhair1_${color}_${String(type).padStart(2, '0')}.png`);
+        loader.add(`player_sprite_female_backhair2_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/female/backhair/female_backhair2_${color}_${String(type).padStart(2, '0')}.png`);
+    }
+}
+// Marque faciales male
+for (let type = 1; type < 9; type++) {
+    loader.add(`player_sprite_facialmark_male_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/male/facialmark/male_facialmark_${String(type).padStart(2, '0')}.png`);
+}
+
+// Marque faciales female
+for (let type = 1; type < 8; type++) {
+    loader.add(`player_sprite_facialmark_female_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/female/facialmark/female_facialmark_${String(type).padStart(2, '0')}.png`);
+}
 // Chargement sprites armes
 loader.add('weapon_sprites_01', "sprites/weapons/spr_weapon_01.png");
 loader.add('weapon_sprites_02', "sprites/weapons/spr_weapon_02.png");
@@ -131,7 +170,7 @@ loader.load((loader, resources) => {
             particles_walk = data;
         }
     });
-    var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, equipment_container, ui_options, mobile_controll_layer, map_layer = null;
+    var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, character_generator_layer, player_particle_layer, bullet_particle_layer, equipment_container, ui_options, mobile_controll_layer, map_layer = null;
     var camera = {
         view_x: 0,
         view_y: 0
@@ -185,7 +224,7 @@ loader.load((loader, resources) => {
             this.breathingIn = true;
 
             this.emitter = new PIXI.particles.Emitter(
-                player_layer,
+                player_particle_layer,
                 [resources.particle_square.texture],
                 particles_walk
             );
@@ -326,7 +365,7 @@ loader.load((loader, resources) => {
             this.sprite.anchor.set(0.5);
 
             this.emitter = new PIXI.particles.Emitter(
-                bullet_layer,
+                bullet_particle_layer,
                 [resources.particle.texture],
                 particles_weapon
             );
@@ -343,11 +382,29 @@ loader.load((loader, resources) => {
             this.sprite.zIndex = this.y;
         }
 
-        die() {
-            this.emitter.updateSpawnPos(this.x, this.y);
-            this.emitter.playOnceAndDestroy();
+        die(explode = true) {
+            if (explode) {
+                this.emitter.updateSpawnPos(this.x, this.y);
+                this.emitter.playOnceAndDestroy();
+            }
             this.sprite.destroy();
             delete bullet_list[this.id];
+        }
+    }
+
+    class Text {
+        constructor(x, y, text, fontSize, anchor = { x: 0.5, y: 0.5 }) {
+            this.text = new PIXI.Text(text, {
+                fill: "white",
+                fontFamily: "Verdana",
+                fontSize: fontSize,
+                fontVariant: "small-caps",
+                lineJoin: "bevel",
+                strokeThickness: 2.5
+            });
+            this.text.x = x;
+            this.text.y = y;
+            this.text.anchor.set(anchor.x, anchor.y);
         }
     }
 
@@ -392,7 +449,7 @@ loader.load((loader, resources) => {
                     const newPosition = e.data.getLocalPosition(instance.container);
                     if (newPosition.x > instance.minX && newPosition.x < instance.maxX) {
                         instance.head.x = newPosition.x;
-                        instance.value = Math.floor(instance.valueRange * (((100 / instance.range * instance.head.x) / 100) + 0.5));
+                        instance.value = instance.min + Math.floor(instance.valueRange * (((100 / instance.range * instance.head.x) / 100) + 0.5) + 0.5);
                     }
                     instance.change();
                     if (cmdup != null) {
@@ -418,7 +475,7 @@ loader.load((loader, resources) => {
                         else {
                             instance.value = instance.min;
                         }
-                        instance.head.x = instance.range * ((100 / instance.valueRange * instance.value) / 100) - instance.maxX;
+                        instance.head.x = instance.range * ((100 / instance.valueRange * (instance.value - instance.min)) / 100) - instance.maxX;
                         instance.change();
                     }, "", false);
                     this.container.addChild(this.minusButton.container);
@@ -435,7 +492,7 @@ loader.load((loader, resources) => {
                         else {
                             instance.value = instance.max;
                         }
-                        instance.head.x = instance.range * ((100 / instance.valueRange * instance.value) / 100) - instance.maxX;
+                        instance.head.x = instance.range * ((100 / instance.valueRange * (instance.value - instance.min)) / 100) - instance.maxX;
                         instance.change();
                     }, "", false);
                     this.container.addChild(this.plusButton.container);
@@ -446,7 +503,7 @@ loader.load((loader, resources) => {
                     this.container.addChild(this.bgs[i]);
                 }
             }
-            this.head = createSprite(ui_slider_head.textures[0], this.range * ((100 / this.valueRange * this.value) / 100) - this.maxX, 0, 1, -90, { x: 1.1, y: 1.1 });
+            this.head = createSprite(ui_slider_head.textures[0], this.range * ((100 / this.valueRange * (this.value - this.min)) / 100) - this.maxX, 0, 1, -90, { x: 1.1, y: 1.1 });
             this.head.anchor.set(0.5);
             this.head.interactive = true;
             this.head.buttonMode = true;
@@ -458,6 +515,7 @@ loader.load((loader, resources) => {
             });
             this.head.on('pointermove', function () {
                 if (instance.dragged) {
+                    let old_value = instance.value;
                     const newPosition = instance.data.getLocalPosition(instance.head.parent);
                     if (newPosition.x > instance.maxX) {
                         instance.head.x = instance.maxX;
@@ -468,8 +526,10 @@ loader.load((loader, resources) => {
                     else {
                         instance.head.x = newPosition.x;
                     }
-                    instance.value = Math.floor(instance.valueRange * (((100 / instance.range * instance.head.x) / 100) + 0.5));
-                    instance.change();
+                    instance.value = instance.min + Math.floor(instance.valueRange * (((100 / instance.range * instance.head.x) / 100) + 0.5) + 0.5);
+                    if (old_value != instance.value) {
+                        instance.change();
+                    }
                 }
             });
             this.head.on('pointerup', function () {
@@ -543,7 +603,7 @@ loader.load((loader, resources) => {
                     const newPosition = e.data.getLocalPosition(instance.container);
                     if (newPosition.y > instance.minY && newPosition.y < instance.maxY) {
                         instance.head.y = newPosition.y;
-                        instance.value = Math.floor(instance.valueRange * (((100 / instance.range * instance.head.y) / 100) + 0.5));
+                        instance.value = instance.min + Math.floor(instance.valueRange * (((100 / instance.range * instance.head.y) / 100) + 0.5) + 0.5);
                     }
                     instance.change();
                     if (cmdup != null) {
@@ -569,7 +629,7 @@ loader.load((loader, resources) => {
                         else {
                             instance.value = instance.min;
                         }
-                        instance.head.y = instance.range * ((100 / instance.valueRange * instance.value) / 100) - instance.maxY;
+                        instance.head.y = instance.range * ((100 / instance.valueRange * (instance.value - instance.min)) / 100) - instance.maxY;
                         instance.change();
                     }, "", false);
                     this.container.addChild(this.minusButton.container);
@@ -586,7 +646,7 @@ loader.load((loader, resources) => {
                         else {
                             instance.value = instance.max;
                         }
-                        instance.head.y = instance.range * ((100 / instance.valueRange * instance.value) / 100) - instance.maxY;
+                        instance.head.y = instance.range * ((100 / instance.valueRange * (instance.value - instance.min)) / 100) - instance.maxY;
                         instance.change();
                     }, "", false);
                     this.container.addChild(this.plusButton.container);
@@ -597,7 +657,7 @@ loader.load((loader, resources) => {
                     this.container.addChild(this.bgs[i]);
                 }
             }
-            this.head = createSprite(ui_slider_head.textures[0], 0, instance.range * ((100 / instance.valueRange * instance.value) / 100) - instance.maxY, 1, 0, { x: 1.1, y: 1.1 });
+            this.head = createSprite(ui_slider_head.textures[0], 0, this.range * ((100 / this.valueRange * (this.value - this.min)) / 100) - this.maxY, 1, 0, { x: 1.1, y: 1.1 });
             this.head.anchor.set(0.5);
             this.head.interactive = true;
             this.head.buttonMode = true;
@@ -619,8 +679,10 @@ loader.load((loader, resources) => {
                     else {
                         instance.head.y = newPosition.y;
                     }
-                    instance.value = Math.floor(instance.valueRange * (((100 / instance.range * instance.head.y) / 100) + 0.5));
-                    instance.change();
+                    instance.value = instance.min + Math.floor(instance.valueRange * (((100 / instance.range * instance.head.y) / 100) + 0.5) + 0.5);
+                    if (old_value != instance.value) {
+                        instance.change();
+                    }
                 }
             });
             this.head.on('pointerup', function () {
@@ -1582,13 +1644,7 @@ loader.load((loader, resources) => {
     function updateCurrentMap(map) {
         current_player.map = map;
         changeMapLayer(maps[map], tileset.textures, scale);
-        for (let i in player_list) {
-            player_list[i].die();
-        }
-
-        for (let i in bullet_list) {
-            bullet_list[i].die();
-        }
+        resetLayer();
     }
 
     function generateLayer(container, tileset, scale, layer, nbr_tile_x, nbr_tile_y, tile_size_x, tile_size_y) {
@@ -1619,6 +1675,485 @@ loader.load((loader, resources) => {
         map_layer = generateMap(map, tileset, scale);
         map_layer.zIndex = 0;
         layers.addChild(map_layer);
+    }
+
+    function resetLayer() {
+        while (bullet_layer.children[0]) {
+            bullet_layer.removeChild(bullet_layer.children[0]);
+        }
+        while (player_layer.children[0]) {
+            player_layer.removeChild(player_layer.children[0]);
+        }
+
+        for (let i in player_list) {
+            player_list[i].emitter.cleanup();
+            player_list[i].emitter.emit = false;
+            player_list[i].emitter.destroy();
+            player_list[i].die();
+        }
+
+        for (let i in bullet_list) {
+            bullet_list[i].emitter.cleanup();
+            bullet_list[i].emitter.emit = false;
+            bullet_list[i].emitter.destroy();
+            bullet_list[i].die(false);
+        }
+    }
+
+    function generateCharacter(bodyparts) {
+        let bodyparts_texture = {
+            body: null,
+            hair: null,
+            backhair: null,
+            ears: null,
+            facialmark: null
+        }
+
+        let texture;
+        switch (bodyparts.angle) {
+            case 0:
+                texture = 1;
+                break;
+
+            case 1:
+                texture = 7;
+                break;
+
+            case 2:
+                texture = 10;
+                break;
+
+            case 3:
+                texture = 4;
+                break;
+
+            default: break;
+        }
+
+        if (bodyparts.body.sexe == 0) {
+            let body_textures = generateTextures(resources[`player_sprite_body_male_${String(bodyparts.body.color).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+            bodyparts_texture.body = [body_textures[texture - 1], body_textures[texture], body_textures[texture + 1], body_textures[texture]];
+        }
+        else if (bodyparts.body.sexe == 1) {
+            let body_textures = generateTextures(resources[`player_sprite_body_female_${String(bodyparts.body.color).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+            bodyparts_texture.body = [body_textures[texture - 1], body_textures[texture], body_textures[texture + 1], body_textures[texture]];
+        }
+
+        if (bodyparts.angle == 2) {
+            if (bodyparts.body.sexe == 0) {
+                if (bodyparts.hair.type == 0) {
+                    bodyparts_texture.hair = null;
+                }
+                else {
+                    let hair_texture = generateTextures(resources[`player_sprite_male_hair2_${bodyparts.hair.color}_${String(bodyparts.hair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+                    bodyparts_texture.hair = [hair_texture[texture - 1], hair_texture[texture], hair_texture[texture + 1], hair_texture[texture]];
+                }
+
+                if (bodyparts.backhair.type == 0) {
+                    bodyparts_texture.backhair = null;
+                }
+                else {
+                    let backhair_texture = generateTextures(resources[`player_sprite_male_backhair2_${bodyparts.backhair.color}_${String(bodyparts.backhair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+                    bodyparts_texture.backhair = [backhair_texture[texture - 1], backhair_texture[texture], backhair_texture[texture + 1], backhair_texture[texture]];
+                }
+            }
+            else if (bodyparts.body.sexe == 1) {
+                if (bodyparts.hair.type == 0) {
+                    bodyparts_texture.hair = null;
+                }
+                else {
+                    let hair_texture = generateTextures(resources[`player_sprite_female_hair2_${bodyparts.hair.color}_${String(bodyparts.hair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+                    bodyparts_texture.hair = [hair_texture[texture - 1], hair_texture[texture], hair_texture[texture + 1], hair_texture[texture]];
+                }
+
+                if (bodyparts.backhair.type == 0) {
+                    bodyparts_texture.backhair = null;
+                }
+                else {
+                    let backhair_texture = generateTextures(resources[`player_sprite_female_backhair2_${bodyparts.backhair.color}_${String(bodyparts.backhair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+                    bodyparts_texture.backhair = [backhair_texture[texture - 1], backhair_texture[texture], backhair_texture[texture + 1], backhair_texture[texture]];
+                }
+            }
+        }
+        else {
+            if (bodyparts.body.sexe == 0) {
+                if (bodyparts.hair.type == 0) {
+                    bodyparts_texture.hair = null;
+                }
+                else {
+                    let hair_texture = generateTextures(resources[`player_sprite_male_hair1_${bodyparts.hair.color}_${String(bodyparts.hair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+                    bodyparts_texture.hair = [hair_texture[texture - 1], hair_texture[texture], hair_texture[texture + 1], hair_texture[texture]];
+                }
+
+                if (bodyparts.backhair.type == 0) {
+                    bodyparts_texture.backhair = null;
+                }
+                else {
+                    let backhair_texture = generateTextures(resources[`player_sprite_male_backhair1_${bodyparts.backhair.color}_${String(bodyparts.backhair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+                    bodyparts_texture.backhair = [backhair_texture[texture - 1], backhair_texture[texture], backhair_texture[texture + 1], backhair_texture[texture]];
+                }
+            }
+            else if (bodyparts.body.sexe == 1) {
+                if (bodyparts.hair.type == 0) {
+                    bodyparts_texture.hair = null;
+                }
+                else {
+                    let hair_texture = generateTextures(resources[`player_sprite_female_hair1_${bodyparts.hair.color}_${String(bodyparts.hair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+                    bodyparts_texture.hair = [hair_texture[texture - 1], hair_texture[texture], hair_texture[texture + 1], hair_texture[texture]];
+                }
+
+                if (bodyparts.backhair.type == 0) {
+                    bodyparts_texture.backhair = null;
+                }
+                else {
+                    let backhair_texture = generateTextures(resources[`player_sprite_female_backhair1_${bodyparts.backhair.color}_${String(bodyparts.backhair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+                    bodyparts_texture.backhair = [backhair_texture[texture - 1], backhair_texture[texture], backhair_texture[texture + 1], backhair_texture[texture]];
+                }
+            }
+        }
+
+        if (bodyparts.ears.type == 0) {
+            bodyparts_texture.ears = null;
+        }
+        else if (bodyparts.ears.type == 1) {
+            let ears_texture = generateTextures(resources[`player_sprite_ear_${String(bodyparts.body.color).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+            bodyparts_texture.ears = [ears_texture[texture - 1], ears_texture[texture], ears_texture[texture + 1], ears_texture[texture]];
+        }
+
+        if (bodyparts.facialmark.type == 0) {
+            bodyparts_texture.facialmark = null;
+        }
+        else {
+            if (bodyparts.body.sexe == 0) {
+                let facialmask_texture = generateTextures(resources[`player_sprite_facialmark_male_${String(bodyparts.facialmark.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+                bodyparts_texture.facialmark = [facialmask_texture[texture - 1], facialmask_texture[texture], facialmask_texture[texture + 1], facialmask_texture[texture]];
+            }
+            else if (bodyparts.body.sexe == 1) {
+                let facialmask_texture = generateTextures(resources[`player_sprite_facialmark_female_${String(bodyparts.facialmark.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+                bodyparts_texture.facialmark = [facialmask_texture[texture - 1], facialmask_texture[texture], facialmask_texture[texture + 1], facialmask_texture[texture]];
+            }
+        }
+
+        return bodyparts_texture;
+    }
+
+    function createMenuCharacterGenerator() {
+        character_generator_layer = new UIContainer(app.screen.width / 2, app.screen.height / 2, 20, 18, 1, null, null, null, null);
+        character_generator_layer.hideShow();
+        ui_layer.addChild(character_generator_layer.container);
+
+        let animate = false;
+        let bodyparts = {
+            angle: 0,
+            body: {
+                sexe: 0,
+                color: 2
+            },
+            hair: {
+                type: 0,
+                color: 0
+            },
+            backhair: {
+                type: 0,
+                color: 0
+            },
+            ears: {
+                type: 0
+            },
+            facialmark: {
+                type: 0
+            }
+        }
+
+        function setTexture(bodyparts_texture) {
+            if (bodyparts_texture.body) {
+                body.textures = bodyparts_texture.body;
+                body.texture = bodyparts_texture.body[1];
+                if (animate) {
+                    body.play();
+                }
+                else {
+                    body.stop();
+                }
+            }
+            else {
+                body.textures = [PIXI.Texture.EMPTY];
+                body.texture = PIXI.Texture.EMPTY;
+                body.stop();
+            }
+
+            if (bodyparts_texture.backhair) {
+                backhair.textures = bodyparts_texture.backhair;
+                backhair.texture = bodyparts_texture.backhair[1];
+                if (animate) {
+                    backhair.play();
+                }
+                else {
+                    backhair.stop();
+                }
+            }
+            else {
+                backhair.textures = [PIXI.Texture.EMPTY];
+                backhair.texture = PIXI.Texture.EMPTY;
+                backhair.stop();
+            }
+
+            if (bodyparts_texture.ears) {
+                ears.textures = bodyparts_texture.ears;
+                ears.texture = bodyparts_texture.ears[1];
+                if (animate) {
+                    ears.play();
+                }
+                else {
+                    ears.stop();
+                }
+            }
+            else {
+                ears.textures = [PIXI.Texture.EMPTY];
+                ears.texture = PIXI.Texture.EMPTY;
+                ears.stop();
+            }
+
+            if (bodyparts_texture.facialmark) {
+                facialmark.textures = bodyparts_texture.facialmark;
+                facialmark.texture = bodyparts_texture.facialmark[1];
+                if (animate) {
+                    facialmark.play();
+                }
+                else {
+                    facialmark.stop();
+                }
+            }
+            else {
+                facialmark.textures = [PIXI.Texture.EMPTY];
+                facialmark.texture = PIXI.Texture.EMPTY;
+                facialmark.stop();
+            }
+
+            if (bodyparts_texture.hair) {
+                hair.textures = bodyparts_texture.hair;
+                hair.texture = bodyparts_texture.hair[1];
+                if (animate) {
+                    hair.play();
+                }
+                else {
+                    hair.stop();
+                }
+            }
+            else {
+                hair.textures = [PIXI.Texture.EMPTY];
+                hair.texture = PIXI.Texture.EMPTY;
+                hair.stop();
+            }
+        }
+
+        let character_view = new UIContainer(96, 96, 5, 5, 1, null, null, null, null);
+        character_view.hideShow();
+        let character_container = new PIXI.Container();
+        character_container.sortableChildren = true;
+        character_view.container.addChild(character_container);
+        let body = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2, 1, 0, { x: 2.5, y: 2.5 }, 0.1, false);
+        body.anchor.set(0.5);
+        let backhair = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2, 1, 0, { x: 2.5, y: 2.5 }, 0.1, false);
+        backhair.anchor.set(0.5);
+        let ears = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2, 1, 0, { x: 2.5, y: 2.5 }, 0.1, false);
+        ears.anchor.set(0.5);
+        let facialmark = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2, 1, 0, { x: 2.5, y: 2.5 }, 0.1, false);
+        facialmark.anchor.set(0.5);
+        let hair = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2, 1, 0, { x: 2.5, y: 2.5 }, 0.1, false);
+        hair.anchor.set(0.5);
+        body.zIndex = 0;
+        backhair.zIndex = 1;
+        ears.zIndex = 2;
+        facialmark.zIndex = 3;
+        hair.zIndex = 4;
+        character_container.addChild(body);
+        character_container.addChild(backhair);
+        character_container.addChild(facialmark);
+        character_container.addChild(ears);
+        character_container.addChild(hair);
+        let minusButton = new MiniButton(28, character_view.container.height - 14, 0, button_icons.textures[14], null, null, null, function () {
+            if (bodyparts.angle == 0) {
+                bodyparts.angle = 3;
+            }
+            else {
+                bodyparts.angle--;
+            }
+
+            if (bodyparts.angle == 2) {
+                body.zIndex = 3;
+                backhair.zIndex = 4;
+                ears.zIndex = 2;
+                facialmark.zIndex = 1;
+                hair.zIndex = 0;
+            }
+            else {
+                body.zIndex = 0;
+                backhair.zIndex = 1;
+                ears.zIndex = 2;
+                facialmark.zIndex = 3;
+                hair.zIndex = 4;
+            }
+            setTexture(generateCharacter(bodyparts));
+        }, "", true);
+        character_view.container.addChild(minusButton.container);
+        let plusButton = new MiniButton(character_view.container.width - 12, character_view.container.height - 14, 0, button_icons.textures[15], null, null, null, function () {
+            if (bodyparts.angle == 3) {
+                bodyparts.angle = 0;
+            }
+            else {
+                bodyparts.angle++;
+            }
+
+            if (bodyparts.angle == 2) {
+                body.zIndex = 3;
+                backhair.zIndex = 4;
+                ears.zIndex = 2;
+                facialmark.zIndex = 1;
+                hair.zIndex = 0;
+            }
+            else {
+                body.zIndex = 0;
+                backhair.zIndex = 1;
+                ears.zIndex = 2;
+                facialmark.zIndex = 3;
+                hair.zIndex = 4;
+            }
+            setTexture(generateCharacter(bodyparts));
+        }, "", true);
+        character_view.container.addChild(plusButton.container);
+        character_generator_layer.container.addChild(character_view.container);
+
+        setTexture(generateCharacter(bodyparts));
+
+        let male_options = new UIContainer(character_generator_layer.container.width / 2, character_generator_layer.container.height / 2 + 88, 19, 11, 1, null, null, null, null);
+        male_options.hideShow();
+        character_generator_layer.container.addChild(male_options.container);
+        let male_options_text = new Text(8, 8, "Options Homme", 16, { x: 0, y: 0 });
+        male_options.container.addChild(male_options_text.text);
+
+        let female_options = new UIContainer(character_generator_layer.container.width / 2, character_generator_layer.container.height / 2 + 88, 19, 11, 1, null, null, null, null);
+        character_generator_layer.container.addChild(female_options.container);
+        let female_options_text = new Text(8, 8, "Options Femme", 16, { x: 0, y: 0 });
+        female_options.container.addChild(female_options_text.text);
+
+        let choose_sex_male_checkbox = new CheckBox(256, 32, true, null, null, null, null, function () {
+            male_options.hideShow();
+            female_options.hideShow();
+
+            bodyparts.body.sexe = 0;
+            bodyparts.hair.type = slider_hair_male.value;
+            bodyparts.backhair.type = slider_backhair_male.value;
+            bodyparts.ears.type = slider_ears_male.value;
+            bodyparts.facialmark.type = slider_facialmark_male.value;
+            setTexture(generateCharacter(bodyparts));
+        }, null);
+        let male_text = new Text(304, 32, "Homme", 14);
+        character_generator_layer.container.addChild(male_text.text);
+        let choose_sex_female_checkbox = new CheckBox(384, 32, false, null, null, null, null, function () {
+            male_options.hideShow();
+            female_options.hideShow();
+
+            bodyparts.body.sexe = 1;
+            bodyparts.hair.type = slider_hair_female.value;
+            bodyparts.backhair.type = slider_backhair_female.value;
+            bodyparts.ears.type = slider_ears_female.value;
+            bodyparts.facialmark.type = slider_facialmark_female.value;
+            setTexture(generateCharacter(bodyparts));
+        }, null);
+        let female_text = new Text(432, 32, "Femme", 14);
+        character_generator_layer.container.addChild(female_text.text);
+        choose_sex_male_checkbox.addCheckbox(choose_sex_female_checkbox);
+        choose_sex_female_checkbox.addCheckbox(choose_sex_male_checkbox);
+        character_generator_layer.container.addChild(choose_sex_male_checkbox.container);
+        character_generator_layer.container.addChild(choose_sex_female_checkbox.container);
+
+        let slider_skin_color = new SliderHorizontal(character_generator_layer.container.width / 2 + 72, 92, 12, 1, 10, 1, 2, 0, null, null, null, null, function (value) {
+            bodyparts.body.color = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        character_generator_layer.container.addChild(slider_skin_color.container);
+        let slider_skin_color_text = new Text(248, 68, "Couleur de peau :", 14, { x: 0, y: 0.5 });
+        character_generator_layer.container.addChild(slider_skin_color_text.text);
+
+        let slider_hair_color = new SliderHorizontal(character_generator_layer.container.width / 2 + 72, 140, 12, 0, 0, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.hair.color = value;
+            bodyparts.backhair.color = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        character_generator_layer.container.addChild(slider_hair_color.container);
+        let slider_hair_color_text = new Text(248, 116, "Couleur de cheveux :", 14, { x: 0, y: 0.5 });
+        character_generator_layer.container.addChild(slider_hair_color_text.text);
+        let animate_checkbox = new CheckBox(256, 172, false, null, null, null, null, function () {
+            animate = true;
+            setTexture(generateCharacter(bodyparts));
+        }, function () {
+            animate = false;
+            setTexture(generateCharacter(bodyparts));
+        });
+        character_generator_layer.container.addChild(animate_checkbox.container);
+        let animate_checkbox_text = new Text(278, 172, "Sprite animée", 14, { x: 0, y: 0.5 });
+        character_generator_layer.container.addChild(animate_checkbox_text.text);
+
+        // options male 
+        let slider_hair_male = new SliderHorizontal(male_options.container.width / 2, 72, 12, 0, 17, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.hair.type = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        male_options.container.addChild(slider_hair_male.container);
+        let slider_hair_male_text = new Text(male_options.container.width / 2 - 144, 48, "Cheveux avant :", 14, { x: 0, y: 0.5 });
+        male_options.container.addChild(slider_hair_male_text.text);
+        let slider_backhair_male = new SliderHorizontal(male_options.container.width / 2, 120, 12, 0, 18, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.backhair.type = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        male_options.container.addChild(slider_backhair_male.container);
+        let slider_backhair_male_text = new Text(male_options.container.width / 2 - 144, 96, "Cheveux arrière :", 14, { x: 0, y: 0.5 });
+        male_options.container.addChild(slider_backhair_male_text.text);
+        let slider_ears_male = new SliderHorizontal(male_options.container.width / 2, 168, 12, 0, 1, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.ears.type = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        male_options.container.addChild(slider_ears_male.container);
+        let slider_ears_male_text = new Text(male_options.container.width / 2 - 144, 144, "Oreilles :", 14, { x: 0, y: 0.5 });
+        male_options.container.addChild(slider_ears_male_text.text);
+        let slider_facialmark_male = new SliderHorizontal(male_options.container.width / 2, 216, 12, 0, 8, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.facialmark.type = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        male_options.container.addChild(slider_facialmark_male.container);
+        let slider_facialmark_male_text = new Text(male_options.container.width / 2 - 144, 192, "Marque faciale :", 14, { x: 0, y: 0.5 });
+        male_options.container.addChild(slider_facialmark_male_text.text);
+
+        // options female
+        let slider_hair_female = new SliderHorizontal(female_options.container.width / 2, 72, 12, 0, 15, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.hair.type = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        female_options.container.addChild(slider_hair_female.container);
+        let slider_hair_female_text = new Text(female_options.container.width / 2 - 144, 48, "Cheveux avant :", 14, { x: 0, y: 0.5 });
+        female_options.container.addChild(slider_hair_female_text.text);
+        let slider_backhair_female = new SliderHorizontal(female_options.container.width / 2, 120, 12, 0, 20, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.backhair.type = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        female_options.container.addChild(slider_backhair_female.container);
+        let slider_backhair_female_text = new Text(female_options.container.width / 2 - 144, 96, "Cheveux arrière :", 14, { x: 0, y: 0.5 });
+        female_options.container.addChild(slider_backhair_female_text.text);
+        let slider_ears_female = new SliderHorizontal(female_options.container.width / 2, 168, 12, 0, 1, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.ears.type = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        female_options.container.addChild(slider_ears_female.container);
+        let slider_ears_female_text = new Text(female_options.container.width / 2 - 144, 144, "Oreilles :", 14, { x: 0, y: 0.5 });
+        female_options.container.addChild(slider_ears_female_text.text);
+        let slider_facialmark_female = new SliderHorizontal(female_options.container.width / 2, 216, 12, 0, 7, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.facialmark.type = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        female_options.container.addChild(slider_facialmark_female.container);
+        let slider_facialmark_female_text = new Text(female_options.container.width / 2 - 144, 192, "Marque faciale :", 14, { x: 0, y: 0.5 });
+        female_options.container.addChild(slider_facialmark_female_text.text);
     }
 
     function createMobileControll() {
@@ -2066,19 +2601,28 @@ loader.load((loader, resources) => {
         layers = new PIXI.Container();
         layers.sortableChildren = true;
         app.stage.addChild(layers);
-        changeMapLayer(maps[player.map], tileset.textures, scale);
         bullet_layer = new PIXI.Container();
         bullet_layer.sortableChildren = true;
-        bullet_layer.zIndex = 1;
+        bullet_layer.zIndex = 2;
         layers.addChild(bullet_layer);
+        bullet_particle_layer = new PIXI.ParticleContainer();
+        bullet_particle_layer.zIndex = 1;
+        bullet_particle_layer.sortableChildren = true;
+        layers.addChild(bullet_particle_layer);
         player_layer = new PIXI.Container();
         player_layer.sortableChildren = true;
-        player_layer.zIndex = 2;
+        player_layer.zIndex = 4;
         layers.addChild(player_layer);
+        player_particle_layer = new PIXI.ParticleContainer();
+        player_particle_layer.zIndex = 3;
+        player_particle_layer.sortableChildren = true;
+        layers.addChild(player_particle_layer);
         ui_layer = new PIXI.Container();
-        ui_layer.zIndex = 3;
+        ui_layer.zIndex = 5;
         layers.addChild(ui_layer);
 
+        changeMapLayer(maps[player.map], tileset.textures, scale);
+        createMenuCharacterGenerator();
         createMobileControll();
         createOptions();
         createInventory();

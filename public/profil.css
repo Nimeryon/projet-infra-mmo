@@ -1,0 +1,126 @@
+#bloc {
+    margin-left: auto;
+    margin-right: auto;
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    background: #4B4D4B;
+    border-radius: 3px;
+    box-shadow: 1px 1px 2px 1px black;
+    transition-duration: 0.4s;
+    padding: 1.5%;
+}
+
+#bloc:hover {
+    box-shadow: 3px 3px 2px 1px black;
+}
+
+#upper-div {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+#gauche {
+    border: 1px solid black;
+    padding: 5px;
+    width: 29%;
+}
+
+#bloc-image {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+#droite {
+    width: 69%;
+}
+
+#username, #email, #password {
+    display: flex;
+    flex-direction: column;
+    padding: 2%;
+}
+
+#username, #email, #password {
+    color: #EDE7D9;
+}
+
+.title {
+    text-decoration: underline;
+}
+
+button {
+    outline: none;
+    padding: 8px;
+    background-color: #4B4D4B;
+    border: 2px solid rgb(92, 166, 185);
+    color: #EDE7D9;
+    border-radius: 3px;
+    transition-duration: 0.3s;
+    box-shadow: 1px 1px 2px 1px black;
+}
+
+#delete-account {
+    border: 2px solid rgb(214, 79, 79);
+    width: 30%;
+}
+
+.validate {
+    border: 2px solid rgb(86, 182, 74);
+}
+
+button:hover {
+    background-color:rgb(92, 166, 185);
+    box-shadow: 3px 3px 2px 1px black;
+    cursor: pointer;
+}
+
+button:active {
+    transform: translateY(2px);
+    box-shadow: 1px 1px 2px 1px black;
+}
+
+#delete-account:hover {
+    background-color: rgb(214, 79, 79);
+}
+
+.validate:hover {
+    background-color: rgb(86, 182, 74);
+}
+
+#button {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding-top: 2%;
+}
+
+#center {
+    width: 70%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+#form-username, #form-mail, #form-password {
+    display: none;
+    margin: 5px;
+    padding: 5px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+form input {
+    margin-bottom: 5px;
+    padding: 5px;
+}
+
+#error {
+    margin: 0;
+    padding: 0;
+}

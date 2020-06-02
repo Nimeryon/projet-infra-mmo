@@ -29,7 +29,7 @@ const transporter = nodemailer.createTransport({
 });
 
 function sendMail(email, hash, pseudo) {
-    let url = `https://kingdomofnalleor.herokuapp.com/validate_account?hash=${hash}`;
+    let url = `http://localhost:3000/validate_account?hash=${hash}`;
     let html = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html style="width:100%;font-family:helvetica, 'helvetica neue', arial, verdana, sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;padding:0;Margin:0;"><head><meta charset="UTF-8"><meta content="width=device-width, initial-scale=1" name="viewport"><meta name="x-apple-disable-message-reformatting"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta content="telephone=no" name="format-detection"><title>New email</title> <!--[if gte mso 9]><style>sup { font-size: 100% !important; }</style><![endif]--> <!--[if !mso]><!-- --><link href="https://fonts.googleapis.com/css?family=Lato:400,400i,700,700i" rel="stylesheet"> <!--<![endif]--><style type="text/css">
     @media only screen and (max-width:600px) {p, ul li, ol li, a { font-size:17px!important; line-height:150%!important } h1 { font-size:26px!important; text-align:center; line-height:120%!important } h2 { font-size:24px!important; text-align:left; line-height:120%!important } h3 { font-size:20px!important; text-align:left; line-height:120%!important } h1 a { font-size:26px!important; text-align:center } h2 a { font-size:24px!important; text-align:left } h3 a { font-size:20px!important; text-align:left } .es-menu td a { font-size:16px!important } .es-header-body p, .es-header-body ul li, .es-header-body ol li, .es-header-body a { font-size:16px!important } .es-footer-body p, .es-footer-body ul li, .es-footer-body ol li, .es-footer-body a { font-size:17px!important } .es-infoblock p, .es-infoblock ul li, .es-infoblock ol li, .es-infoblock a { font-size:12px!important } *[class="gmail-fix"] { display:none!important } .es-m-txt-c, 
     .es-m-txt-c h1, .es-m-txt-c h2, .es-m-txt-c h3 { text-align:center!important } .es-m-txt-r, .es-m-txt-r h1, .es-m-txt-r h2, .es-m-txt-r h3 { text-align:right!important } .es-m-txt-l, .es-m-txt-l h1, .es-m-txt-l h2, .es-m-txt-l h3 { text-align:left!important } .es-m-txt-r img, .es-m-txt-c img, .es-m-txt-l img { display:inline!important } .es-button-border { display:inline-block!important } a.es-button { font-size:14px!important; display:inline-block!important } .es-btn-fw { border-width:10px 0px!important; text-align:center!important } .es-adaptive table, .es-btn-fw, .es-btn-fw-brdr, .es-left, .es-right { width:100%!important } .es-content table, .es-header table, .es-footer table, .es-content, .es-footer, .es-header { width:100%!important; max-width:600px!important } .es-adapt-td { display:block!important; width:100%!important } .adapt-img { width:100%!important; height:auto!important } .es-m-p0 { padding:0px!important } .es-m-p0r { 
@@ -59,7 +59,12 @@ function sendMail(email, hash, pseudo) {
 
 // Connexion base de donnée
 const mongojs = require('mongojs');
-const db = mongojs(`mongodb+srv://${config.pseudo}:${config.mdp}@mmo-project-anpkb.mongodb.net/mmo-project?retryWrites=true&w=majority`, ['account']);
+const db = mongojs(`mongodb+srv://${config.pseudo}:${config.mdp}@mmo-project-anpkb.mongodb.net/mmo-project?retryWrites=true&w=majority`, ['account', 'blog']);
+
+// Modification de la variable inGame de tous les joueurs à false lors du démarrage du serveur histoire de ne pas bloquer l'accès aux joueurs
+db.account.update({}, { $set: { inGame: false } }, function (err, res) {
+    if (err) console.log(err);
+});
 
 // ==================================================================================================================
 //  ____  ____  ____  _  _  ____  _  _  ____ 
@@ -103,78 +108,6 @@ app.get('/*', function (req, res, next) {
 
 app.use(express.static(__dirname + '/public'));
 
-app.route('/getNav')
-    .get(function (req, res) {
-        const { token } = req.session;
-        if (token) {
-            res.send(
-                {
-                    link: [
-                        [
-                            "/",
-                            "Accueil"
-                        ],
-                        [
-                            "/profil",
-                            "Profil"
-                        ],
-                        [
-                            "/logout",
-                            "Déconnexion"
-                        ]
-                    ]
-                }
-            );
-        }
-        else {
-            res.send(
-                {
-                    link: [
-                        [
-                            "/login",
-                            "Connexion"
-                        ],
-                        [
-                            "/",
-                            "Accueil"
-                        ],
-                        [
-                            "/signin",
-                            "Inscription"
-                        ]
-                    ]
-                }
-            );
-        }
-    });
-
-app.route('/getAlert')
-    .get(function (req, res) {
-        if (req.session.alert) {
-            const { alert } = req.session;
-            req.session.alert = "";
-            res.send({
-                alert: alert
-            });
-        }
-    });
-
-app.route('/getGame')
-    .get(function (req, res) {
-        const { token } = req.session;
-        if (token) {
-            res.send({
-                redirect: "/game"
-            });
-        }
-        else {
-            req.session.alert = "Vous devez être connecté pour pouvoir jouer";
-            res.send({
-                redirect: "/login"
-            });
-        }
-    });
-
 app.route('/validate_account')
     .get(function (req, res) {
         if (req.query.hash) {
@@ -195,10 +128,23 @@ app.route('/game')
     .get(function (req, res) {
         const { token } = req.session;
         if (token) {
-            res.sendFile(__dirname + '/public/game.html');
+            db.account.findOne({ token: token }, function (err, data) {
+                if (err) console.log(err);
+                if (data.inGame == true) {
+                    req.session.alert = "Quelqu'un joue déjà sur ce compte";
+                    res.redirect('/');
+                }
+                else {
+                    db.account.updateOne({ token: token }, { $set: { inGame: true } }, function (err, res) {
+                        if (err) console.log(err);
+                    });
+                    res.sendFile(__dirname + '/public/game.html');
+                }
+            });
         }
         else {
-            res.redirect('/');
+            req.session.alert = "Vous devez être connecté pour pouvoir jouer";
+            res.redirect('/login');
         }
     });
 
@@ -615,7 +561,7 @@ class Player extends Entity {
 
     shoot() {
         let bullet_id = Math.random();
-        bullet_list[bullet_id] = new Bullet(bullet_id, this.id, this.x, this.y, { minX: 1, minY: 1, maxX: 1, maxY: 1 }, this.mouseAngle, this.map, 24);
+        bullet_list[bullet_id] = new Bullet(bullet_id, this.id, this.x, this.y, 300 - Math.floor(Math.random() * 100), { minX: 3, minY: 3, maxX: 3, maxY: 3 }, this.mouseAngle, this.map, 24);
     }
 
     update() {
@@ -640,9 +586,11 @@ class Player extends Entity {
 }
 
 class Bullet extends Entity {
-    constructor(id, parent_id, x, y, size, angle, map, speed) {
+    constructor(id, parent_id, x, y, lifetime, size, angle, map, speed, onDie = null) {
         // Hérite de la classe Entity
         super(id, parent_id, x, y, size, map, speed);
+
+        this.onDie = onDie;
 
         this.angle = angle;
         this.speed = speed;
@@ -650,7 +598,7 @@ class Bullet extends Entity {
         this.spdX = Math.cos(this.angle / 180 * Math.PI) * this.speed;
         this.spdY = Math.sin(this.angle / 180 * Math.PI) * this.speed;
 
-        this.timeToDie = 300 - Math.floor(Math.random() * 100);
+        this.timeToDie = lifetime;
         this.timer = 0;
     }
 
@@ -701,6 +649,9 @@ class Bullet extends Entity {
     }
 
     die() {
+        if (this.onDie != null) {
+            this.onDie();
+        }
         delete bullet_list[this.id];
     }
 }
@@ -825,16 +776,74 @@ function getPlayerCount() {
 // Cherche la connexion d'un client
 io.on('connection', function (socket) {
     console.log("Quelqu'un vient de se connecter");
+    socket.id = getRandomString(32);
+    socket_list[socket.id] = socket;
 
     socket.on('welcome', function () {
         socket.emit('nombre users', getPlayerCount());
     });
 
+    socket.on('getNav', function () {
+        const { token } = socket.request.session;
+        if (token) {
+            socket.emit('nav', [
+                [
+                    "/",
+                    "Accueil"
+                ],
+                [
+                    "/profil",
+                    socket.request.session.username
+                ],
+                [
+                    "/logout",
+                    "Déconnexion"
+                ]
+            ]
+            );
+        }
+        else {
+            socket.emit('nav', [
+                [
+                    "/login",
+                    "Connexion"
+                ],
+                [
+                    "/",
+                    "Accueil"
+                ],
+                [
+                    "/signin",
+                    "Inscription"
+                ]
+            ]
+            );
+        }
+    });
+
+    socket.on('getGame', function () {
+        const { token } = socket.request.session;
+        if (token) {
+            db.account.findOne({ token: token }, function (err, data) {
+                if (err) console.log(err);
+                if (data.inGame == true) {
+                    socket.emit('alert', "Quelqu'un joue déjà sur ce compte");
+                    socket.emit('redirect', "/");
+                }
+                else {
+                    socket.emit('redirect', "/game");
+                }
+            });
+        }
+        else {
+            socket.emit('alert', "Vous devez être connecté pour pouvoir jouer");
+            socket.emit('redirect', "/login");
+        }
+    });
+
     socket.on('player ready', function () {
         let pseudo = socket.request.session.username;
         io.emit('chat message', { id: "Serveur", msg: `${pseudo} vient de se connecter !` });
-        socket.id = Math.random();
-        socket_list[socket.id] = socket;
         let player_map = ["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)];
         player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, { minX: 16, minY: 0, maxX: 16, maxY: 46 }, player_map, 12);
         for (let i = 0; i < 8 * 9; i++) {
@@ -952,8 +961,12 @@ io.on('connection', function (socket) {
         console.log("Quelqu'un vient de se déconnecter");
         if (player_list[socket.id]) {
             io.emit('chat message', { id: "Serveur", msg: `${player_list[socket.id].pseudo} vient de se déconnecter !` });
+            db.account.updateOne({ token: socket.request.session.token }, { $set: { inGame: false } }, function (err, res) {
+                if (err) console.log(err);
+            });
+            delete player_list[socket.id];
         }
-        delete player_list[socket.id];
+        delete socket_list[socket.id];
         io.emit('nombre users', getPlayerCount());
     });
 });

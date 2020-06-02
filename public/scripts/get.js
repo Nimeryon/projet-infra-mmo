@@ -1,41 +1,31 @@
 function getNav() {
-    $.get("/getNav",
-        function (data, status, jqXHR) {
-            if (data.link) {
-                for (let i = 0; i < data.link.length; i++) {
-                    let li = document.createElement("li");
-                    let a = document.createElement("a");
-                    a.href = data.link[i][0];
-                    a.innerText = data.link[i][1];
-                    li.appendChild(a);
-                    document.getElementById("link").appendChild(li);
-                }
-            }
-        }
-    );
-}
-
-function getAlert() {
-    $.get("/getAlert",
-        function (data, status, jqXHR) {
-            if (data.alert) {
-                alert(data.alert);
-            }
-        }
-    );
+    socket.emit('getNav');
 }
 
 function getGame() {
-    $.get("/getGame",
-        function (data, status, jqXHR) {
-            if (data.redirect) {
-                window.location = data.redirect;
-            }
-        }
-    );
+    socket.emit('getGame');
 }
 
 function get() {
     getNav();
-    getAlert();
 }
+
+socket.on('nav', function (data) {
+    for (let i = 0; i < data.length; i++) {
+        let li = document.createElement("li");
+        let a = document.createElement("a");
+        a.href = data[i][0];
+        a.innerText = data[i][1];
+        li.appendChild(a);
+        document.getElementById("link").appendChild(li);
+    }
+});
+
+socket.on('alert', function (data) {
+    console.log('data');
+    alert(data);
+});
+
+socket.on('redirect', function (data) {
+    window.location = data;
+});
