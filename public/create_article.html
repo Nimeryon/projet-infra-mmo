@@ -28,13 +28,13 @@
         </nav>
     </header>
     <content>
-        <form onsubmit="newArticle();return false;">
+        <form onsubmit="return false;">
             <div id="title-div">
                 <input id="title" placeholder="Titre">
             </div>
             <div class="editor"></div>
             <div id="submit">
-                <button class="add-article" type="submit">Ajouter l'article</button>
+                <button class="add-article" onclick="newArticle();">Ajouter l'article</button>
             </div>
         </form>
     </content>

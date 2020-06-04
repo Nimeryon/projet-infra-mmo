@@ -13,7 +13,7 @@ content {
     background-color: #4B4D4B;
     padding: 15px;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     justify-content: space-around;
     color: #EDE7D9;
     margin-bottom: 2%;

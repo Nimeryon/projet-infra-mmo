@@ -1,27 +1,3 @@
-function newArticle() {
-    newTitle = $("#new-title").val();
-    instantDate = Date.now()
-    newImg = $("#new-img").val();
-    newText = $("#new-text").val();
-
-    $.post("/article",
-        {
-            titre: newTitle,
-            date: instantDate,
-            img: newImg,
-            text: newText,
-        },
-        function (data, status, jqXHR) {
-            if (data.redirect) {
-                window.location = data.redirect;
-            }
-            else {
-
-            }
-        }
-    );
-}
-
 ClassicEditor
     .create(document.querySelector(".editor"), {
         toolbar: {
@@ -68,7 +44,6 @@ ClassicEditor
             ]
         },
         licenseKey: '',
-
     })
     .then(editor => {
         window.editor = editor;
@@ -79,3 +54,22 @@ ClassicEditor
         console.warn('Build id: 68ruokdtyzcq-rllgfekr2iaw');
         console.error(error);
     });
+
+function newArticle() {
+    let saveData = window.editor.getData();
+    $.post("/create_article",
+        {
+            data: saveData,
+            title: $("#title").val()
+        },
+        function (data, status, jqXHR) {
+            if (data.alert) {
+                alert(data.alert);
+            }
+
+            if (data.redirect) {
+                window.location = data.redirect;
+            }
+        }
+    );
+}

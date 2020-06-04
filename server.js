@@ -151,12 +151,71 @@ app.route('/create_article')
     .get(function (req, res) {
         const { token } = req.session;
         if (token) {
-            res.sendFile(__dirname + '/public/create_article.html');
+            db.account.findOne({ token: token, admin: true }, function (err, data) {
+                if (err) console.log(err);
+
+                if (data) {
+                    res.sendFile(__dirname + '/public/create_article.html');
+                }
+                else {
+                    res.redirect('/');
+                }
+            });
         }
         else {
             res.redirect('/');
         }
+    })
+    .post(function (req, res) {
+        const title = req.body.title;
+        const article = req.body.data;
+        const { token } = req.session;
+        if (token) {
+            db.account.findOne({ token: token, admin: true }, function (err, data) {
+                if (err) console.log(err);
+
+                if (data) {
+                    db.blog.insertOne({ id: Date.now(), date: new Date(), article: article, title: title }, function (err, success) {
+                        if (err) console.log(err);
+
+                        if (success) {
+                            res.send(
+                                {
+                                    alert: "Article posté avec succès",
+                                    redirect: "/"
+                                }
+                            )
+                        }
+                        else {
+                            res.send(
+                                {
+                                    alert: "Une erreur est survenue",
+                                    redirect: "/create_article"
+                                }
+                            )
+                        }
+                    });
+                }
+                else {
+                    res.send(
+                        {
+                            alert: "Vous n'avez pas les droits de poster un article !",
+                            redirect: "/"
+                        }
+                    )
+                }
+            });
+        }
+        else {
+            res.send(
+                {
+                    alert: "Vous devez être connecté pour pouvoir poster un article",
+                    redirect: "/login"
+                }
+            )
+        }
     });
+
 
 app.route('/profil')
     .get(function (req, res) {
@@ -538,12 +597,13 @@ class Entity {
 }
 
 class Player extends Entity {
-    constructor(id, parent_id, pseudo, x, y, size, map, speed) {
+    constructor(id, parent_id, pseudo, x, y, size, map, speed, bodyparts) {
         // Hérite de la classe Entity
         super(id, parent_id, x, y, size, map, speed);
 
         this.pseudo = pseudo;
 
+        this.bodyparts = bodyparts;
         this.sprite_number = String(Math.floor(Math.random() * 20) + 1).padStart(2, '0');
 
         this.pressingRight = false;
@@ -841,6 +901,16 @@ io.on('connection', function (socket) {
         socket.emit('nombre users', getPlayerCount());
     });
 
+    socket.on('getArticle', function () {
+        db.blog.find({}, function (err, data) {
+            if (err) console.log(err);
+
+            if (data) {
+                socket.emit('article', data);
+            }
+        });
+    });
+
     socket.on('getNav', function () {
         const { token } = socket.request.session;
         db.account.findOne({ token: token }, function (err, data) {
@@ -906,9 +976,40 @@ io.on('connection', function (socket) {
         db.account.findOne({ token: socket.request.session.token }, function (err, data) {
             if (err) console.log(err);
             let pseudo = data.username;
+            let base_bodyparts = {
+                angle: 0,
+                body: {
+                    sexe: 0,
+                    color: 2
+                },
+                hair: {
+                    type: 0,
+                    color: 0
+                },
+                backhair: {
+                    type: 0,
+                    color: 0
+                },
+                ears: {
+                    type: 0
+                },
+                facialmark: {
+                    type: 0
+                },
+                beastears: {
+                    type: 0
+                },
+                tail: {
+                    type: 0
+                },
+                beard: {
+                    type: 0,
+                    color: 0
+                }
+            };
             io.emit('chat message', { id: "Serveur", msg: `${pseudo} vient de se connecter !` });
             let player_map = ["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)];
-            player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, { minX: 16, minY: 0, maxX: 16, maxY: 46 }, player_map, 12);
+            player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, { minX: 16, minY: 0, maxX: 16, maxY: 46 }, player_map, 12, base_bodyparts);
             for (let i = 0; i < 8 * 9; i++) {
                 player_list[socket.id].inventory.addItem(Math.floor(Math.random() * 144), Math.floor(Math.random() * 99999));
             }
@@ -923,7 +1024,8 @@ io.on('connection', function (socket) {
                 moving: player_list[socket.id].moving,
                 direction: player_list[socket.id].direction,
                 map: player_list[socket.id].map,
-                inventory: player_list[socket.id].inventory.inventory
+                inventory: player_list[socket.id].inventory.inventory,
+                bodyparts: player_list[socket.id].bodyparts
             });
         });
 
@@ -987,6 +1089,10 @@ io.on('connection', function (socket) {
             else {
                 io.emit('chat message', { id: `(${player_list[socket.id].map}) ${player_list[socket.id].pseudo}`, msg: data });
             }
+        });
+
+        socket.on('set textures', function (bodyparts) {
+            player_list[socket.id].bodyparts = bodyparts;
         });
 
         socket.on('change-map', function () {
@@ -1061,7 +1167,8 @@ setInterval(function () {
             score: player.score,
             moving: player.moving,
             direction: player.direction,
-            map: player.map
+            map: player.map,
+            bodyparts: player.bodyparts
         });
     }
 

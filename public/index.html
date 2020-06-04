@@ -19,7 +19,7 @@
     <script src="scripts/accueil.js"></script>
 </head>
 
-<body onload="get(); socket.emit('welcome');">
+<body onload="get(); getArticle(); socket.emit('welcome');">
     <header>
         <nav>
             <ul id="link"></ul>
@@ -31,6 +31,7 @@
     <div id="infos">
         <span id="nbr-player"></span>
     </div>
+    <div id="article-content"></div>
 </body>
 
 </html>

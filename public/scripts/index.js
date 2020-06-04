@@ -63,36 +63,26 @@ for (let color = 1; color < 11; color++) {
     loader.add(`player_sprite_ear_${String(color).padStart(2, '0')}`, `sprites/players/bodyparts/ears/ears_${String(color).padStart(2, '0')}.png`);
 }
 // Hair / Backhair male
-for (let color = 0; color < 1; color++) {
-    for (let type = 1; type < 18; type++) {
-        loader.add(`player_sprite_male_hair1_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/male/hair/male_hair1_${color}_${String(type).padStart(2, '0')}.png`);
-        loader.add(`player_sprite_male_hair2_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/male/hair/male_hair2_${color}_${String(type).padStart(2, '0')}.png`);
-    }
-    for (let type = 1; type < 19; type++) {
-        loader.add(`player_sprite_male_backhair1_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/male/backhair/male_backhair1_${color}_${String(type).padStart(2, '0')}.png`);
-        loader.add(`player_sprite_male_backhair2_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/male/backhair/male_backhair2_${color}_${String(type).padStart(2, '0')}.png`);
-    }
+for (let color = 0; color < 18; color++) {
+    loader.add(`player_sprite_male_beard_${color}`, `sprites/players/bodyparts/male/beard/beard_0.png`);
+    loader.add(`player_sprite_male_hair_${color}`, `sprites/players/bodyparts/male/hair/male_hair_${color}.png`);
+    loader.add(`player_sprite_male_backhair_${color}`, `sprites/players/bodyparts/male/backhair/male_backhair_${color}.png`);
+    loader.add(`player_sprite_female_hair_${color}`, `sprites/players/bodyparts/female/hair/female_hair_${color}.png`);
+    loader.add(`player_sprite_female_backhair_${color}`, `sprites/players/bodyparts/female/backhair/female_backhair_${color}.png`);
 }
-// Hair / Backhair female
-for (let color = 0; color < 1; color++) {
-    for (let type = 1; type < 16; type++) {
-        loader.add(`player_sprite_female_hair1_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/female/hair/female_hair1_${color}_${String(type).padStart(2, '0')}.png`);
-        loader.add(`player_sprite_female_hair2_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/female/hair/female_hair2_${color}_${String(type).padStart(2, '0')}.png`);
-    }
-    for (let type = 1; type < 21; type++) {
-        loader.add(`player_sprite_female_backhair1_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/female/backhair/female_backhair1_${color}_${String(type).padStart(2, '0')}.png`);
-        loader.add(`player_sprite_female_backhair2_${color}_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/female/backhair/female_backhair2_${color}_${String(type).padStart(2, '0')}.png`);
-    }
+// Marque faciales
+for (let type = 1; type < 12; type++) {
+    loader.add(`player_sprite_facialmark_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/facialmark/facialmark_${String(type).padStart(2, '0')}.png`);
 }
-// Marque faciales male
-for (let type = 1; type < 9; type++) {
-    loader.add(`player_sprite_facialmark_male_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/male/facialmark/male_facialmark_${String(type).padStart(2, '0')}.png`);
+// Oreilles spéciales et queue
+for (let type = 0; type < 6; type++) {
+    loader.add(`player_sprite_tail_${type}`, `sprites/players/bodyparts/tail/tail_${type}.png`);
 }
-
-// Marque faciales female
-for (let type = 1; type < 8; type++) {
-    loader.add(`player_sprite_facialmark_female_${String(type).padStart(2, '0')}`, `sprites/players/bodyparts/female/facialmark/female_facialmark_${String(type).padStart(2, '0')}.png`);
+for (let type = 0; type < 11; type++) {
+    loader.add(`player_sprite_beastears_${type}`, `sprites/players/bodyparts/beastears/beastears_${type}.png`);
 }
+// Shadow
+loader.add('player_sprite_shadow', "sprites/players/bodyparts/shadow.png");
 // Chargement sprites armes
 loader.add('weapon_sprites_01', "sprites/weapons/spr_weapon_01.png");
 loader.add('weapon_sprites_02', "sprites/weapons/spr_weapon_02.png");
@@ -203,7 +193,7 @@ loader.load((loader, resources) => {
     }
 
     class Player extends Entity {
-        constructor(id, parent_id, pseudo, x, y, scale, hp, maxHP, score, sprite_number, map) {
+        constructor(id, parent_id, pseudo, x, y, scale, hp, maxHP, score, map, playerbodyparts) {
             super(id, parent_id, x, y, map);
 
             this.scale = scale;
@@ -214,7 +204,6 @@ loader.load((loader, resources) => {
             this.hp_text = new PIXI.Text(`HP : ${this.hp}`, { fontSize: 14 });
             this.hp_text.x = this.x - (16 * this.scale / 2);
             this.hp_text.y = this.y - (24 * this.scale);
-
             this.score = score;
 
             this.canBreath = true;
@@ -231,11 +220,47 @@ loader.load((loader, resources) => {
             this.emitter.autoUpdate = true;
 
             this.pseudo = pseudo;
-            this.generateSprite(sprite_number);
+            this.bodyparts = playerbodyparts;
+            this.generateSprite(this.bodyparts);
 
-            this.sprite = createAnimatedSprite(this.player_animation_walk_front, x, y, this.alpha, 0, { x: this.scale, y: this.scale }, 0.1, false);
-            this.sprite.id = id;
-            this.sprite.anchor.set(0.5);
+            this.character_container = new PIXI.Container();
+            this.character_container.sortableChildren = true;
+            this.shadow = createAnimatedSprite([PIXI.Texture.EMPTY], 0, 4, 1, 0, { x: 2, y: 2 }, 0.1, false);
+            this.shadow.anchor.set(0.5);
+            this.tail = createAnimatedSprite([PIXI.Texture.EMPTY], 0, 0, 1, 0, { x: 2, y: 2 }, 0.1, false);
+            this.tail.anchor.set(0.5);
+            this.body = createAnimatedSprite([PIXI.Texture.EMPTY], 0, 0, 1, 0, { x: 2, y: 2 }, 0.1, false);
+            this.body.anchor.set(0.5);
+            this.backhair = createAnimatedSprite([PIXI.Texture.EMPTY], 0, 0, 1, 0, { x: 2, y: 2 }, 0.1, false);
+            this.backhair.anchor.set(0.5);
+            this.ears = createAnimatedSprite([PIXI.Texture.EMPTY], 0, 0, 1, 0, { x: 2, y: 2 }, 0.1, false);
+            this.ears.anchor.set(0.5);
+            this.facialmark = createAnimatedSprite([PIXI.Texture.EMPTY], 0, 0, 1, 0, { x: 2, y: 2 }, 0.1, false);
+            this.facialmark.anchor.set(0.5);
+            this.beard = createAnimatedSprite([PIXI.Texture.EMPTY], 0, 0, 1, 0, { x: 2, y: 2 }, 0.1, false);
+            this.beard.anchor.set(0.5);
+            this.beastears = createAnimatedSprite([PIXI.Texture.EMPTY], 0, 0, 1, 0, { x: 2, y: 2 }, 0.1, false);
+            this.beastears.anchor.set(0.5);
+            this.hair = createAnimatedSprite([PIXI.Texture.EMPTY], 0, 0, 1, 0, { x: 2, y: 2 }, 0.1, false);
+            this.hair.anchor.set(0.5);
+            this.shadow.zIndex = 0;
+            this.tail.zIndex = 1;
+            this.body.zIndex = 2;
+            this.backhair.zIndex = 3;
+            this.ears.zIndex = 4;
+            this.facialmark.zIndex = 5;
+            this.beard.zIndex = 6;
+            this.beastears.zIndex = 7;
+            this.hair.zIndex = 8;
+            this.character_container.addChild(this.shadow);
+            this.character_container.addChild(this.tail);
+            this.character_container.addChild(this.body);
+            this.character_container.addChild(this.backhair);
+            this.character_container.addChild(this.ears);
+            this.character_container.addChild(this.facialmark);
+            this.character_container.addChild(this.beard);
+            this.character_container.addChild(this.beastears);
+            this.character_container.addChild(this.hair);
 
             player_list[id] = this;
         }
@@ -249,16 +274,16 @@ loader.load((loader, resources) => {
             if (this.canBreath) {
                 if (this.breathingIn) {
                     this.breathing -= 0.01;
-                    this.sprite.scale.y -= 0.0025 * deltaTime;
-                    this.sprite.scale.x += 0.0015 * deltaTime;
+                    this.character_container.scale.y -= 0.0010 * deltaTime;
+                    this.character_container.scale.x += 0.0005 * deltaTime;
                     if (this.breathing <= 0) {
                         this.breathingIn = false;
                     }
                 }
                 else {
                     this.breathing += 0.01;
-                    this.sprite.scale.y += 0.0025 * deltaTime;
-                    this.sprite.scale.x -= 0.0015 * deltaTime;
+                    this.character_container.scale.y += 0.0010 * deltaTime;
+                    this.character_container.scale.x -= 0.0005 * deltaTime;
                     if (this.breathing >= 1) {
                         this.timeBreath = 300 + Math.floor(Math.random() * 300);
                         this.canBreath = false;
@@ -269,16 +294,16 @@ loader.load((loader, resources) => {
 
         }
 
-        update(x, y, hp, moving, direction) {
+        update(x, y, hp, moving, direction, playerbodyparts) {
             this.x = x;
             this.y = y;
 
-            this.sprite.x = this.x;
-            this.sprite.y = this.y;
-            this.sprite.zIndex = this.y;
+            this.character_container.x = this.x;
+            this.character_container.y = this.y;
+            this.character_container.zIndex = this.y;
 
             this.updateHP(hp, this.x, this.y);
-            this.updateSprite(moving, direction);
+            this.updateSprite(moving, direction, playerbodyparts);
 
             if (this.moving) {
                 this.emitter.updateSpawnPos(this.x - 8, this.y + 32);
@@ -304,53 +329,97 @@ loader.load((loader, resources) => {
             this.hp_text.zIndex = y - (24 * this.scale);
         }
 
-        updateSprite(moving, direction) {
+        updateSprite(moving, direction, playerbodyparts) {
+            if (this.bodyparts != playerbodyparts) {
+                this.bodyparts = playerbodyparts;
+                this.generateSprite(playerbodyparts);
+            }
             if (this.direction != direction) {
                 this.direction = direction;
-                switch (this.direction) {
-                    case 0:
-                        this.sprite.textures = this.player_animation_walk_front;
-                        break;
-
-                    case 1:
-                        this.sprite.textures = this.player_animation_walk_left;
-                        break;
-
-                    case 2:
-                        this.sprite.textures = this.player_animation_walk_back;
-                        break;
-
-                    case 3:
-                        this.sprite.textures = this.player_animation_walk_right;
-                        break;
-
-                    default: break;
+                let spritedirection = this.direction == 0 || this.direction == 2 ? this.direction : this.direction == 1 ? 3 : 1;
+                this.shadow.textures = this.player_sprite_textures.shadow[direction];
+                this.tail.textures = this.player_sprite_textures.tail[spritedirection];
+                this.body.textures = this.player_sprite_textures.body[spritedirection];
+                this.backhair.textures = this.player_sprite_textures.backhair[spritedirection];
+                this.ears.textures = this.player_sprite_textures.ears[spritedirection];
+                this.facialmark.textures = this.player_sprite_textures.facialmark[spritedirection];
+                this.beard.textures = this.player_sprite_textures.beard[spritedirection];
+                this.beastears.textures = this.player_sprite_textures.beastears[spritedirection];
+                this.hair.textures = this.player_sprite_textures.hair[spritedirection];
+                if (this.direction != 2) {
+                    this.shadow.zIndex = 0;
+                    this.tail.zIndex = 1;
+                    this.body.zIndex = 2;
+                    this.backhair.zIndex = 3;
+                    this.ears.zIndex = 4;
+                    this.facialmark.zIndex = 5;
+                    this.beard.zIndex = 6;
+                    this.beastears.zIndex = 7;
+                    this.hair.zIndex = 8;
+                }
+                else {
+                    this.shadow.zIndex = 0;
+                    this.tail.zIndex = 8;
+                    this.body.zIndex = 5;
+                    this.backhair.zIndex = 7;
+                    this.ears.zIndex = 4;
+                    this.facialmark.zIndex = 3;
+                    this.beard.zIndex = 2;
+                    this.beastears.zIndex = 6;
+                    this.hair.zIndex = 1;
                 }
             }
 
             if (moving) {
                 this.moving = true;
-                this.sprite.play();
+                this.play();
             }
             else {
                 this.moving = false;
-                this.sprite.stop();
-                this.sprite.texture = this.sprite.textures[0];
+                this.stop();
             }
         }
 
-        generateSprite(sprite_number) {
-            let player_sprite = `player_sprites_${sprite_number}`;
-            this.player_sprite_textures = generateTextures(resources[player_sprite].texture, 3, 4, 32, 32).textures;
+        generateSprite(playerbodyparts) {
+            this.player_sprite_textures = generateCharacter(playerbodyparts);
+        }
 
-            this.player_animation_walk_front = [this.player_sprite_textures[1], this.player_sprite_textures[0], this.player_sprite_textures[1], this.player_sprite_textures[2]];
-            this.player_animation_walk_left = [this.player_sprite_textures[4], this.player_sprite_textures[3], this.player_sprite_textures[4], this.player_sprite_textures[5]];
-            this.player_animation_walk_right = [this.player_sprite_textures[7], this.player_sprite_textures[6], this.player_sprite_textures[7], this.player_sprite_textures[8]];
-            this.player_animation_walk_back = [this.player_sprite_textures[10], this.player_sprite_textures[9], this.player_sprite_textures[10], this.player_sprite_textures[11]];
+        play() {
+            this.shadow.play();
+            this.tail.play();
+            this.body.play();
+            this.backhair.play();
+            this.ears.play();
+            this.facialmark.play();
+            this.beard.play();
+            this.beastears.play();
+            this.hair.play();
+        }
+
+        stop() {
+            this.shadow.stop();
+            this.tail.stop();
+            this.body.stop();
+            this.backhair.stop();
+            this.ears.stop();
+            this.facialmark.stop();
+            this.beard.stop();
+            this.beastears.stop();
+            this.hair.stop();
+            let spritedirection = this.direction == 0 || this.direction == 2 ? this.direction : this.direction == 1 ? 3 : 1;
+            this.shadow.texture = this.player_sprite_textures.shadow[spritedirection][0];
+            this.tail.texture = this.player_sprite_textures.tail[spritedirection][0];
+            this.body.texture = this.player_sprite_textures.body[spritedirection][0];
+            this.backhair.texture = this.player_sprite_textures.backhair[spritedirection][0];
+            this.ears.texture = this.player_sprite_textures.ears[spritedirection][0];
+            this.facialmark.texture = this.player_sprite_textures.facialmark[spritedirection][0];
+            this.beard.texture = this.player_sprite_textures.beard[spritedirection][0];
+            this.beastears.texture = this.player_sprite_textures.beastears[spritedirection][0];
+            this.hair.texture = this.player_sprite_textures.hair[spritedirection][0];
         }
 
         die() {
-            this.sprite.destroy();
+            this.character_container.destroy();
             this.hp_text.destroy();
             delete player_list[this.id];
         }
@@ -669,6 +738,7 @@ loader.load((loader, resources) => {
             });
             this.head.on('pointermove', function () {
                 if (instance.dragged) {
+                    let old_value = instance.value;
                     const newPosition = instance.data.getLocalPosition(instance.head.parent);
                     if (newPosition.y > instance.maxY) {
                         instance.head.y = instance.maxY;
@@ -1067,7 +1137,6 @@ loader.load((loader, resources) => {
         constructor(x, y, width, height, sliderHeight, cmdover = null, cmdout = null, cmddown = null, cmdup = null) {
             var instance = this;
             this.ui = new UIContainer(x, y, width, height, 1, cmdover, cmdout, cmddown, cmdup);
-            this.ui.hideShow();
             this.container = this.ui.container;
 
             this.childCount = 0;
@@ -1079,9 +1148,8 @@ loader.load((loader, resources) => {
             this.container.addChild(this.mask);
             this.container.mask = this.mask;
 
-            this.slider = new SliderVertical(this.container.width - 16, this.container.height / 2, sliderHeight, 0, 100, 1, 0, 1, null, null, null, null, function (value) {
-                console.log(instance.mask.getBounds());
-                instance.insideContainer.y = -((instance.insideContainer.getBounds().height - (instance.mask.getBounds().height - 12)) * (value / 100));
+            this.slider = new SliderVertical(this.container.width - 20, this.container.height / 2, sliderHeight, 0, 100, 5, 0, 1, null, null, null, null, function (value) {
+                instance.insideContainer.y = -((instance.insideContainer.getBounds().height - (instance.mask.getBounds().height - 24)) * (value / 100));
             });
             this.slider.zIndex = 5;
             this.container.addChild(this.slider.container);
@@ -1585,13 +1653,13 @@ loader.load((loader, resources) => {
     }
 
     // Function
-    function generateTextures(texture, nbr_tile_x, nbr_tile_y, tile_size_x, tile_size_y) {
+    function generateTextures(texture, nbr_tile_x, nbr_tile_y, tile_size_x, tile_size_y, offset_x = 0, offset_y = 0) {
         let textures = [];
         let frame_count = 0;
         for (let y = 0; y < nbr_tile_y; y++) {
             for (let x = 0; x < nbr_tile_x; x++) {
                 textures[frame_count] = new PIXI.Texture(texture,
-                    new PIXI.Rectangle(x * tile_size_x, y * tile_size_y, tile_size_x, tile_size_y)
+                    new PIXI.Rectangle(offset_x + (x * tile_size_x), offset_y + (y * tile_size_y), tile_size_x, tile_size_y)
                 );
                 frame_count++;
             }
@@ -1706,139 +1774,226 @@ loader.load((loader, resources) => {
             hair: null,
             backhair: null,
             ears: null,
-            facialmark: null
-        }
-
-        let texture;
-        switch (bodyparts.angle) {
-            case 0:
-                texture = 1;
-                break;
-
-            case 1:
-                texture = 7;
-                break;
-
-            case 2:
-                texture = 10;
-                break;
-
-            case 3:
-                texture = 4;
-                break;
-
-            default: break;
+            facialmark: null,
+            beard: null,
+            beastears: null,
+            tail: null,
+            shadow: null
         }
 
         if (bodyparts.body.sexe == 0) {
-            let body_textures = generateTextures(resources[`player_sprite_body_male_${String(bodyparts.body.color).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
-            bodyparts_texture.body = [body_textures[texture - 1], body_textures[texture], body_textures[texture + 1], body_textures[texture]];
+            let body_texture = generateTextures(resources[`player_sprite_body_male_${String(bodyparts.body.color).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+            bodyparts_texture.body = [
+                [body_texture[1], body_texture[0], body_texture[1], body_texture[2]],
+                [body_texture[7], body_texture[6], body_texture[7], body_texture[8]],
+                [body_texture[10], body_texture[9], body_texture[10], body_texture[11]],
+                [body_texture[4], body_texture[3], body_texture[4], body_texture[5]]
+            ];
         }
         else if (bodyparts.body.sexe == 1) {
-            let body_textures = generateTextures(resources[`player_sprite_body_female_${String(bodyparts.body.color).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
-            bodyparts_texture.body = [body_textures[texture - 1], body_textures[texture], body_textures[texture + 1], body_textures[texture]];
+            let body_texture = generateTextures(resources[`player_sprite_body_female_${String(bodyparts.body.color).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+            bodyparts_texture.body = [
+                [body_texture[1], body_texture[0], body_texture[1], body_texture[2]],
+                [body_texture[7], body_texture[6], body_texture[7], body_texture[8]],
+                [body_texture[10], body_texture[9], body_texture[10], body_texture[11]],
+                [body_texture[4], body_texture[3], body_texture[4], body_texture[5]]
+            ];
         }
 
-        if (bodyparts.angle == 2) {
-            if (bodyparts.body.sexe == 0) {
-                if (bodyparts.hair.type == 0) {
-                    bodyparts_texture.hair = null;
-                }
-                else {
-                    let hair_texture = generateTextures(resources[`player_sprite_male_hair2_${bodyparts.hair.color}_${String(bodyparts.hair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
-                    bodyparts_texture.hair = [hair_texture[texture - 1], hair_texture[texture], hair_texture[texture + 1], hair_texture[texture]];
-                }
-
-                if (bodyparts.backhair.type == 0) {
-                    bodyparts_texture.backhair = null;
-                }
-                else {
-                    let backhair_texture = generateTextures(resources[`player_sprite_male_backhair2_${bodyparts.backhair.color}_${String(bodyparts.backhair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
-                    bodyparts_texture.backhair = [backhair_texture[texture - 1], backhair_texture[texture], backhair_texture[texture + 1], backhair_texture[texture]];
-                }
+        if (bodyparts.body.sexe == 0) {
+            if (bodyparts.hair.type == 0) {
+                bodyparts_texture.hair = [
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY]
+                ];
             }
-            else if (bodyparts.body.sexe == 1) {
-                if (bodyparts.hair.type == 0) {
-                    bodyparts_texture.hair = null;
-                }
-                else {
-                    let hair_texture = generateTextures(resources[`player_sprite_female_hair2_${bodyparts.hair.color}_${String(bodyparts.hair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
-                    bodyparts_texture.hair = [hair_texture[texture - 1], hair_texture[texture], hair_texture[texture + 1], hair_texture[texture]];
-                }
+            else {
+                let hair_texture = generateTextures(resources[`player_sprite_male_hair_${bodyparts.hair.color}`].texture, 3, 4, 48, 48, (bodyparts.hair.type - 1) * 144, 0).textures;
+                bodyparts_texture.hair = [
+                    [hair_texture[1], hair_texture[0], hair_texture[1], hair_texture[2]],
+                    [hair_texture[7], hair_texture[6], hair_texture[7], hair_texture[8]],
+                    [hair_texture[10], hair_texture[9], hair_texture[10], hair_texture[11]],
+                    [hair_texture[4], hair_texture[3], hair_texture[4], hair_texture[5]]
+                ];
+            }
 
-                if (bodyparts.backhair.type == 0) {
-                    bodyparts_texture.backhair = null;
-                }
-                else {
-                    let backhair_texture = generateTextures(resources[`player_sprite_female_backhair2_${bodyparts.backhair.color}_${String(bodyparts.backhair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
-                    bodyparts_texture.backhair = [backhair_texture[texture - 1], backhair_texture[texture], backhair_texture[texture + 1], backhair_texture[texture]];
-                }
+            if (bodyparts.backhair.type == 0) {
+                bodyparts_texture.backhair = [
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY]
+                ];
+            }
+            else {
+                let backhair_texture = generateTextures(resources[`player_sprite_male_backhair_${bodyparts.backhair.color}`].texture, 3, 4, 48, 48, (bodyparts.backhair.type - 1) * 144, 0).textures;
+                bodyparts_texture.backhair = [
+                    [backhair_texture[1], backhair_texture[0], backhair_texture[1], backhair_texture[2]],
+                    [backhair_texture[7], backhair_texture[6], backhair_texture[7], backhair_texture[8]],
+                    [backhair_texture[10], backhair_texture[9], backhair_texture[10], backhair_texture[11]],
+                    [backhair_texture[4], backhair_texture[3], backhair_texture[4], backhair_texture[5]]
+                ];
             }
         }
-        else {
-            if (bodyparts.body.sexe == 0) {
-                if (bodyparts.hair.type == 0) {
-                    bodyparts_texture.hair = null;
-                }
-                else {
-                    let hair_texture = generateTextures(resources[`player_sprite_male_hair1_${bodyparts.hair.color}_${String(bodyparts.hair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
-                    bodyparts_texture.hair = [hair_texture[texture - 1], hair_texture[texture], hair_texture[texture + 1], hair_texture[texture]];
-                }
-
-                if (bodyparts.backhair.type == 0) {
-                    bodyparts_texture.backhair = null;
-                }
-                else {
-                    let backhair_texture = generateTextures(resources[`player_sprite_male_backhair1_${bodyparts.backhair.color}_${String(bodyparts.backhair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
-                    bodyparts_texture.backhair = [backhair_texture[texture - 1], backhair_texture[texture], backhair_texture[texture + 1], backhair_texture[texture]];
-                }
+        else if (bodyparts.body.sexe == 1) {
+            if (bodyparts.hair.type == 0) {
+                bodyparts_texture.hair = [
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY]
+                ];
             }
-            else if (bodyparts.body.sexe == 1) {
-                if (bodyparts.hair.type == 0) {
-                    bodyparts_texture.hair = null;
-                }
-                else {
-                    let hair_texture = generateTextures(resources[`player_sprite_female_hair1_${bodyparts.hair.color}_${String(bodyparts.hair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
-                    bodyparts_texture.hair = [hair_texture[texture - 1], hair_texture[texture], hair_texture[texture + 1], hair_texture[texture]];
-                }
+            else {
+                let hair_texture = generateTextures(resources[`player_sprite_female_hair_${bodyparts.hair.color}`].texture, 3, 4, 48, 48, (bodyparts.hair.type - 1) * 144, 0).textures;
+                bodyparts_texture.hair = [
+                    [hair_texture[1], hair_texture[0], hair_texture[1], hair_texture[2]],
+                    [hair_texture[7], hair_texture[6], hair_texture[7], hair_texture[8]],
+                    [hair_texture[10], hair_texture[9], hair_texture[10], hair_texture[11]],
+                    [hair_texture[4], hair_texture[3], hair_texture[4], hair_texture[5]]
+                ];
+            }
 
-                if (bodyparts.backhair.type == 0) {
-                    bodyparts_texture.backhair = null;
-                }
-                else {
-                    let backhair_texture = generateTextures(resources[`player_sprite_female_backhair1_${bodyparts.backhair.color}_${String(bodyparts.backhair.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
-                    bodyparts_texture.backhair = [backhair_texture[texture - 1], backhair_texture[texture], backhair_texture[texture + 1], backhair_texture[texture]];
-                }
+            if (bodyparts.backhair.type == 0) {
+                bodyparts_texture.backhair = [
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY]
+                ];
+            }
+            else {
+                let backhair_texture = generateTextures(resources[`player_sprite_female_backhair_${bodyparts.backhair.color}`].texture, 3, 4, 48, 48, (bodyparts.backhair.type - 1) * 144, 0).textures;
+                bodyparts_texture.backhair = [
+                    [backhair_texture[1], backhair_texture[0], backhair_texture[1], backhair_texture[2]],
+                    [backhair_texture[7], backhair_texture[6], backhair_texture[7], backhair_texture[8]],
+                    [backhair_texture[10], backhair_texture[9], backhair_texture[10], backhair_texture[11]],
+                    [backhair_texture[4], backhair_texture[3], backhair_texture[4], backhair_texture[5]]
+                ];
             }
         }
 
         if (bodyparts.ears.type == 0) {
-            bodyparts_texture.ears = null;
+            bodyparts_texture.ears = [
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY]
+            ];
         }
         else if (bodyparts.ears.type == 1) {
             let ears_texture = generateTextures(resources[`player_sprite_ear_${String(bodyparts.body.color).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
-            bodyparts_texture.ears = [ears_texture[texture - 1], ears_texture[texture], ears_texture[texture + 1], ears_texture[texture]];
+            bodyparts_texture.ears = [
+                [ears_texture[1], ears_texture[0], ears_texture[1], ears_texture[2]],
+                [ears_texture[7], ears_texture[6], ears_texture[7], ears_texture[8]],
+                [ears_texture[10], ears_texture[9], ears_texture[10], ears_texture[11]],
+                [ears_texture[4], ears_texture[3], ears_texture[4], ears_texture[5]]
+            ];
         }
 
         if (bodyparts.facialmark.type == 0) {
-            bodyparts_texture.facialmark = null;
+            bodyparts_texture.facialmark = [
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY]
+            ];
+        }
+        else {
+            let facialmask_texture = generateTextures(resources[`player_sprite_facialmark_${String(bodyparts.facialmark.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
+            bodyparts_texture.facialmark = [
+                [facialmask_texture[1], facialmask_texture[0], facialmask_texture[1], facialmask_texture[2]],
+                [facialmask_texture[7], facialmask_texture[6], facialmask_texture[7], facialmask_texture[8]],
+                [facialmask_texture[10], facialmask_texture[9], facialmask_texture[10], facialmask_texture[11]],
+                [facialmask_texture[4], facialmask_texture[3], facialmask_texture[4], facialmask_texture[5]]
+            ];
+        }
+
+        if (bodyparts.beard.type == 0) {
+            bodyparts_texture.beard = [
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY]
+            ];
         }
         else {
             if (bodyparts.body.sexe == 0) {
-                let facialmask_texture = generateTextures(resources[`player_sprite_facialmark_male_${String(bodyparts.facialmark.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
-                bodyparts_texture.facialmark = [facialmask_texture[texture - 1], facialmask_texture[texture], facialmask_texture[texture + 1], facialmask_texture[texture]];
+                let beard_texture = generateTextures(resources[`player_sprite_male_beard_${bodyparts.beard.color}`].texture, 3, 4, 48, 48, (bodyparts.beard.type - 1) * 144, 0).textures;
+                bodyparts_texture.beard = [
+                    [beard_texture[1], beard_texture[0], beard_texture[1], beard_texture[2]],
+                    [beard_texture[7], beard_texture[6], beard_texture[7], beard_texture[8]],
+                    [beard_texture[10], beard_texture[9], beard_texture[10], beard_texture[11]],
+                    [beard_texture[4], beard_texture[3], beard_texture[4], beard_texture[5]]
+                ];
             }
             else if (bodyparts.body.sexe == 1) {
-                let facialmask_texture = generateTextures(resources[`player_sprite_facialmark_female_${String(bodyparts.facialmark.type).padStart(2, '0')}`].texture, 3, 4, 48, 48).textures;
-                bodyparts_texture.facialmark = [facialmask_texture[texture - 1], facialmask_texture[texture], facialmask_texture[texture + 1], facialmask_texture[texture]];
+                bodyparts_texture.beard = [
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY],
+                    [PIXI.Texture.EMPTY]
+                ];
             }
         }
+
+        if (bodyparts.beastears.type == 0) {
+            bodyparts_texture.beastears = [
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY]
+            ];
+        }
+        else {
+            let beastears_texture = generateTextures(resources[`player_sprite_beastears_${bodyparts.beastears.type - 1}`].texture, 3, 4, 48, 48).textures;
+            bodyparts_texture.beastears = [
+                [beastears_texture[1], beastears_texture[0], beastears_texture[1], beastears_texture[2]],
+                [beastears_texture[7], beastears_texture[6], beastears_texture[7], beastears_texture[8]],
+                [beastears_texture[10], beastears_texture[9], beastears_texture[10], beastears_texture[11]],
+                [beastears_texture[4], beastears_texture[3], beastears_texture[4], beastears_texture[5]]
+            ];
+        }
+
+        if (bodyparts.tail.type == 0) {
+            bodyparts_texture.tail = [
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY],
+                [PIXI.Texture.EMPTY]
+            ];
+        }
+        else {
+            let tail_texture = generateTextures(resources[`player_sprite_tail_${bodyparts.tail.type - 1}`].texture, 3, 4, 48, 48).textures;
+            bodyparts_texture.tail = [
+                [tail_texture[1], tail_texture[0], tail_texture[1], tail_texture[2]],
+                [tail_texture[7], tail_texture[6], tail_texture[7], tail_texture[8]],
+                [tail_texture[10], tail_texture[9], tail_texture[10], tail_texture[11]],
+                [tail_texture[4], tail_texture[3], tail_texture[4], tail_texture[5]]
+            ];
+        }
+
+        let shadow_texture = generateTextures(resources['player_sprite_shadow'].texture, 3, 4, 48, 48).textures;
+        bodyparts_texture.shadow = [
+            [shadow_texture[1], shadow_texture[0], shadow_texture[1], shadow_texture[2]],
+            [shadow_texture[7], shadow_texture[6], shadow_texture[7], shadow_texture[8]],
+            [shadow_texture[10], shadow_texture[9], shadow_texture[10], shadow_texture[11]],
+            [shadow_texture[4], shadow_texture[3], shadow_texture[4], shadow_texture[5]]
+        ];
 
         return bodyparts_texture;
     }
 
     function createMenuCharacterGenerator() {
-        character_generator_layer = new UIContainer(app.screen.width / 2, app.screen.height / 2, 20, 18, 1, null, null, null, null);
+        character_generator_layer = new UIContainer(app.screen.width / 2, app.screen.height / 2, 15, 21, 1,
+            function () {
+                canShoot = false;
+            },
+            function () {
+                canShoot = true;
+            }, null, null);
         character_generator_layer.hideShow();
         ui_layer.addChild(character_generator_layer.container);
 
@@ -1862,115 +2017,104 @@ loader.load((loader, resources) => {
             },
             facialmark: {
                 type: 0
+            },
+            beastears: {
+                type: 0
+            },
+            tail: {
+                type: 0
+            },
+            beard: {
+                type: 0,
+                color: 0
             }
-        }
+        };
 
         function setTexture(bodyparts_texture) {
-            if (bodyparts_texture.body) {
-                body.textures = bodyparts_texture.body;
-                body.texture = bodyparts_texture.body[1];
-                if (animate) {
-                    body.play();
-                }
-                else {
-                    body.stop();
-                }
+            console.log(bodyparts_texture);
+            tail.textures = bodyparts_texture.tail[bodyparts.angle];
+            body.textures = bodyparts_texture.body[bodyparts.angle];
+            backhair.textures = bodyparts_texture.backhair[bodyparts.angle];
+            ears.textures = bodyparts_texture.ears[bodyparts.angle];
+            facialmark.textures = bodyparts_texture.facialmark[bodyparts.angle];
+            beard.textures = bodyparts_texture.beard[bodyparts.angle];
+            beastears.textures = bodyparts_texture.beastears[bodyparts.angle];
+            hair.textures = bodyparts_texture.hair[bodyparts.angle];
+            shadow.textures = bodyparts_texture.shadow[bodyparts.angle];
+
+            if (animate) {
+                tail.play();
+                body.play();
+                backhair.play();
+                ears.play();
+                facialmark.play();
+                beard.play();
+                beastears.play();
+                hair.play();
+                shadow.play();
             }
             else {
-                body.textures = [PIXI.Texture.EMPTY];
-                body.texture = PIXI.Texture.EMPTY;
+                tail.stop();
                 body.stop();
-            }
-
-            if (bodyparts_texture.backhair) {
-                backhair.textures = bodyparts_texture.backhair;
-                backhair.texture = bodyparts_texture.backhair[1];
-                if (animate) {
-                    backhair.play();
-                }
-                else {
-                    backhair.stop();
-                }
-            }
-            else {
-                backhair.textures = [PIXI.Texture.EMPTY];
-                backhair.texture = PIXI.Texture.EMPTY;
                 backhair.stop();
-            }
-
-            if (bodyparts_texture.ears) {
-                ears.textures = bodyparts_texture.ears;
-                ears.texture = bodyparts_texture.ears[1];
-                if (animate) {
-                    ears.play();
-                }
-                else {
-                    ears.stop();
-                }
-            }
-            else {
-                ears.textures = [PIXI.Texture.EMPTY];
-                ears.texture = PIXI.Texture.EMPTY;
                 ears.stop();
-            }
-
-            if (bodyparts_texture.facialmark) {
-                facialmark.textures = bodyparts_texture.facialmark;
-                facialmark.texture = bodyparts_texture.facialmark[1];
-                if (animate) {
-                    facialmark.play();
-                }
-                else {
-                    facialmark.stop();
-                }
-            }
-            else {
-                facialmark.textures = [PIXI.Texture.EMPTY];
-                facialmark.texture = PIXI.Texture.EMPTY;
                 facialmark.stop();
-            }
-
-            if (bodyparts_texture.hair) {
-                hair.textures = bodyparts_texture.hair;
-                hair.texture = bodyparts_texture.hair[1];
-                if (animate) {
-                    hair.play();
-                }
-                else {
-                    hair.stop();
-                }
-            }
-            else {
-                hair.textures = [PIXI.Texture.EMPTY];
-                hair.texture = PIXI.Texture.EMPTY;
+                beard.stop();
+                beastears.stop();
                 hair.stop();
+                shadow.stop();
+                tail.texture = tail.textures[0];
+                body.texture = body.textures[0];
+                backhair.texture = backhair.textures[0];
+                ears.texture = ears.textures[0];
+                facialmark.texture = facialmark.textures[0];
+                beard.texture = beard.textures[0];
+                beastears.texture = beastears.textures[0];
+                hair.texture = hair.textures[0];
+                shadow.texture = shadow.textures[0];
             }
         }
 
-        let character_view = new UIContainer(96, 96, 5, 5, 1, null, null, null, null);
+        let character_view = new UIContainer(96, 136 - 4, 5, 7, 1, null, null, null, null);
         character_view.hideShow();
         let character_container = new PIXI.Container();
         character_container.sortableChildren = true;
         character_view.container.addChild(character_container);
-        let body = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2, 1, 0, { x: 2.5, y: 2.5 }, 0.1, false);
+        let shadow = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2 - 8, 1, 0, { x: 3, y: 3 }, 0.1, false);
+        shadow.anchor.set(0.5);
+        let tail = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2 - 16, 1, 0, { x: 3, y: 3 }, 0.1, false);
+        tail.anchor.set(0.5);
+        let body = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2 - 16, 1, 0, { x: 3, y: 3 }, 0.1, false);
         body.anchor.set(0.5);
-        let backhair = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2, 1, 0, { x: 2.5, y: 2.5 }, 0.1, false);
+        let backhair = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2 - 16, 1, 0, { x: 3, y: 3 }, 0.1, false);
         backhair.anchor.set(0.5);
-        let ears = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2, 1, 0, { x: 2.5, y: 2.5 }, 0.1, false);
+        let ears = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2 - 16, 1, 0, { x: 3, y: 3 }, 0.1, false);
         ears.anchor.set(0.5);
-        let facialmark = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2, 1, 0, { x: 2.5, y: 2.5 }, 0.1, false);
+        let facialmark = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2 - 16, 1, 0, { x: 3, y: 3 }, 0.1, false);
         facialmark.anchor.set(0.5);
-        let hair = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2, 1, 0, { x: 2.5, y: 2.5 }, 0.1, false);
+        let beard = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2 - 16, 1, 0, { x: 3, y: 3 }, 0.1, false);
+        beard.anchor.set(0.5);
+        let beastears = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2 - 16, 1, 0, { x: 3, y: 3 }, 0.1, false);
+        beastears.anchor.set(0.5);
+        let hair = createAnimatedSprite([PIXI.Texture.EMPTY], character_view.container.width / 2, character_view.container.height / 2 - 16, 1, 0, { x: 3, y: 3 }, 0.1, false);
         hair.anchor.set(0.5);
-        body.zIndex = 0;
-        backhair.zIndex = 1;
-        ears.zIndex = 2;
-        facialmark.zIndex = 3;
-        hair.zIndex = 4;
+        shadow.zIndex = 0;
+        tail.zIndex = 1;
+        body.zIndex = 2;
+        backhair.zIndex = 3;
+        ears.zIndex = 4;
+        facialmark.zIndex = 5;
+        beard.zIndex = 6;
+        beastears.zIndex = 7;
+        hair.zIndex = 8;
+        character_container.addChild(shadow);
+        character_container.addChild(tail);
         character_container.addChild(body);
         character_container.addChild(backhair);
-        character_container.addChild(facialmark);
         character_container.addChild(ears);
+        character_container.addChild(facialmark);
+        character_container.addChild(beard);
+        character_container.addChild(beastears);
         character_container.addChild(hair);
         let minusButton = new MiniButton(28, character_view.container.height - 14, 0, button_icons.textures[14], null, null, null, function () {
             if (bodyparts.angle == 0) {
@@ -1981,18 +2125,26 @@ loader.load((loader, resources) => {
             }
 
             if (bodyparts.angle == 2) {
-                body.zIndex = 3;
-                backhair.zIndex = 4;
-                ears.zIndex = 2;
-                facialmark.zIndex = 1;
-                hair.zIndex = 0;
+                shadow.zIndex = 0;
+                tail.zIndex = 8;
+                body.zIndex = 5;
+                backhair.zIndex = 7;
+                ears.zIndex = 4;
+                facialmark.zIndex = 3;
+                beard.zIndex = 2;
+                beastears.zIndex = 6;
+                hair.zIndex = 1;
             }
             else {
-                body.zIndex = 0;
-                backhair.zIndex = 1;
-                ears.zIndex = 2;
-                facialmark.zIndex = 3;
-                hair.zIndex = 4;
+                shadow.zIndex = 0;
+                tail.zIndex = 1;
+                body.zIndex = 2;
+                backhair.zIndex = 3;
+                ears.zIndex = 4;
+                facialmark.zIndex = 5;
+                beard.zIndex = 6;
+                beastears.zIndex = 7;
+                hair.zIndex = 8;
             }
             setTexture(generateCharacter(bodyparts));
         }, "", true);
@@ -2006,18 +2158,26 @@ loader.load((loader, resources) => {
             }
 
             if (bodyparts.angle == 2) {
-                body.zIndex = 3;
-                backhair.zIndex = 4;
-                ears.zIndex = 2;
-                facialmark.zIndex = 1;
-                hair.zIndex = 0;
+                shadow.zIndex = 0;
+                tail.zIndex = 8;
+                body.zIndex = 5;
+                backhair.zIndex = 7;
+                ears.zIndex = 4;
+                facialmark.zIndex = 3;
+                beard.zIndex = 2;
+                beastears.zIndex = 6;
+                hair.zIndex = 1;
             }
             else {
-                body.zIndex = 0;
-                backhair.zIndex = 1;
-                ears.zIndex = 2;
-                facialmark.zIndex = 3;
-                hair.zIndex = 4;
+                shadow.zIndex = 0;
+                tail.zIndex = 1;
+                body.zIndex = 2;
+                backhair.zIndex = 3;
+                ears.zIndex = 4;
+                facialmark.zIndex = 5;
+                beard.zIndex = 6;
+                beastears.zIndex = 7;
+                hair.zIndex = 8;
             }
             setTexture(generateCharacter(bodyparts));
         }, "", true);
@@ -2026,19 +2186,19 @@ loader.load((loader, resources) => {
 
         setTexture(generateCharacter(bodyparts));
 
-        let male_options = new UIContainer(character_generator_layer.container.width / 2, character_generator_layer.container.height / 2 + 88, 19, 11, 1, null, null, null, null);
-        male_options.hideShow();
+        let male_options = new ScrollableContainer(character_generator_layer.container.width / 2, character_generator_layer.container.height / 2 + 112 - 12, 14, 11, 13, null, null, null, null);
+        male_options.ui.hideShow();
         character_generator_layer.container.addChild(male_options.container);
         let male_options_text = new Text(8, 8, "Options Homme", 16, { x: 0, y: 0 });
-        male_options.container.addChild(male_options_text.text);
+        male_options.addChild(male_options_text.text);
 
-        let female_options = new UIContainer(character_generator_layer.container.width / 2, character_generator_layer.container.height / 2 + 88, 19, 11, 1, null, null, null, null);
+        let female_options = new UIContainer(character_generator_layer.container.width / 2, character_generator_layer.container.height / 2 + 112 - 12, 14, 11, 1, null, null, null, null);
         character_generator_layer.container.addChild(female_options.container);
         let female_options_text = new Text(8, 8, "Options Femme", 16, { x: 0, y: 0 });
         female_options.container.addChild(female_options_text.text);
 
-        let choose_sex_male_checkbox = new CheckBox(256, 32, true, null, null, null, null, function () {
-            male_options.hideShow();
+        let choose_sex_male_checkbox = new CheckBox(character_generator_layer.container.width / 3 + 40, 40 - 4, true, null, null, null, null, function () {
+            male_options.ui.hideShow();
             female_options.hideShow();
 
             bodyparts.body.sexe = 0;
@@ -2046,12 +2206,15 @@ loader.load((loader, resources) => {
             bodyparts.backhair.type = slider_backhair_male.value;
             bodyparts.ears.type = slider_ears_male.value;
             bodyparts.facialmark.type = slider_facialmark_male.value;
+            bodyparts.beard.type = slider_beard_male.value;
+            bodyparts.beastears.type = slider_beastears_male.value;
+            bodyparts.tail.type = slider_tail_male.value;
             setTexture(generateCharacter(bodyparts));
         }, null);
-        let male_text = new Text(304, 32, "Homme", 14);
+        let male_text = new Text(character_generator_layer.container.width / 3 + 64, 40 - 4, "Homme", 14, { x: 0, y: 0.5 });
         character_generator_layer.container.addChild(male_text.text);
-        let choose_sex_female_checkbox = new CheckBox(384, 32, false, null, null, null, null, function () {
-            male_options.hideShow();
+        let choose_sex_female_checkbox = new CheckBox((character_generator_layer.container.width / 3) * 2 + 40, 40 - 4, false, null, null, null, null, function () {
+            male_options.ui.hideShow();
             female_options.hideShow();
 
             bodyparts.body.sexe = 1;
@@ -2059,32 +2222,41 @@ loader.load((loader, resources) => {
             bodyparts.backhair.type = slider_backhair_female.value;
             bodyparts.ears.type = slider_ears_female.value;
             bodyparts.facialmark.type = slider_facialmark_female.value;
+            bodyparts.beard.type = 0;
+            bodyparts.beastears.type = slider_beastears_female.value;
+            bodyparts.tail.type = slider_tail_female.value;
             setTexture(generateCharacter(bodyparts));
         }, null);
-        let female_text = new Text(432, 32, "Femme", 14);
+        let female_text = new Text((character_generator_layer.container.width / 3) * 2 + 64, 40 - 4, "Femme", 14, { x: 0, y: 0.5 });
         character_generator_layer.container.addChild(female_text.text);
         choose_sex_male_checkbox.addCheckbox(choose_sex_female_checkbox);
         choose_sex_female_checkbox.addCheckbox(choose_sex_male_checkbox);
         character_generator_layer.container.addChild(choose_sex_male_checkbox.container);
         character_generator_layer.container.addChild(choose_sex_female_checkbox.container);
 
-        let slider_skin_color = new SliderHorizontal(character_generator_layer.container.width / 2 + 72, 92, 12, 1, 10, 1, 2, 0, null, null, null, null, function (value) {
+        let slider_skin_color = new SliderHorizontal(character_generator_layer.container.width / 2 + 82, 100 - 4, 11, 1, 10, 1, 2, 0, null, null, null, null, function (value) {
             bodyparts.body.color = value;
             setTexture(generateCharacter(bodyparts));
         });
         character_generator_layer.container.addChild(slider_skin_color.container);
-        let slider_skin_color_text = new Text(248, 68, "Couleur de peau :", 14, { x: 0, y: 0.5 });
+        let slider_skin_color_text = new Text(character_generator_layer.container.width / 3 + 32, 76 - 4, "Couleur de peau :", 14, { x: 0, y: 0.5 });
         character_generator_layer.container.addChild(slider_skin_color_text.text);
 
-        let slider_hair_color = new SliderHorizontal(character_generator_layer.container.width / 2 + 72, 140, 12, 0, 0, 1, 0, 0, null, null, null, null, function (value) {
+        let slider_hair_color = new SliderHorizontal(character_generator_layer.container.width / 2 + 82, 148 - 4, 11, 0, 17, 1, 0, 0, null, null, null, null, function (value) {
             bodyparts.hair.color = value;
-            bodyparts.backhair.color = value;
             setTexture(generateCharacter(bodyparts));
         });
         character_generator_layer.container.addChild(slider_hair_color.container);
-        let slider_hair_color_text = new Text(248, 116, "Couleur de cheveux :", 14, { x: 0, y: 0.5 });
+        let slider_hair_color_text = new Text(character_generator_layer.container.width / 3 + 32, 124 - 4, "Couleur de cheveux avant :", 14, { x: 0, y: 0.5 });
         character_generator_layer.container.addChild(slider_hair_color_text.text);
-        let animate_checkbox = new CheckBox(256, 172, false, null, null, null, null, function () {
+        let slider_backhair_color = new SliderHorizontal(character_generator_layer.container.width / 2 + 82, 196 - 4, 11, 0, 17, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.backhair.color = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        character_generator_layer.container.addChild(slider_backhair_color.container);
+        let slider_backhair_color_text = new Text(character_generator_layer.container.width / 3 + 32, 172 - 4, "Couleur de cheveux arrière :", 14, { x: 0, y: 0.5 });
+        character_generator_layer.container.addChild(slider_backhair_color_text.text);
+        let animate_checkbox = new CheckBox(character_generator_layer.container.width / 3 + 40, 228 - 4, false, null, null, null, null, function () {
             animate = true;
             setTexture(generateCharacter(bodyparts));
         }, function () {
@@ -2092,7 +2264,7 @@ loader.load((loader, resources) => {
             setTexture(generateCharacter(bodyparts));
         });
         character_generator_layer.container.addChild(animate_checkbox.container);
-        let animate_checkbox_text = new Text(278, 172, "Sprite animée", 14, { x: 0, y: 0.5 });
+        let animate_checkbox_text = new Text(character_generator_layer.container.width / 3 + 64, 228 - 4, "Sprite animée", 14, { x: 0, y: 0.5 });
         character_generator_layer.container.addChild(animate_checkbox_text.text);
 
         // options male 
@@ -2100,30 +2272,51 @@ loader.load((loader, resources) => {
             bodyparts.hair.type = value;
             setTexture(generateCharacter(bodyparts));
         });
-        male_options.container.addChild(slider_hair_male.container);
+        male_options.addChild(slider_hair_male.container);
         let slider_hair_male_text = new Text(male_options.container.width / 2 - 144, 48, "Cheveux avant :", 14, { x: 0, y: 0.5 });
-        male_options.container.addChild(slider_hair_male_text.text);
+        male_options.addChild(slider_hair_male_text.text);
         let slider_backhair_male = new SliderHorizontal(male_options.container.width / 2, 120, 12, 0, 18, 1, 0, 0, null, null, null, null, function (value) {
             bodyparts.backhair.type = value;
             setTexture(generateCharacter(bodyparts));
         });
-        male_options.container.addChild(slider_backhair_male.container);
+        male_options.addChild(slider_backhair_male.container);
         let slider_backhair_male_text = new Text(male_options.container.width / 2 - 144, 96, "Cheveux arrière :", 14, { x: 0, y: 0.5 });
-        male_options.container.addChild(slider_backhair_male_text.text);
+        male_options.addChild(slider_backhair_male_text.text);
         let slider_ears_male = new SliderHorizontal(male_options.container.width / 2, 168, 12, 0, 1, 1, 0, 0, null, null, null, null, function (value) {
             bodyparts.ears.type = value;
             setTexture(generateCharacter(bodyparts));
         });
-        male_options.container.addChild(slider_ears_male.container);
+        male_options.addChild(slider_ears_male.container);
         let slider_ears_male_text = new Text(male_options.container.width / 2 - 144, 144, "Oreilles :", 14, { x: 0, y: 0.5 });
-        male_options.container.addChild(slider_ears_male_text.text);
-        let slider_facialmark_male = new SliderHorizontal(male_options.container.width / 2, 216, 12, 0, 8, 1, 0, 0, null, null, null, null, function (value) {
+        male_options.addChild(slider_ears_male_text.text);
+        let slider_facialmark_male = new SliderHorizontal(male_options.container.width / 2, 216, 12, 0, 11, 1, 0, 0, null, null, null, null, function (value) {
             bodyparts.facialmark.type = value;
             setTexture(generateCharacter(bodyparts));
         });
-        male_options.container.addChild(slider_facialmark_male.container);
+        male_options.addChild(slider_facialmark_male.container);
         let slider_facialmark_male_text = new Text(male_options.container.width / 2 - 144, 192, "Marque faciale :", 14, { x: 0, y: 0.5 });
-        male_options.container.addChild(slider_facialmark_male_text.text);
+        male_options.addChild(slider_facialmark_male_text.text);
+        let slider_beastears_male = new SliderHorizontal(male_options.container.width / 2, 264, 12, 0, 11, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.beastears.type = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        male_options.addChild(slider_beastears_male.container);
+        let slider_beastears_male_text = new Text(male_options.container.width / 2 - 144, 240, "Oreilles spéciales :", 14, { x: 0, y: 0.5 });
+        male_options.addChild(slider_beastears_male_text.text);
+        let slider_tail_male = new SliderHorizontal(male_options.container.width / 2, 312, 12, 0, 5, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.tail.type = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        male_options.addChild(slider_tail_male.container);
+        let slider_tail_male_text = new Text(male_options.container.width / 2 - 144, 288, "Queue :", 14, { x: 0, y: 0.5 });
+        male_options.addChild(slider_tail_male_text.text);
+        let slider_beard_male = new SliderHorizontal(male_options.container.width / 2, 360, 12, 0, 10, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.beard.type = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        male_options.addChild(slider_beard_male.container);
+        let slider_beard_male_text = new Text(male_options.container.width / 2 - 144, 336, "Barbe :", 14, { x: 0, y: 0.5 });
+        male_options.addChild(slider_beard_male_text.text);
 
         // options female
         let slider_hair_female = new SliderHorizontal(female_options.container.width / 2, 72, 12, 0, 15, 1, 0, 0, null, null, null, null, function (value) {
@@ -2147,13 +2340,35 @@ loader.load((loader, resources) => {
         female_options.container.addChild(slider_ears_female.container);
         let slider_ears_female_text = new Text(female_options.container.width / 2 - 144, 144, "Oreilles :", 14, { x: 0, y: 0.5 });
         female_options.container.addChild(slider_ears_female_text.text);
-        let slider_facialmark_female = new SliderHorizontal(female_options.container.width / 2, 216, 12, 0, 7, 1, 0, 0, null, null, null, null, function (value) {
+        let slider_facialmark_female = new SliderHorizontal(female_options.container.width / 2, 216, 12, 0, 11, 1, 0, 0, null, null, null, null, function (value) {
             bodyparts.facialmark.type = value;
             setTexture(generateCharacter(bodyparts));
         });
         female_options.container.addChild(slider_facialmark_female.container);
         let slider_facialmark_female_text = new Text(female_options.container.width / 2 - 144, 192, "Marque faciale :", 14, { x: 0, y: 0.5 });
         female_options.container.addChild(slider_facialmark_female_text.text);
+        let slider_beastears_female = new SliderHorizontal(male_options.container.width / 2, 264, 12, 0, 11, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.beastears.type = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        female_options.container.addChild(slider_beastears_female.container);
+        let slider_beastears_female_text = new Text(male_options.container.width / 2 - 144, 240, "Oreilles spéciales :", 14, { x: 0, y: 0.5 });
+        female_options.container.addChild(slider_beastears_female_text.text);
+        let slider_tail_female = new SliderHorizontal(male_options.container.width / 2, 312, 12, 0, 5, 1, 0, 0, null, null, null, null, function (value) {
+            bodyparts.tail.type = value;
+            setTexture(generateCharacter(bodyparts));
+        });
+        female_options.container.addChild(slider_tail_female.container);
+        let slider_tail_female_text = new Text(male_options.container.width / 2 - 144, 288, "Queue :", 14, { x: 0, y: 0.5 });
+        female_options.container.addChild(slider_tail_female_text.text);
+
+        // Bouton validation
+        let validate_button = new Button(character_generator_layer.container.width / 2, character_generator_layer.container.height - 32, "Créer mon personnage", 9, null, null, null,
+            function () {
+                socket.emit('set textures', bodyparts);
+            }
+        );
+        character_generator_layer.container.addChild(validate_button.container);
     }
 
     function createMobileControll() {
@@ -2421,6 +2636,20 @@ loader.load((loader, resources) => {
             }
         );
         ui_layer.addChild(menu_fullscreen.container);
+
+        let menu_generator = new SquareButton(app.screen.width - 264, 24, 4, "Générateur", false,
+            function () {
+                canShoot = false;
+            },
+            function () {
+                canShoot = true;
+            },
+            null,
+            function () {
+                character_generator_layer.hideShow();
+            }
+        );
+        ui_layer.addChild(menu_generator.container);
     }
 
     function createInventory() {
@@ -2659,6 +2888,7 @@ loader.load((loader, resources) => {
                     current_player.hp = player.hp;
                     current_player.direction = player.direction;
                     current_player.moving = player.moving;
+                    current_player.bodyparts = player.bodyparts;
                     if (current_player.map != player.map) {
                         updateCurrentMap(player.map);
                     }
@@ -2667,12 +2897,13 @@ loader.load((loader, resources) => {
 
                 if (player.map == current_player.map) {
                     if (!player_list[player.id]) {
-                        player_list[player.id] = new Player(player.id, null, player.pseudo, player.x, player.y, scale, player.hp, player.maxHP, player.score, player.sprite_number, player.moving, player.direction, player.map);
-                        player_layer.addChild(player_list[player.id].sprite);
+                        player_list[player.id] = new Player(player.id, null, player.pseudo, player.x, player.y, scale, player.hp, player.maxHP, player.score, player.map, player.bodyparts);
+                        console.log(player_list[player.id].character_container);
+                        player_layer.addChild(player_list[player.id].character_container);
                         player_layer.addChild(player_list[player.id].hp_text);
                     }
                     else {
-                        player_list[player.id].update(player.x, player.y, player.hp, player.moving, player.direction);
+                        player_list[player.id].update(player.x, player.y, player.hp, player.moving, player.direction, player.bodyparts);
                     }
                 }
                 else {
