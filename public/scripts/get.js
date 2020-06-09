@@ -44,7 +44,8 @@ socket.on('profilData', function (data) {
 });
 
 socket.on('article', function (data) {
-    data.forEach(article => {
+    console.log(data.admin);
+    data.articles.forEach(article => {
         let divArticle = document.createElement('div');
         divArticle.id = "article";
         let divtitre_date = document.createElement('div');

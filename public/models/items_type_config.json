@@ -1,2 +1,8 @@
 {
+    "nom": {
+        "stacklimit": "1-9 999 999 INT"
+    },
+    "Truc": {
+        "stacklimit": 9999999
+    }
 }

@@ -1,0 +1,26 @@
+{
+    "0": {
+        "name": "Commum",
+        "color": "FFFFFF"
+    },
+    "1": {
+        "name": "Peu Commun",
+        "color": "ADADAD"
+    },
+    "2": {
+        "name": "Rare",
+        "color": "548C2F"
+    },
+    "3": {
+        "name": "Trés Rare",
+        "color": "83C9F4"
+    },
+    "4": {
+        "name": "Légendaire",
+        "color": "772D8B"
+    },
+    "5": {
+        "name": "Unique",
+        "color": "FFC60A"
+    }
+}

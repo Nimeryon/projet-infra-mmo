@@ -62,7 +62,7 @@ const mongojs = require('mongojs');
 const db = mongojs(`mongodb+srv://${config.pseudo}:${config.mdp}@mmo-project-anpkb.mongodb.net/mmo-project?retryWrites=true&w=majority`, ['account', 'blog']);
 
 // Modification de la variable inGame de tous les joueurs à false lors du démarrage du serveur histoire de ne pas bloquer l'accès aux joueurs
-function setIngameFalse() {
+function setIngameFalse(token) {
     db.account.updateOne({ token: token }, { $set: { inGame: false } }, function (err, res) {
         if (err) console.log(err);
     });
@@ -122,6 +122,10 @@ app.route('/validate_account')
 
 app.route('/')
     .get(function (req, res) {
+        const { token } = req.session;
+        if (token) {
+            setIngameFalse(token);
+        }
         res.sendFile(__dirname + '/public/index.hmtl');
     });
 
@@ -153,7 +157,6 @@ app.route('/create_article')
     .get(function (req, res) {
         const { token } = req.session;
         if (token) {
-            setIngameFalse();
             db.account.findOne({ token: token, admin: true }, function (err, data) {
                 if (err) console.log(err);
 
@@ -224,7 +227,7 @@ app.route('/profil')
     .get(function (req, res) {
         const { token } = req.session;
         if (token) {
-            setIngameFalse();
+            setIngameFalse(token);
             res.sendFile(__dirname + '/public/profil.html');
         }
         else {
@@ -1123,7 +1126,23 @@ io.on('connection', function (socket) {
             if (err) console.log(err);
 
             if (data) {
-                socket.emit('article', data);
+                const { token } = socket.request.session;
+                db.account.findOne({ token: token, admin: true }, function (err, data1) {
+                    if (err) console.log(err);
+
+                    if (data1) {
+                        socket.emit('article', {
+                            articles: data,
+                            admin: true
+                        });
+                    }
+                    else {
+                        socket.emit('article', {
+                            articles: data,
+                            admin: false
+                        });
+                    }
+                });
             }
         });
     });
