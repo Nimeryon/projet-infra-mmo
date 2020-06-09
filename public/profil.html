@@ -20,7 +20,7 @@
     <script src="scripts/profil.js"></script>
 </head>
 
-<body onload="get();">
+<body onload="get(); getProfilData();">
     <header>
         <nav>
             <ul id="link"></ul>
@@ -28,12 +28,12 @@
     </header>
     <div id="bloc">
         <div id="upper-div">
-            <div id="gauche">
+            <!-- <div id="gauche">
                 <div id="bloc-image">
                     <img id="avatar">
                     <button id="change-avatar" onclick="">Changer d'avatar</button>
                 </div>
-            </div>
+            </div> -->
             <div id="droite">
                 <div id="username">
                     <span class="title">Nom d'utilisateur</span>
@@ -83,10 +83,11 @@
             </div>
         </div>
         <div id="button">
-            <button id="delete-account">Supprimer mon compte</button>
-            <div id="center">
+            <button id="delete-account" onclick="deleteAccount();">Supprimer mon compte</button>
+            <!-- <div id="center"></div>
                 <button class="validate">Retour accueil</button>
-            </div>
+            </div> -->
+            <button class="validate" onclick="window.location = '/';">Retour accueil</button>
         </div>
     </div>
 </body>

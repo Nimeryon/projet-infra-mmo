@@ -277,6 +277,94 @@ app.route('/newusername')
         }
     });
 
+app.route('/newmail')
+    .post(function (req, res) {
+        const { token } = req.session;
+        const { mail, password } = req.body;
+        if (token) {
+            db.account.findOne({ token: token, password: password }, function (err, data) {
+                if (err) console.log(err);
+
+                if (data) {
+                    db.account.findOne({ email: mail }, function (err, data) {
+                        if (err) console.log(err);
+
+                        if (data) {
+                            res.send({
+                                error: "Cet email est déjà utilisé"
+                            });
+                        }
+                        else {
+                            db.account.updateOne({ token: token, password: password }, { $set: { email: mail } }, function (err, data) {
+                                if (err) console.log(err);
+
+                                if (data) {
+                                    res.send({
+                                        alert: `Votre email a été changé pour ${mail}`
+                                    });
+                                }
+                                else {
+                                    res.send({
+                                        alert: "Une erreur est survenue, veuillez réessayer plus tard"
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+                else {
+                    res.send({
+                        error: "Le mot de passe saisi est incorrect"
+                    });
+                }
+            });
+        }
+        else {
+            res.send({
+                redirect: "/login"
+            });
+        }
+    });
+
+app.route('/newpassword')
+    .post(function (req, res) {
+        const { token } = req.session;
+        const { newpassword, password } = req.body;
+        if (token) {
+            db.account.findOne({ token: token, password: password }, function (err, data) {
+                if (err) console.log(err);
+
+                if (data) {
+                    db.account.updateOne({ token: token, password: password }, { $set: { password: newpassword } }, function (err, data) {
+                        if (err) console.log(err);
+
+                        if (data) {
+                            res.send({
+                                alert: `Votre mot de passe a bien été changé, vous allez être déconnecté puis redirigé vers la page d'acceuil`,
+                                redirect: '/logout'
+                            });
+                        }
+                        else {
+                            res.send({
+                                alert: "Une erreur est survenue, veuillez réessayer plus tard"
+                            });
+                        }
+                    });
+                }
+                else {
+                    res.send({
+                        error: "Le mot de passe saisi est incorrect"
+                    });
+                }
+            });
+        }
+        else {
+            res.send({
+                redirect: "/login"
+            });
+        }
+    });
+
 app.route('/login')
     .get(function (req, res) {
         const { token } = req.session;
@@ -390,12 +478,13 @@ serveur.listen(process.env.PORT || 3000, function () {
 var socket_list = [];
 var player_list = [];
 var bullet_list = [];
+var monster_list = [];
 var maps = require('./public/models/maps.json');
 var items = require('./public/models/items.json');
 var items_type_config = require('./public/models/items_type_config.json');
 var scale = 3;
 var tile_size = 32;
-var server_frameRate = 25;
+var server_frameRate = 20;
 
 class Entity {
     constructor(id, parent_id, x, y, size, map, speed) {
@@ -740,6 +829,23 @@ class Bullet extends Entity {
     }
 
     live() {
+        for (let i in monster_list) {
+            if (monster_list[i].id != this.parent_id && this.map == monster_list[i].map) {
+                if (!monster_list[this.parent_id] && this.testBoundsCollisions(monster_list[i].bounds)) {
+                    if (monster_list[i].hp > 1) {
+                        monster_list[i].hp--;
+                    }
+                    else {
+                        monster_list[i].die();
+                        if (player_list[this.parent_id]) {
+                            player_list[this.parent_id].score++;
+                        }
+                    }
+                    return this.die();
+                }
+            }
+        }
+
         for (let i in player_list) {
             if (player_list[i].id != this.parent_id && this.map == player_list[i].map) {
                 if (this.testBoundsCollisions(player_list[i].bounds)) {
@@ -751,18 +857,20 @@ class Bullet extends Entity {
                         player_list[i].hp = player_list[i].maxHP;
                         player_list[i].x = maps[player_list[i].map].spawnPoint.x;
                         player_list[i].y = maps[player_list[i].map].spawnPoint.y;
-                        player_list[this.parent_id].score++;
+                        if (player_list[this.parent_id]) {
+                            player_list[this.parent_id].score += 10;
+                        }
                     }
-                    this.die();
+                    return this.die();
                 }
             }
         }
 
         if (this.timer++ < this.timeToDie / server_frameRate) {
-            this.update();
+            return this.update();
         }
         else {
-            this.die();
+            return this.die();
         }
     }
 
@@ -771,6 +879,114 @@ class Bullet extends Entity {
             this.onDie();
         }
         delete bullet_list[this.id];
+    }
+}
+
+class Monster extends Entity {
+    constructor(id, parent_id, x, y, size, angle, map, speed, hp, onDie = null) {
+        // Hérite de la classe Entity
+        super(id, parent_id, x, y, size, map, speed);
+
+        this.hp = hp;
+        this.onDie = onDie;
+
+        this.focus = null;
+
+        this.angle = angle;
+        this.speed = speed;
+
+        this.moving = false;
+
+        this.timeBtwAttack = 100;
+        this.timer = 0;
+        this.canShoot = true;
+
+        this.spdX = Math.cos(this.angle / 180 * Math.PI) * this.speed;
+        this.spdY = Math.sin(this.angle / 180 * Math.PI) * this.speed;
+
+        this.direction = (-this.angle < 45 || -this.angle >= 315) ? 2 : (-this.angle < 135 && -this.angle >= 45) ? 3 : (-this.angle < 225 && -this.angle >= 135) ? 1 : (-this.angle < 315 && -this.angle >= 225) ? 0 : null;
+    }
+
+    live() {
+        if (this.focus == null) {
+            for (let i in player_list) {
+                if (this.map == player_list[i].map) {
+                    if (this.getDistance({ x: player_list[i].x, y: player_list[i].y }) < 300) {
+                        this.focus = player_list[i];
+                        break;
+                    }
+                }
+            }
+            if (Math.floor(Math.random() * 25) == 0) {
+                this.angle = -Math.floor(Math.random() * 360);
+
+                this.spdX = Math.cos(this.angle / 180 * Math.PI) * this.speed;
+                this.spdY = Math.sin(this.angle / 180 * Math.PI) * this.speed;
+            }
+        }
+        else {
+            if (this.getDistance({ x: this.focus.x, y: this.focus.y }) > 300 || !player_list[this.focus.id]) {
+                this.focus = null;
+            }
+            else if (this.getDistance({ x: this.focus.x, y: this.focus.y }) > 50) {
+                let x = -this.focus.x + this.x;
+                let y = -this.focus.y + this.y;
+
+                this.angle = (Math.atan2(y, x) / Math.PI * 180) - 180;
+
+                this.spdX = Math.cos(this.angle / 180 * Math.PI) * this.speed;
+                this.spdY = Math.sin(this.angle / 180 * Math.PI) * this.speed;
+            }
+            else {
+                this.spdX = 0;
+                this.spdY = 0;
+            }
+
+            if (this.canShoot) {
+                this.canShoot = false;
+                this.shoot();
+            }
+
+            if (this.canShoot == false && this.timer++ > this.timeBtwAttack / server_frameRate) {
+                this.canShoot = true;
+                this.timer = 0;
+            }
+        }
+
+        this.direction = (-this.angle < 45 || -this.angle >= 315) ? 2 : (-this.angle < 135 && -this.angle >= 45) ? 3 : (-this.angle < 225 && -this.angle >= 135) ? 1 : (-this.angle < 315 && -this.angle >= 225) ? 0 : null;
+        this.update();
+
+        if (this.spdX == 0 && this.spdY == 0) {
+            this.moving = false;
+        }
+        else {
+            this.moving = true;
+        }
+    }
+
+    shoot() {
+        let bullet_id = Math.random();
+        bullet_list[bullet_id] = new Bullet(bullet_id, this.id, this.x, this.y, 500 - Math.floor(Math.random() * 100), { minX: 3, minY: 3, maxX: 3, maxY: 3 }, this.angle, this.map, this.speed * 2);
+    }
+
+    die() {
+        let count = 0;
+        for (let i in monster_list) {
+            if (monster_list[i].map == this.map) {
+                count++
+            }
+        }
+        if (count < 50) {
+            let monster_id = Math.random();
+            monster_list[monster_id] = new Monster(monster_id, null, Math.floor(Math.random() * 500), Math.floor(Math.random() * 500), { minX: 20, minY: 0, maxX: 20, maxY: 46 }, Math.floor(Math.random() * 360), this.map, 10, 1, null);
+            monster_id = Math.random();
+            monster_list[monster_id] = new Monster(monster_id, null, Math.floor(Math.random() * 500), Math.floor(Math.random() * 500), { minX: 20, minY: 0, maxX: 20, maxY: 46 }, Math.floor(Math.random() * 360), this.map, 10, 1, null);
+        }
+
+        if (this.onDie != null) {
+            this.onDie();
+        }
+        delete monster_list[this.id];
     }
 }
 
@@ -911,12 +1127,39 @@ io.on('connection', function (socket) {
         });
     });
 
-    socket.on('getNav', function () {
+    socket.on('deleteAccount', function () {
         const { token } = socket.request.session;
         db.account.findOne({ token: token }, function (err, data) {
             if (err) console.log(err);
-            if (token) {
-                socket.emit('nav', [
+        });
+        socket.emit('redirect', "/");
+    });
+
+    socket.on('getProfilData', function () {
+        const { token } = socket.request.session;
+        db.account.findOne({ token: token }, function (err, data) {
+            if (err) console.log(err);
+
+            if (data) {
+                socket.emit('profilData', {
+                    mail: data.email,
+                    username: data.username
+                });
+            }
+            else {
+                socket.emit('alert', "Vous devez être connecté pour pouvoir voir votre profil");
+                socket.emit('redirect', "/login");
+            }
+        });
+    });
+
+    socket.on('getNav', function () {
+        const { token } = socket.request.session;
+        db.account.findOne({ token: token, admin: true }, function (err, data) {
+            if (err) console.log(err);
+
+            if (data) {
+                return socket.emit('nav', [
                     [
                         "/",
                         "Accueil"
@@ -926,6 +1169,10 @@ io.on('connection', function (socket) {
                         data.username
                     ],
                     [
+                        "/create_article",
+                        "Article"
+                    ],
+                    [
                         "/logout",
                         "Déconnexion"
                     ]
@@ -933,23 +1180,45 @@ io.on('connection', function (socket) {
                 );
             }
             else {
-                socket.emit('nav', [
-                    [
-                        "/login",
-                        "Connexion"
-                    ],
-                    [
-                        "/",
-                        "Accueil"
-                    ],
-                    [
-                        "/signin",
-                        "Inscription"
-                    ]
-                ]
-                );
+                db.account.findOne({ token: token }, function (err, data) {
+                    if (err) console.log(err);
+                    if (token) {
+                        return socket.emit('nav', [
+                            [
+                                "/",
+                                "Accueil"
+                            ],
+                            [
+                                "/profil",
+                                data.username
+                            ],
+                            [
+                                "/logout",
+                                "Déconnexion"
+                            ]
+                        ]
+                        );
+                    }
+                    else {
+                        return socket.emit('nav', [
+                            [
+                                "/login",
+                                "Connexion"
+                            ],
+                            [
+                                "/",
+                                "Accueil"
+                            ],
+                            [
+                                "/signin",
+                                "Inscription"
+                            ]
+                        ]
+                        );
+                    }
+                });
             }
-        })
+        });
     });
 
     socket.on('getGame', function () {
@@ -1010,6 +1279,8 @@ io.on('connection', function (socket) {
             io.emit('chat message', { id: "Serveur", msg: `${pseudo} vient de se connecter !` });
             let player_map = ["spawn", "spawn1", "spawn2"][Math.floor(Math.random() * 3)];
             player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, { minX: 16, minY: 0, maxX: 16, maxY: 46 }, player_map, 12, base_bodyparts);
+            let monster_id = Math.random();
+            monster_list[monster_id] = new Monster(monster_id, null, Math.floor(Math.random() * 500), Math.floor(Math.random() * 500), { minX: 20, minY: 0, maxX: 20, maxY: 46 }, Math.floor(Math.random() * 360), player_map, 10, 1, null);
             for (let i = 0; i < 8 * 9; i++) {
                 player_list[socket.id].inventory.addItem(Math.floor(Math.random() * 144), Math.floor(Math.random() * 99999));
             }
@@ -1149,7 +1420,8 @@ setInterval(function () {
     var packet = {
         timeStamp: Date.now(),
         players: [],
-        bullets: []
+        bullets: [],
+        monsters: []
     };
 
     for (let i in player_list) {
@@ -1180,10 +1452,22 @@ setInterval(function () {
             x: bullet.x,
             y: bullet.y,
             parent_id: bullet.parent_id,
-            spdX: bullet.spdX,
-            spdY: bullet.spdY,
             angle: bullet.angle,
             map: bullet.map
+        });
+    }
+
+    for (let i in monster_list) {
+        let monster = monster_list[i];
+        monster.live();
+        packet.monsters.push({
+            id: monster.id,
+            x: monster.x,
+            y: monster.y,
+            direction: monster.direction,
+            map: monster.map,
+            moving: monster.moving,
+            hp: monster.hp
         });
     }
 

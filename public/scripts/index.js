@@ -33,27 +33,6 @@ app.renderer.plugins.interaction.cursorStyles.default = "url('sprites/ui/cursor.
 
 const loader = new PIXI.Loader();
 // Chargement sprites joueur
-loader.add('player_sprites_01', "sprites/players/spr_player_01.png");
-loader.add('player_sprites_02', "sprites/players/spr_player_02.png");
-loader.add('player_sprites_03', "sprites/players/spr_player_03.png");
-loader.add('player_sprites_04', "sprites/players/spr_player_04.png");
-loader.add('player_sprites_05', "sprites/players/spr_player_05.png");
-loader.add('player_sprites_06', "sprites/players/spr_player_06.png");
-loader.add('player_sprites_07', "sprites/players/spr_player_07.png");
-loader.add('player_sprites_08', "sprites/players/spr_player_08.png");
-loader.add('player_sprites_09', "sprites/players/spr_player_09.png");
-loader.add('player_sprites_10', "sprites/players/spr_player_10.png");
-loader.add('player_sprites_11', "sprites/players/spr_player_11.png");
-loader.add('player_sprites_12', "sprites/players/spr_player_12.png");
-loader.add('player_sprites_13', "sprites/players/spr_player_13.png");
-loader.add('player_sprites_14', "sprites/players/spr_player_14.png");
-loader.add('player_sprites_15', "sprites/players/spr_player_15.png");
-loader.add('player_sprites_16', "sprites/players/spr_player_16.png");
-loader.add('player_sprites_17', "sprites/players/spr_player_17.png");
-loader.add('player_sprites_18', "sprites/players/spr_player_18.png");
-loader.add('player_sprites_19', "sprites/players/spr_player_19.png");
-loader.add('player_sprites_20', "sprites/players/spr_player_20.png");
-loader.add('player_sprite', "sprites/players/player.png");
 // Custom character builder
 // Body
 for (let color = 1; color < 11; color++) {
@@ -117,6 +96,8 @@ loader.add('items_2', "sprites/icons/item_2.png");
 // Chargement particules
 loader.add('particle', "sprites/particles/particle.png");
 loader.add('particle_square', "sprites/particles/particle_square.png");
+// Chargement monstre
+loader.add('monster', "sprites/monsters/monsters.png");
 // Execution
 loader.load((loader, resources) => {
     // Global var
@@ -134,6 +115,7 @@ loader.load((loader, resources) => {
     var canShoot = true;
     var player_list = [];
     var bullet_list = [];
+    var monster_list = [];
     var inventory_slots = [];
     var equipment_slots = [];
     var maps;
@@ -300,7 +282,7 @@ loader.load((loader, resources) => {
 
             this.character_container.x = this.x;
             this.character_container.y = this.y;
-            this.character_container.zIndex = this.y;
+            this.character_container.zIndex = this.y + (this.character_container.getBounds().height / 2);
 
             this.updateHP(hp, this.x, this.y);
             this.updateSprite(moving, direction, playerbodyparts);
@@ -430,7 +412,6 @@ loader.load((loader, resources) => {
             super(id, parent_id, x, y, map);
 
             this.sprite = createSprite(resources.weapon_sprites_02.texture, x, y, 1, angle + 45, { x: scale, y: scale });
-            this.sprite.id = id;
             this.sprite.anchor.set(0.5);
 
             this.emitter = new PIXI.particles.Emitter(
@@ -458,6 +439,102 @@ loader.load((loader, resources) => {
             }
             this.sprite.destroy();
             delete bullet_list[this.id];
+        }
+    }
+
+    class Monster extends Entity {
+        constructor(id, x, y, hp, scale, direction, map) {
+            super(id, null, x, y, map);
+
+            this.createSprite();
+            this.direction = direction;
+            this.sprite = createAnimatedSprite(this.textures[this.direction], x, y, 1, 0, { x: 2, y: 2 }, 0.1, false);
+            this.sprite.anchor.set(0.5);
+            this.shadow = createAnimatedSprite(this.texture_shadow[this.direction], x, y, 1, 0, { x: 2, y: 2 }, 0.1, false);
+            this.shadow.anchor.set(0.5);
+            this.shadow.zIndex = 0;
+
+            this.scale = scale;
+
+            this.hp = hp;
+            this.hp_text = new PIXI.Text(`HP : ${this.hp}`, { fontSize: 14 });
+            this.hp_text.x = this.x - (16 * this.scale / 2);
+            this.hp_text.y = this.y - (24 * this.scale);
+
+            this.moving = false;
+
+            monster_list[id] = this;
+        }
+
+        createSprite() {
+            let monster_textures = generateTextures(resources['monster'].texture, 3, 4, 48, 48, 144 * Math.floor(Math.random() * 14), 0).textures;
+
+            this.textures = [
+                [monster_textures[1], monster_textures[0], monster_textures[1], monster_textures[2]],
+                [monster_textures[4], monster_textures[3], monster_textures[4], monster_textures[5]],
+                [monster_textures[7], monster_textures[6], monster_textures[7], monster_textures[8]],
+                [monster_textures[10], monster_textures[9], monster_textures[10], monster_textures[11]]
+            ];
+
+            let shadow_texture = generateTextures(resources['player_sprite_shadow'].texture, 3, 4, 48, 48).textures;
+            this.texture_shadow = [
+                [shadow_texture[1], shadow_texture[0], shadow_texture[1], shadow_texture[2]],
+                [shadow_texture[7], shadow_texture[6], shadow_texture[7], shadow_texture[8]],
+                [shadow_texture[10], shadow_texture[9], shadow_texture[10], shadow_texture[11]],
+                [shadow_texture[4], shadow_texture[3], shadow_texture[4], shadow_texture[5]]
+            ];
+        }
+
+        update(x, y, hp, direction, moving) {
+            this.x = x;
+            this.y = y;
+
+            this.updateHP(hp, this.x, this.y);
+
+            this.sprite.x = this.x;
+            this.sprite.y = this.y;
+            this.shadow.x = this.x;
+            this.shadow.y = this.y;
+            this.sprite.zIndex = this.y + (this.sprite.getBounds().height / 2);
+
+            if (this.direction != direction) {
+                this.direction = direction;
+                this.sprite.textures = this.textures[this.direction];
+                this.shadow.textures = this.texture_shadow[this.direction];
+            }
+
+            if (moving) {
+                this.moving = true;
+                if (!this.sprite.playing || !this.shadow.playing) {
+                    this.sprite.play();
+                    this.shadow.play();
+                }
+            }
+            else {
+                this.moving = false;
+                if (this.sprite.playing || this.shadow.playing) {
+                    this.sprite.stop();
+                    this.shadow.play();
+                }
+            }
+        }
+
+        updateHP(hp, x, y) {
+            if (this.hp != hp) {
+                this.hp = hp;
+                this.hp_text.text = `HP : ${this.hp}`;
+            }
+
+            this.hp_text.x = x - (16 * this.scale / 2);
+            this.hp_text.y = y - (24 * this.scale);
+            this.hp_text.zIndex = y - (24 * this.scale);
+        }
+
+        die() {
+            this.sprite.destroy();
+            this.shadow.destroy();
+            this.hp_text.destroy();
+            delete monster_list[this.id];
         }
     }
 
@@ -1766,6 +1843,10 @@ loader.load((loader, resources) => {
             bullet_list[i].emitter.destroy();
             bullet_list[i].die(false);
         }
+
+        for (let i in monster_list) {
+            monster_list[i].die();
+        }
     }
 
     function generateCharacter(bodyparts) {
@@ -1994,7 +2075,6 @@ loader.load((loader, resources) => {
             function () {
                 canShoot = true;
             }, null, null);
-        character_generator_layer.hideShow();
         ui_layer.addChild(character_generator_layer.container);
 
         let animate = false;
@@ -2031,7 +2111,6 @@ loader.load((loader, resources) => {
         };
 
         function setTexture(bodyparts_texture) {
-            console.log(bodyparts_texture);
             tail.textures = bodyparts_texture.tail[bodyparts.angle];
             body.textures = bodyparts_texture.body[bodyparts.angle];
             backhair.textures = bodyparts_texture.backhair[bodyparts.angle];
@@ -2898,7 +2977,6 @@ loader.load((loader, resources) => {
                 if (player.map == current_player.map) {
                     if (!player_list[player.id]) {
                         player_list[player.id] = new Player(player.id, null, player.pseudo, player.x, player.y, scale, player.hp, player.maxHP, player.score, player.map, player.bodyparts);
-                        console.log(player_list[player.id].character_container);
                         player_layer.addChild(player_list[player.id].character_container);
                         player_layer.addChild(player_list[player.id].hp_text);
                     }
@@ -2941,7 +3019,7 @@ loader.load((loader, resources) => {
                 }
             }
 
-            // Supprimer les balles supprimé
+            // Supprimer les balles supprimées
             for (let bullet_id in bullet_list) {
                 let find = false;
                 for (let i = 0; i < packet.bullets.length; i++) {
@@ -2951,6 +3029,35 @@ loader.load((loader, resources) => {
                 }
                 if (!find) {
                     bullet_list[bullet_id].die();
+                }
+            }
+
+            // Monster
+            for (var i = 0; i < packet.monsters.length; i++) {
+                let monster = packet.monsters[i];
+                if (monster.map == current_player.map) {
+                    if (!monster_list[monster.id]) {
+                        new Monster(monster.id, monster.x, monster.y, monster.hp, 2, monster.direction, monster.map);
+                        player_layer.addChild(monster_list[monster.id].sprite);
+                        player_layer.addChild(monster_list[monster.id].shadow);
+                        player_layer.addChild(monster_list[monster.id].hp_text);
+                    }
+                    else {
+                        monster_list[monster.id].update(monster.x, monster.y, monster.hp, monster.direction, monster.moving);
+                    }
+                }
+            }
+
+            // Supprimer les monstres supprimées
+            for (let monster_id in monster_list) {
+                let find = false;
+                for (let i = 0; i < packet.monsters.length; i++) {
+                    if (monster_list[monster_id].id == packet.monsters[i].id) {
+                        find = true;
+                    }
+                }
+                if (!find) {
+                    monster_list[monster_id].die();
                 }
             }
 

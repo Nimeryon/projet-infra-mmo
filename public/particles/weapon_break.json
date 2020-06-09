@@ -4,8 +4,8 @@
 		"end": 0
 	},
 	"scale": {
-		"start": 0.1,
-		"end": 0.05,
+		"start": 0.2,
+		"end": 0.1,
 		"minimumScaleMultiplier": 3
 	},
 	"color": {
@@ -36,7 +36,7 @@
 		"max": 0.6
 	},
 	"blendMode": "normal",
-	"frequency": 0.001,
+	"frequency": 0.01,
 	"emitterLifetime": 0.1,
 	"maxParticles": 500,
 	"pos": {

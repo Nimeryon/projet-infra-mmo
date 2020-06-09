@@ -21,7 +21,7 @@
     justify-content: space-between;
 }
 
-#gauche {
+/* #gauche {
     border: 1px solid black;
     padding: 5px;
     width: 29%;
@@ -31,10 +31,10 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-}
+} */
 
 #droite {
-    width: 69%;
+    width: 100%;
 }
 
 #username, #email, #password {
@@ -69,6 +69,7 @@ button {
 
 .validate {
     border: 2px solid rgb(86, 182, 74);
+    width: 100%;
 }
 
 button:hover {
@@ -91,18 +92,25 @@ button:active {
 }
 
 #button {
+    width: 96%;
+    margin-left: auto;
+    margin-right: auto;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     padding-top: 2%;
 }
 
-#center {
+#button .validate {
+    width: 65%;
+}
+
+/* #center {
     width: 70%;
     display: flex;
     flex-direction: row;
     justify-content: center;
-}
+} */
 
 #form-username, #form-mail, #form-password {
     display: none;
@@ -124,4 +132,11 @@ form input {
     margin: 0;
     padding: 0;
     color: red;
+}
+
+.visuel {
+    margin: 1%;
+    padding: 1%;
+    border-bottom: 1px solid black;
+    border-left: 1px solid black;
 }

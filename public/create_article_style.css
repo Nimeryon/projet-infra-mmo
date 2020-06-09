@@ -15,7 +15,6 @@ content {
     display: flex;
     flex-direction: column;
     justify-content: space-around;
-    color: #EDE7D9;
     margin-bottom: 2%;
     border-radius: 2px;
     box-shadow: 1px 1px 2px 1px black;

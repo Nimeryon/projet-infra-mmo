@@ -10,6 +10,10 @@ function getGame() {
     socket.emit('getGame');
 }
 
+function getProfilData() {
+    socket.emit('getProfilData');
+}
+
 function get() {
     getNav();
 }
@@ -34,8 +38,12 @@ socket.on('redirect', function (data) {
     window.location = data;
 });
 
+socket.on('profilData', function (data) {
+    $("#email .visuel").text(data.mail);
+    $("#username .visuel").text(data.username);
+});
+
 socket.on('article', function (data) {
-    console.log(data);
     data.forEach(article => {
         let divArticle = document.createElement('div');
         divArticle.id = "article";
@@ -52,6 +60,6 @@ socket.on('article', function (data) {
         content.id = "article-content";
         content.innerHTML = article.article;
         divArticle.appendChild(content);
-        document.getElementById('article-content').appendChild(divArticle);
+        document.getElementById('articles').appendChild(divArticle);
     });
 });

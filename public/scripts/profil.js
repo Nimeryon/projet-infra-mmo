@@ -68,25 +68,91 @@ function usernameformvalidation() {
             password: SHA256(password)
         },
         function (data, status, jqXHR) {
+            if (data.alert) {
+                alert(data.alert);
+            }
+
             if (data.redirect) {
                 window.location = data.redirect;
             }
-            else if (data.error) {
+
+            if (data.error) {
                 $("#form-username .password").val("");
                 $("#error").text(data.error);
-            }
-            else if (data.alert) {
-                alert(data.alert);
-                window.location.reload();
             }
         }
     );
 }
 
 function mailformvalidation() {
+    let mail = $(".new-mail").val();
+    let password = $("#form-mail .password").val();
 
+    $.post(
+        "/newmail",
+        {
+            mail: mail,
+            password: SHA256(password),
+        },
+        function (data, status, jqXHR) {
+            if (data.alert) {
+                alert(data.alert);
+            }
+
+            if (data.redirect) {
+                window.location = data.redirect;
+            }
+
+            if (data.error) {
+                $("#form-username .password").val("");
+                $("#error").text(data.error);
+            }
+        }
+    );
 }
 
 function passwordformvalidation() {
+    let password = $("#form-password .password").val();
+    let newpassword = $("#form-password .new-password").val();
+    let password_verification = $("#form-password .new-password-2").val();
+    let regexPassword = RegExp("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$");
 
+    if (!regexPassword.test(newpassword)) {
+        $("#form-password").trigger("reset");
+        return $("#error").text("Le mot de passe n'est pas assez sécurisé");
+    } else if (password_verification != newpassword) {
+        $("#form-password").trigger("reset");
+        return $("#error").text("Les mots de passe ne correspondent pas");
+    }
+
+    $.post(
+        "/newpassword",
+        {
+            newpassword: SHA256(newpassword),
+            password: SHA256(password),
+        },
+        function (data, status, jqXHR) {
+            if (data.alert) {
+                alert(data.alert);
+            }
+
+            if (data.redirect) {
+                window.location = data.redirect;
+            }
+
+            if (data.error) {
+                $("#form-username .password").val("");
+                $("#error").text(data.error);
+            }
+        }
+    );
+}
+
+function deleteAccount() {
+    if (confirm("Êtes vous vraiment sûr de vouloir nous quitter ?")) {
+        if (confirm("Vraiment vraiment sûr ?")) {
+            alert("Nous sommes désolés de vous voir partir et espérons vous revoir un jour.");
+            socket.emit('deleteAccount');
+        }
+    }
 }
