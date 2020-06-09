@@ -62,9 +62,11 @@ const mongojs = require('mongojs');
 const db = mongojs(`mongodb+srv://${config.pseudo}:${config.mdp}@mmo-project-anpkb.mongodb.net/mmo-project?retryWrites=true&w=majority`, ['account', 'blog']);
 
 // Modification de la variable inGame de tous les joueurs à false lors du démarrage du serveur histoire de ne pas bloquer l'accès aux joueurs
-db.account.update({}, { $set: { inGame: false } }, function (err, res) {
-    if (err) console.log(err);
-});
+function setIngameFalse() {
+    db.account.updateOne({ token: token }, { $set: { inGame: false } }, function (err, res) {
+        if (err) console.log(err);
+    });
+}
 
 // ==================================================================================================================
 //  ____  ____  ____  _  _  ____  _  _  ____ 
@@ -151,6 +153,7 @@ app.route('/create_article')
     .get(function (req, res) {
         const { token } = req.session;
         if (token) {
+            setIngameFalse();
             db.account.findOne({ token: token, admin: true }, function (err, data) {
                 if (err) console.log(err);
 
@@ -221,6 +224,7 @@ app.route('/profil')
     .get(function (req, res) {
         const { token } = req.session;
         if (token) {
+            setIngameFalse();
             res.sendFile(__dirname + '/public/profil.html');
         }
         else {
@@ -459,9 +463,6 @@ app.route('/logout')
         else {
             res.redirect('/');
         }
-    })
-    .post(function (req, res) {
-
     });
 
 serveur.listen(process.env.PORT || 3000, function () {
