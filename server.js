@@ -992,13 +992,13 @@ class Monster extends Entity {
         if (count < 50) {
             let monster_id = Math.random();
             monster_list[monster_id] = new Monster(monster_id, null,
-                (maps[this.map].width * tile_size * scale - 16) - (Math.floor(Math.random() * maps[this.map].width * tile_size * scale + 16)),
-                (maps[this.map].width * tile_size * scale - 16) - (Math.floor(Math.random() * maps[this.map].height * tile_size * scale + 16)),
+                64 + (Math.floor(Math.random() * (maps[this.map].width * tile_size * scale) - 64)),
+                64 + (Math.floor(Math.random() * (maps[this.map].height * tile_size * scale) - 64)),
                 { minX: 20, minY: 0, maxX: 20, maxY: 46 }, Math.floor(Math.random() * 360), this.map, 10, 1, null);
             monster_id = Math.random();
             monster_list[monster_id] = new Monster(monster_id, null,
-                (maps[this.map].width * tile_size * scale - 16) - (Math.floor(Math.random() * maps[this.map].width * tile_size * scale + 16)),
-                (maps[this.map].width * tile_size * scale - 16) - (Math.floor(Math.random() * maps[this.map].height * tile_size * scale + 16)),
+                64 + (Math.floor(Math.random() * (maps[this.map].width * tile_size * scale) - 64)),
+                64 + (Math.floor(Math.random() * (maps[this.map].height * tile_size * scale) - 64)),
                 { minX: 20, minY: 0, maxX: 20, maxY: 46 }, Math.floor(Math.random() * 360), this.map, 10, 1, null);
         }
 
