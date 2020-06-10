@@ -135,16 +135,18 @@ app.route('/game')
         if (token) {
             db.account.findOne({ token: token }, function (err, data) {
                 if (err) console.log(err);
-                if (data.inGame == true) {
-                    req.session.alert = "Quelqu'un joue déjà sur ce compte";
-                    res.redirect('/');
-                }
-                else {
-                    db.account.updateOne({ token: token }, { $set: { inGame: true } }, function (err, res) {
-                        if (err) console.log(err);
-                    });
-                    res.sendFile(__dirname + '/public/game.html');
-                }
+
+                res.sendFile(__dirname + '/public/game.html');
+                // if (data.inGame == true) {
+                //     req.session.alert = "Quelqu'un joue déjà sur ce compte";
+                //     res.redirect('/');
+                // }
+                // else {
+                //     db.account.updateOne({ token: token }, { $set: { inGame: true } }, function (err, res) {
+                //         if (err) console.log(err);
+                //     });
+                //     res.sendFile(__dirname + '/public/game.html');
+                // }
             });
         }
         else {
@@ -718,7 +720,7 @@ class Player extends Entity {
         this.hp = 10;
         this.score = 0;
 
-        this.inventory = new Inventory(8, 9);
+        this.inventory = new Inventory(8, 9, this.id);
     }
 
     updateSpeed() {
@@ -840,9 +842,12 @@ class Bullet extends Entity {
                         monster_list[i].hp--;
                     }
                     else {
-                        monster_list[i].die();
                         if (player_list[this.parent_id]) {
                             player_list[this.parent_id].score++;
+                            monster_list[i].die(this.parent_id);
+                        }
+                        else {
+                            monster_list[i].die();
                         }
                     }
                     return this.die();
@@ -973,7 +978,11 @@ class Monster extends Entity {
         bullet_list[bullet_id] = new Bullet(bullet_id, this.id, this.x, this.y, 500 - Math.floor(Math.random() * 100), { minX: 3, minY: 3, maxX: 3, maxY: 3 }, this.angle, this.map, this.speed * 2);
     }
 
-    die() {
+    die(playerID = null) {
+        if (playerID) {
+            player_list[playerID].inventory.addItem(Math.floor(Math.random() * 41), 1);
+        }
+
         let count = 0;
         for (let i in monster_list) {
             if (monster_list[i].map == this.map) {
@@ -995,7 +1004,8 @@ class Monster extends Entity {
 }
 
 class Inventory {
-    constructor(sizeX, sizeY) {
+    constructor(sizeX, sizeY, parent_id) {
+        this.parent_id = parent_id;
         this.inventory = [];
         for (let i = 0; i < sizeX * sizeY; i++) {
             this.inventory.push(null);
@@ -1018,6 +1028,7 @@ class Inventory {
                 }
             }
         }
+        this.onChange();
     }
 
     sortPlus() {
@@ -1033,6 +1044,7 @@ class Inventory {
                 }
             }
         }
+        this.onChange();
     }
 
     sortMoins() {
@@ -1048,6 +1060,7 @@ class Inventory {
                 }
             }
         }
+        this.onChange();
     }
 
     getLastfree() {
@@ -1070,7 +1083,7 @@ class Inventory {
 
     getItem(itemID) {
         for (let i = 0; i < this.inventory.length; i++) {
-            if (this.inventory[i][0] == itemID) {
+            if (this.inventory[i] && this.inventory[i][0] == itemID) {
                 return i
             }
         }
@@ -1087,7 +1100,13 @@ class Inventory {
     addItem(itemID, count) {
         let slot = this.getFirstFree();
         if (slot != -1) {
-            this.inventory[slot] = [itemID, count];
+            if (this.getItem(itemID) != -1) {
+                this.inventory[this.getItem(itemID)] = [itemID, count + this.inventory[this.getItem(itemID)][1]];
+            }
+            else {
+                this.inventory[slot] = [itemID, count];
+            }
+            this.onChange();
         }
     }
 
@@ -1099,6 +1118,11 @@ class Inventory {
             }
         }
         [this.inventory[slot], this.inventory[targetSlot]] = [this.inventory[targetSlot], this.inventory[slot]];
+        this.onChange();
+    }
+
+    onChange() {
+        socket_list[this.parent_id].emit('update inventory', this.inventory);
     }
 }
 
@@ -1301,9 +1325,6 @@ io.on('connection', function (socket) {
             player_list[socket.id] = new Player(socket.id, false, pseudo, maps[player_map].spawnPoint.x, maps[player_map].spawnPoint.y, { minX: 16, minY: 0, maxX: 16, maxY: 46 }, player_map, 12, base_bodyparts);
             let monster_id = Math.random();
             monster_list[monster_id] = new Monster(monster_id, null, Math.floor(Math.random() * 500), Math.floor(Math.random() * 500), { minX: 20, minY: 0, maxX: 20, maxY: 46 }, Math.floor(Math.random() * 360), player_map, 10, 1, null);
-            for (let i = 0; i < 8 * 9; i++) {
-                player_list[socket.id].inventory.addItem(Math.floor(Math.random() * 144), Math.floor(Math.random() * 99999));
-            }
             io.emit('nombre users', getPlayerCount());
             socket.emit('init', {
                 id: player_list[socket.id].id,
@@ -1414,7 +1435,6 @@ io.on('connection', function (socket) {
 
                 default: break;
             }
-            socket.emit('update inventory', player_list[socket.id].inventory.inventory);
         });
     });
 

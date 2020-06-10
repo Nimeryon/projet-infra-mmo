@@ -1,9 +1,289 @@
 {
     "0": {
-        "name": "",
-        "type": "",
-        "description": "",
+        "name": "Casque de la mort qui tue",
+        "type": "Truc",
+        "description": "Un casque qui vous tue quand vous le portez",
+        "rarity": 4,
+        "texture": 46
+    },
+    "1": {
+        "name": "Casque de l'Archange Shizarohe",
+        "type": "Truc",
+        "description": "Un casque qui vous portera la malchance éternelle",
+        "rarity": 4,
+        "texture": 38
+    },
+    "2": {
+        "name": "Champignon magique",
+        "type": "Truc",
+        "description": "Champignon hallucinogène qui vous provoquera des nausés de femme\nenceinte",
+        "rarity": 2,
+        "texture": 59
+    },
+    "3": {
+        "name": "Pierre de l'infini",
+        "type": "Truc",
+        "description": "Caillou magique selon Thanos",
+        "rarity": 0,
+        "texture": 60
+    },
+    "4": {
+        "name": "Thé à la menthe",
+        "type": "Truc",
+        "description": "Certains diront que c'est du thé",
+        "rarity": 1,
+        "texture": 68
+    },
+    "5": {
+        "name": "Choixpeau",
+        "type": "Truc",
+        "description": "Chapeau magique qui à bu trop de thé à la menthe",
+        "rarity": 3,
+        "texture": 124
+    },
+    "6": {
+        "name": "Gants du cleptomane",
+        "type": "Truc",
+        "description": "Ces gants ne vous donneront aucunes facultés",
+        "rarity": 3,
+        "texture": 132
+    },
+    "7": {
+        "name": "Sereingue usagé",
+        "type": "Truc",
+        "description": "Sereingue qui vous donnera une dose de facultés d'héro",
+        "rarity": 4,
+        "texture": 11
+    },
+    "8": {
+        "name": "Verre de vin",
+        "type": "Truc",
+        "description": "Le verre de Jesus",
+        "rarity": 4,
+        "texture": 143
+    },
+    "9": {
+        "name": "Capuche de Shizarohe",
+        "type": "Truc",
+        "description": "Shizarohe croit que cette capuche confère des pouvoirs magiques\nà son utilisateur",
+        "rarity": 3,
+        "texture": 127
+    },
+    "10": {
+        "name": "Couteau d'Alibaba",
+        "type": "Truc",
+        "description": "Couteau du roi des voleurs",
+        "rarity": 3,
+        "texture": 75
+    },
+    "11": {
+        "name": "Pomme verte",
+        "type": "Truc",
+        "description": "Une pomme, c'est tout",
         "rarity": "0-5 INT",
-        "texture": "0-143 INT"
+        "texture": 136
+    },
+    "12": {
+      "name": "Épée en fer",
+      "type": "Truc",
+      "description": "Épée basique qui fait un peu mal mais qu'un peu",
+      "rarity": 2,
+      "texture": 72
+    },
+    "13": {
+      "name": "Épée du chevalier",
+      "type": "Truc",
+      "description": "Cette épée a été forgée par un ancien chevalier et son courage\nvous envahiera pendant le combat",
+      "rarity": 0,
+      "texture": 73
+    },
+    "14": {
+      "name": "Couteau allongé",
+      "type": "Truc",
+      "description": "Ce couteau sert ... ben à rien",
+      "rarity": 1,
+      "texture": 74
+    },
+    "15": {
+      "name": "Poignard d'ali baba",
+      "type": "Truc",
+      "description": "Ce poignard vous aidera à voler les items des autres joueurs",
+      "rarity": 3,
+      "texture": 75
+    },
+    "16": {
+      "name": "Épée d'Alexandre CHEVALIER",
+      "type": "Truc",
+      "description": "Cette épée vous portera malheur si vous tuez un autre joueur et\ncoupera instantanément votre addiction aux écrans",
+      "rarity": 4,
+      "texture": 76
+    },
+    "17": {
+      "name": "Épée d'Alexandre CHEVALIER améliorée",
+      "type": "Truc",
+      "description": "Cette épée vous communiquera dans le tchat que Alexandre\nCHEVALIER vous donnera 1 million d'€ sur votre compte",
+      "rarity": 5,
+      "texture": 77
+    },
+    "18": {
+      "name": "Épée du King",
+      "type": "Truc",
+      "description": "Cette épée vous rendra plus fort pendant 10 secondes",
+      "rarity": 3,
+      "texture": 78
+    },
+    "19": {
+      "name": "Épée de Gryffondor",
+      "type": "Truc",
+      "description": "Cette épée vous rendra invincible et tout puissant pendant\n30 secondes",
+      "rarity": 5,
+      "texture": 79
+    },
+    "20": {
+      "name": "Lance du paysan",
+      "type": "Truc",
+      "description": "Cette lance se casse encore plus vite qu'un téléphone",
+      "rarity": 0,
+      "texture": 80
+    },
+    "21": {
+      "name": "Lance d'un chevalier",
+      "type": "Truc",
+      "description": "Cette lance est plus résistante que la lance du paysan",
+      "rarity": 2,
+      "texture": 81
+    },
+    "22": {
+      "name": "Fourchelangue",
+      "type": "Truc",
+      "description": "Lorsque cette épée est en votre possesion, vous parlez le\nfourchelangue et vous faites équipe avec Drago MALFOY",
+      "rarity": 3,
+      "texture": 82
+    },
+    "23": {
+      "name": "Couteau de cuisine",
+      "type": "Truc",
+      "description": "Vous cuisinez aussi bien que Philippe ETCHEBEST, mais sans les cheveux\net les sourcils",
+      "rarity": 1,
+      "texture": 83
+    },
+    "24": {
+      "name": "Hache de Mincraft",
+      "type": "Truc",
+      "description": "Vous craftez des tables de craft avec des arbres",
+      "rarity": 2,
+      "texture": 84
+    },
+    "25": {
+      "name": "Hache de Valkirie",
+      "type": "Truc",
+      "description": "En prenant cette hache, vous tournez sur vous même",
+      "rarity": 3,
+      "texture": 85
+    },
+    "26": {
+      "name": "Hache du Diable",
+      "type": "Truc",
+      "description": "Vous tuez 3 joueurs à la fois",
+      "rarity": 4,
+      "texture": 86
+    },
+    "27": {
+      "name": "Hache du bourreau",
+      "type": "Truc",
+      "description": "Vous coupez la tête au joueur le plus proche",
+      "rarity": 3,
+      "texture": 87
+    },
+    "28": {
+      "name": "Arc du noob",
+      "type": "Truc",
+      "description": "Cet arc ira très bien avec votre skill",
+      "rarity": 2,
+      "texture": 88
+    },
+    "29": {
+      "name": "Arc aux dents ",
+      "type": "Truc",
+      "description": "Vous pouvez tuer vos adversaires sans tirer de flèches",
+      "rarity": 0,
+      "texture": 89
+    },
+    "30": {
+      "name": "Arc de feu",
+      "type": "Truc",
+      "description": "Vous tirez des flèches en feux",
+      "rarity": 2,
+      "texture": 90
+    },
+    "31": {
+      "name": "Arc tribal",
+      "type": "Truc",
+      "description": "Vous aurez le soutien d'une tribu entière qui se battra pour vous",
+      "rarity": 4,
+      "texture": 91
+    },
+    "32": {
+      "name": "Baton du vieux druide",
+      "type": "Truc",
+      "description": "Ce vieux baton est inutile et fait très peu de dégâts",
+      "rarity": 1,
+      "texture": 92
+    },
+    "33": {
+      "name": "Baton écologique",
+      "type": "Truc",
+      "description": "Ce baton vous rendra plus écologique que Donald TRUMP",
+      "rarity": 2,
+      "texture": 93
+    },
+    "34": {
+      "name": "Baton de la Lune",
+      "type": "Truc",
+      "description": "Invoque la Lune et vous rendra invulnérable pendant 20 secondes",
+      "rarity": 5,
+      "texture": 94
+    },
+    "35": {
+      "name": "Baton terrestre",
+      "type": "Truc",
+      "description": "Provoque un tremblement de terre quand on tape le sol",
+      "rarity": 4,
+      "texture": 95
+    },
+    "36": {
+      "name": "Bouclier en bois",
+      "type": "Truc",
+      "description": "Pas très résistant mais fera l'affaire face à des petits ennemis",
+      "rarity": 1,
+      "texture": 96
+    },
+    "37": {
+      "name": "Bouclier en fer",
+      "type": "Truc",
+      "description": "Plus résistant",
+      "rarity": 2,
+      "texture": 97
+    },
+    "38": {
+      "name": "Bouclier en bronze",
+      "type": "Truc",
+      "description": "Plus robuste et plus lourd",
+      "rarity": 3,
+      "texture": 98
+    },
+    "39": {
+      "name": "Bouclier de Captain AMERICA",
+      "type": "Truc",
+      "description": "Ce bouclier encaissera tout les coups à votre place",
+      "rarity": 5,
+      "texture": 99
+    },
+    "40": {
+      "name": "Potion d'empoisonnement",
+      "type": "Truc",
+      "description": "Réduit la vitesse et la santé pendant 5 secondes",
+      "rarity": 2,
+      "texture": 100
     }
 }

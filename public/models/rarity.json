@@ -5,22 +5,22 @@
     },
     "1": {
         "name": "Peu Commun",
-        "color": "ADADAD"
+        "color": "CCCCCC"
     },
     "2": {
         "name": "Rare",
-        "color": "548C2F"
+        "color": "78C247"
     },
     "3": {
         "name": "Trés Rare",
-        "color": "83C9F4"
+        "color": "67B0F4"
     },
     "4": {
         "name": "Légendaire",
-        "color": "772D8B"
+        "color": "C484D7"
     },
     "5": {
         "name": "Unique",
-        "color": "FFC60A"
+        "color": "FFCF33"
     }
 }

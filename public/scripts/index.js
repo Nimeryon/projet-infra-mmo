@@ -126,6 +126,22 @@ loader.load((loader, resources) => {
             maps = data;
         }
     });
+    var items;
+    $.ajax({
+        async: false,
+        url: "models/items.json",
+        success: function (data) {
+            items = data;
+        }
+    });
+    var rarity;
+    $.ajax({
+        async: false,
+        url: "models/rarity.json",
+        success: function (data) {
+            rarity = data;
+        }
+    });
     var particles_weapon;
     $.ajax({
         async: false,
@@ -142,7 +158,8 @@ loader.load((loader, resources) => {
             particles_walk = data;
         }
     });
-    var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, character_generator_layer, player_particle_layer, bullet_particle_layer, equipment_container, ui_options, mobile_controll_layer, map_layer = null;
+    var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, inventory_details_container, character_generator_layer, player_particle_layer, bullet_particle_layer, equipment_container, ui_options, mobile_controll_layer, map_layer = null;
+    var item_details_view_sprite, item_details_name, item_details_rarity, item_details_description, item_details_count = null;
     var camera = {
         view_x: 0,
         view_y: 0
@@ -539,9 +556,9 @@ loader.load((loader, resources) => {
     }
 
     class Text {
-        constructor(x, y, text, fontSize, anchor = { x: 0.5, y: 0.5 }) {
+        constructor(x, y, text, fontSize, anchor = { x: 0.5, y: 0.5 }, color = 0xFFFFFF) {
             this.text = new PIXI.Text(text, {
-                fill: "white",
+                fill: color,
                 fontFamily: "Verdana",
                 fontSize: fontSize,
                 fontVariant: "small-caps",
@@ -1507,7 +1524,7 @@ loader.load((loader, resources) => {
             this.count_text.y = y;
             this.count_text.anchor.set(1, 0);
             this.count_text.zIndex = 2;
-            this.item = createSprite(item_icons.textures[item], x, y, 1, 0, { x: 2, y: 2 });
+            this.item = createSprite(item_icons.textures[items[String(item)].texture], x, y, 1, 0, { x: 2, y: 2 });
             this.item.zIndex = 1;
             this.item.anchor.set(0.5);
             this.item.interactive = true;
@@ -1652,6 +1669,7 @@ loader.load((loader, resources) => {
             });
             this.item.on('pointerover', function () {
                 instance.parent.bg.texture = instance.parent.textures[2];
+                setItemDetails(instance.item.texture, items[String(instance.itemID)].name, rarity[String(items[String(instance.itemID)].rarity)], items[String(instance.itemID)].description, instance.count);
             });
             this.item.on('pointerout', function () {
                 instance.parent.bg.texture = instance.parent.textures[0];
@@ -1700,9 +1718,9 @@ loader.load((loader, resources) => {
             this.container.buttonMode = true;
             this.container.cursor = "default";
             this.container.zIndex = 1;
-            this.bg = createSprite(textures[0], x, y, 1, 0, { x: 1.5, y: 1.5 });
+            this.bg = createSprite(textures[0], x, y, 1, 0, { x: 1.4, y: 1.4 });
             this.bg.anchor.set(0.5);
-            this.type = createSprite(ui_inventory_icons.textures[type], x, y, 1, 0, { x: 1.3, y: 1.3 });
+            this.type = createSprite(ui_inventory_icons.textures[type], x, y, 1, 0, { x: 1.2, y: 1.2 });
             this.type.anchor.set(0.5);
             this.container.addChild(this.bg);
             this.container.addChild(this.type);
@@ -2629,6 +2647,7 @@ loader.load((loader, resources) => {
                 if (!ui_inventory.hide) {
                     ui_inventory.hideShow();
                 }
+                setItemDetails(null, "", "", "", "");
                 ui_options.hideShow();
             }
         );
@@ -2660,6 +2679,7 @@ loader.load((loader, resources) => {
                 if (!ui_options.hide) {
                     ui_options.hideShow();
                 }
+                setItemDetails(null, "", "", "", "");
                 ui_inventory.hideShow();
             }
         );
@@ -2733,7 +2753,7 @@ loader.load((loader, resources) => {
 
     function createInventory() {
         let inventory_slots_index = 0;
-        ui_inventory = new UIContainer(app.screen.width / 2, app.screen.height / 2, 20, 16, 1,
+        ui_inventory = new UIContainer(app.screen.width / 2, app.screen.height / 2, 20, 18, 1,
             function () {
                 canShoot = false;
             },
@@ -2776,7 +2796,7 @@ loader.load((loader, resources) => {
                                 inventory_container.addChild(inventory_slots[inventory_slots_index].container);
                                 break;
 
-                            case height:
+                            case height - 1:
                                 inventory_slots[inventory_slots_index] = new InventorySlot(38 * x, 38 * y, [ui_inventory_slots_2.textures[6], ui_inventory_slots_2.textures[15], ui_inventory_slots_2.textures[24]]);
                                 inventory_container.addChild(inventory_slots[inventory_slots_index].container);
                                 break;
@@ -2788,14 +2808,14 @@ loader.load((loader, resources) => {
                         }
                         break;
 
-                    case width:
+                    case width - 1:
                         switch (y) {
                             case 0:
                                 inventory_slots[inventory_slots_index] = new InventorySlot(38 * x, 38 * y, [ui_inventory_slots_2.textures[2], ui_inventory_slots_2.textures[11], ui_inventory_slots_2.textures[20]]);
                                 inventory_container.addChild(inventory_slots[inventory_slots_index].container);
                                 break;
 
-                            case height:
+                            case height - 1:
                                 inventory_slots[inventory_slots_index] = new InventorySlot(38 * x, 38 * y, [ui_inventory_slots_2.textures[8], ui_inventory_slots_2.textures[17], ui_inventory_slots_2.textures[26]]);
                                 inventory_container.addChild(inventory_slots[inventory_slots_index].container);
                                 break;
@@ -2814,7 +2834,7 @@ loader.load((loader, resources) => {
                                 inventory_container.addChild(inventory_slots[inventory_slots_index].container);
                                 break;
 
-                            case height:
+                            case height - 1:
                                 inventory_slots[inventory_slots_index] = new InventorySlot(38 * x, 38 * y, [ui_inventory_slots_2.textures[7], ui_inventory_slots_2.textures[16], ui_inventory_slots_2.textures[25]]);
                                 inventory_container.addChild(inventory_slots[inventory_slots_index].container);
                                 break;
@@ -2829,20 +2849,20 @@ loader.load((loader, resources) => {
                 inventory_slots_index++;
             }
 
-            equipment_container = new UIContainer(8 * 64, 192, 7, 11, 1, null, null, null, null);
+            equipment_container = new UIContainer(8 * 64, 184, 7, 10, 1, null, null, null, null);
             equipment_container.hideShow();
             equipment_container.zIndex = 0;
             ui_inventory.container.addChild(equipment_container.container);
-            let casque = new EquipmentSlot(128 - 16, 64 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 0);
-            let plastron = new EquipmentSlot(128 - 16, 128 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 1);
-            let ceinture = new EquipmentSlot(128 - 16, 192 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 5);
-            let bottes = new EquipmentSlot(128 - 16, 256 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 6);
-            let arme_1 = new EquipmentSlot(96 - 16, 320 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 4);
-            let arme_2 = new EquipmentSlot(160 - 16, 320 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 4);
-            let bouclier = new EquipmentSlot(192 - 16, 128 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 3);
-            let amulette = new EquipmentSlot(64 - 16, 64 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 2);
-            let accessoire_1 = new EquipmentSlot(64 - 16, 192 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 7);
-            let accessoire_2 = new EquipmentSlot(192 - 16, 192 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 7);
+            let casque = new EquipmentSlot(128 - 16, 64 - 24, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 0);
+            let plastron = new EquipmentSlot(128 - 16, 128 - 24 - 4, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 1);
+            let ceinture = new EquipmentSlot(128 - 16, 192 - 24 - 8, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 5);
+            let bottes = new EquipmentSlot(128 - 16, 256 - 24 - 12, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 6);
+            let arme_1 = new EquipmentSlot(96 - 16, 320 - 24 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 4);
+            let arme_2 = new EquipmentSlot(160 - 16, 320 - 24 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 4);
+            let bouclier = new EquipmentSlot(192 - 16, 128 - 24 - 4, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 3);
+            let amulette = new EquipmentSlot(64 - 16, 64 - 24, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 2);
+            let accessoire_1 = new EquipmentSlot(64 - 16, 192 - 24 - 8, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 7);
+            let accessoire_2 = new EquipmentSlot(192 - 16, 192 - 24 - 8, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 7);
             equipment_container.container.addChild(casque.container);
             equipment_container.container.addChild(plastron.container);
             equipment_container.container.addChild(ceinture.container);
@@ -2854,7 +2874,44 @@ loader.load((loader, resources) => {
             equipment_container.container.addChild(accessoire_1.container);
             equipment_container.container.addChild(accessoire_2.container);
         }
+
+        inventory_details_container = new UIContainer(ui_inventory.container.width / 2, (ui_inventory.container.height / 4) * 3 + 32, 19, 6, 1, null, null, null, null);
+        inventory_details_container.hideShow();
+
+        let item_details_view = new UIContainer(38, 38, 2, 2, 1, null, null, null, null);
+        item_details_view.hideShow();
+
+        item_details_view_sprite = createSprite(null, item_details_view.container.width / 2, item_details_view.container.height / 2, 1, 0, { x: 3, y: 3 });
+        item_details_view_sprite.anchor.set(0.5);
+        item_details_view.container.addChild(item_details_view_sprite);
+
+        item_details_name = new Text(80, 24, "", 20, { x: 0, y: 0.5 });
+        item_details_rarity = new Text(80, 48, "", 18, { x: 0, y: 0.5 });
+        item_details_description = new Text(12, 80, "", 16, { x: 0, y: 0 });
+        item_details_count = new Text(inventory_details_container.container.width - 8, inventory_details_container.container.height - 8, "", 16, { x: 1, y: 1 });
+
+        inventory_details_container.container.addChild(item_details_name.text);
+        inventory_details_container.container.addChild(item_details_rarity.text);
+        inventory_details_container.container.addChild(item_details_description.text);
+        inventory_details_container.container.addChild(item_details_count.text);
+        inventory_details_container.container.addChild(item_details_view.container);
+        ui_inventory.container.addChild(inventory_details_container.container);
         ui_layer.addChild(ui_inventory.container);
+    }
+
+    function setItemDetails(texture, name, rarity, description, count) {
+        item_details_view_sprite.texture = texture;
+        item_details_name.text.text = name;
+        item_details_description.text.text = description;
+        item_details_count.text.text = count;
+        if (rarity) {
+            item_details_rarity.text.text = rarity.name;
+            item_details_name.text.style.fill = `0x${rarity.color}`;
+            item_details_rarity.text.style.fill = `0x${rarity.color}`;
+        }
+        else {
+            item_details_rarity.text.text = "";
+        }
     }
 
     function moveView() {
@@ -2948,12 +3005,15 @@ loader.load((loader, resources) => {
         }
 
         socket.on('update inventory', function (inventory) {
-            current_player.inventory = inventory;
-            for (let i = 0; i < inventory_slots.length; i++) {
-                if (inventory_slots[i].item != null) {
-                    inventory_slots[i].deleteItem();
+            console.log(inventory);
+            if (current_player.inventory != inventory) {
+                current_player.inventory = inventory;
+                for (let i = 0; i < inventory_slots.length; i++) {
+                    if (inventory_slots[i].item != null) {
+                        inventory_slots[i].deleteItem();
+                    }
+                    current_player.inventory[i] != null ? inventory_slots[i].addItem(current_player.inventory[i][0], current_player.inventory[i][1]) : null;
                 }
-                current_player.inventory[i] != null ? inventory_slots[i].addItem(current_player.inventory[i][0], current_player.inventory[i][1]) : null;
             }
         });
 
@@ -3139,6 +3199,7 @@ loader.load((loader, resources) => {
                 if (testActiveChat()) {
                     if (!ui_options.hide) {
                         ui_options.hideShow();
+                        setItemDetails(null, "", "", "", "");
                         ui_inventory.hideShow();
                     }
                     else {
@@ -3152,6 +3213,7 @@ loader.load((loader, resources) => {
                 if (testActiveChat()) {
                     if (!ui_inventory.hide) {
                         ui_inventory.hideShow();
+                        setItemDetails(null, "", "", "", "");
                         ui_options.hideShow();
                     }
                     else {
