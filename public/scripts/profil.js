@@ -115,7 +115,7 @@ function passwordformvalidation() {
     let password = $("#form-password .password").val();
     let newpassword = $("#form-password .new-password").val();
     let password_verification = $("#form-password .new-password-2").val();
-    let regexPassword = RegExp("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$");
+    let regexPassword = RegExp("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9]).{6,}$");
 
     if (!regexPassword.test(newpassword)) {
         $("#form-password").trigger("reset");

@@ -1126,11 +1126,21 @@ class Inventory {
             }
         }
         [this.inventory[slot], this.inventory[targetSlot]] = [this.inventory[targetSlot], this.inventory[slot]];
-        this.onChange("sort");
+        this.onChange("move");
     }
 
     onChange(type) {
         socket_list[this.parent_id].emit('update inventory', { inventory: this.inventory, type: type });
+    }
+}
+
+class Exchange {
+    constructor(player1, player2) {
+        this.player1 = player1;
+        this.player2 = player2;
+
+        this.player1_inventory = new Inventory(8, 9, this.player1.id);
+        this.player2_inventroy = new Inventory(8, 9, this.player2.id);
     }
 }
 
@@ -1381,6 +1391,7 @@ io.on('connection', function (socket) {
                             socket.emit('chat message', { id: "Serveur", msg: `Démarrage de l'échange avec ${player_list[player_list[socket.id].askedExchange].pseudo}` });
                             socket_list[player_list[socket.id].askedExchange].emit({ id: "Serveur", msg: `Démarrage de l'échange avec ${player_list[socket.id].pseudo}` });
                             player_list[socket.id].askedExchange = null;
+
                         }
                         else {
                             socket.emit('chat message', { id: "Serveur", msg: "Vous n'avez aucune demande d'échange" });

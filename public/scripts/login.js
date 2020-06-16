@@ -1,5 +1,5 @@
 function signinformvalidation() {
-    let regexPassword = RegExp("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$");
+    let regexPassword = RegExp("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9]).{6,}$");
     let email = $("#email-signin").val();
     let username = $("#username-signin").val();
     let password = $("#password-signin").val();
