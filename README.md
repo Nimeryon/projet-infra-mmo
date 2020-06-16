@@ -1,11 +1,10 @@
 # Project infra mmo
 ## Présentation : 
 Bonjour, voici mon projet de petit mmo, toujours en cours de developpement.
-Pour le moment, seule la partie infrastructure a été travaillé.
 Les fonctionnalités plus avancées comme le gameplay arriveront dans les semaines ou mois à venir.
 Bonne journée à vous ^^
 (WIP)
-Disponible sur https://mmo-project.herokuapp.com/
+Disponible sur https://kingdomofnalleor.herokuapp.com/
 
 ---
 ## Installation pour Ubuntu : 
