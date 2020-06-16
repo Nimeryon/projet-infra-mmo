@@ -80,7 +80,7 @@
         "name": "Pomme verte",
         "type": "Truc",
         "description": "Une pomme, c'est tout",
-        "rarity": "0-5 INT",
+        "rarity": 5,
         "texture": 136
     },
     "12": {

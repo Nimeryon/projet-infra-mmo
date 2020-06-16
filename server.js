@@ -720,6 +720,8 @@ class Player extends Entity {
         this.hp = 10;
         this.score = 0;
 
+        this.askedExchange = null;
+
         this.inventory = new Inventory(8, 9, this.id);
     }
 
@@ -980,7 +982,7 @@ class Monster extends Entity {
 
     die(playerID = null) {
         if (playerID) {
-            player_list[playerID].inventory.addItem(Math.floor(Math.random() * 41), 1);
+            player_list[playerID].inventory.addItem(Math.floor(Math.random() * 41), 1 + Math.floor(Math.random() * 100000));
         }
 
         let count = 0;
@@ -1034,7 +1036,7 @@ class Inventory {
                 }
             }
         }
-        this.onChange();
+        this.onChange("sort");
     }
 
     sortPlus() {
@@ -1050,7 +1052,7 @@ class Inventory {
                 }
             }
         }
-        this.onChange();
+        this.onChange("sort");
     }
 
     sortMoins() {
@@ -1066,7 +1068,7 @@ class Inventory {
                 }
             }
         }
-        this.onChange();
+        this.onChange("sort");
     }
 
     getLastfree() {
@@ -1112,7 +1114,7 @@ class Inventory {
             else {
                 this.inventory[slot] = [itemID, count];
             }
-            this.onChange();
+            this.onChange("add");
         }
     }
 
@@ -1124,11 +1126,11 @@ class Inventory {
             }
         }
         [this.inventory[slot], this.inventory[targetSlot]] = [this.inventory[targetSlot], this.inventory[slot]];
-        this.onChange();
+        this.onChange("sort");
     }
 
-    onChange() {
-        socket_list[this.parent_id].emit('update inventory', this.inventory);
+    onChange(type) {
+        socket_list[this.parent_id].emit('update inventory', { inventory: this.inventory, type: type });
     }
 }
 
@@ -1370,11 +1372,71 @@ io.on('connection', function (socket) {
 
         socket.on('chat message', function (data) {
             if (data[0] == "/") {
+                let msg_target;
                 let command = data.substring(1).split(" ")[0];
                 let args = data.substring(1).split(" ").slice(1);
                 switch (command) {
+                    case "accept":
+                        if (player_list[socket.id].askedExchange) {
+                            socket.emit('chat message', { id: "Serveur", msg: `Démarrage de l'échange avec ${player_list[player_list[socket.id].askedExchange].pseudo}` });
+                            socket_list[player_list[socket.id].askedExchange].emit({ id: "Serveur", msg: `Démarrage de l'échange avec ${player_list[socket.id].pseudo}` });
+                            player_list[socket.id].askedExchange = null;
+                        }
+                        else {
+                            socket.emit('chat message', { id: "Serveur", msg: "Vous n'avez aucune demande d'échange" });
+                        }
+                        break;
+
+                    case "deny":
+                        if (player_list[socket.id].askedExchange) {
+                            socket.emit('chat message', { id: "Serveur", msg: `Échange avec ${player_list[player_list[socket.id].askedExchange].pseudo} refusé` });
+                            socket_list[player_list[socket.id].askedExchange].emit('chat message', { id: "Serveur", msg: `${player_list[socket.id].pseudo} à refusé l'échange` });
+                            player_list[socket.id].askedExchange = null;
+                        }
+                        else {
+                            socket.emit('chat message', { id: "Serveur", msg: "Vous n'avez aucune demande d'échange" });
+                        }
+                        break;
+
+                    case "echange":
+                        msg_target = null;
+                        for (let i in player_list) {
+                            if (player_list[i].pseudo == args[0]) {
+                                msg_target = {
+                                    pseudo: player_list[i].pseudo,
+                                    id: player_list[i].id
+                                }
+                                break;
+                            }
+                        }
+
+                        if (!msg_target) {
+                            msg_target = {
+                                pseudo: null,
+                                id: null
+                            }
+                        }
+
+                        if (player_list[socket.id].pseudo == msg_target.pseudo) {
+                            socket.emit('chat message', { id: "Serveur", msg: `Vous ne pouvez pas échanger avec vous même.` });
+                        }
+                        else if (msg_target && msg_target.id != null) {
+                            if (player_list[msg_target.id].askedExchange) {
+                                socket.emit('chat message', { id: "Serveur", msg: `${msg_target.pseudo} à déjà reçu une demande d'échange` });
+                            }
+                            else {
+                                socket.emit('chat message', { id: "Serveur", msg: `Demande d'échange avec ${msg_target.pseudo}.` });
+                                socket_list[msg_target.id].emit('chat message', { id: "Serveur", msg: `${player_list[socket.id].pseudo} Souhaite échanger avec vous!\n/accept pour confirmer\n/deny pour refuser` });
+                                player_list[msg_target.id].askedExchange = socket.id;
+                            }
+                        }
+                        else {
+                            socket.emit('chat message', { id: "Serveur", msg: "Cet utilisateur n'as pas été trouvé." });
+                        }
+                        break;
+
                     case "msg":
-                        let msg_target = null;
+                        msg_target = null;
                         for (let i in player_list) {
                             if (player_list[i].pseudo == args[0]) {
                                 msg_target = {

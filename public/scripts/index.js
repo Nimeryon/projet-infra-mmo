@@ -1,7 +1,5 @@
 PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 
-var ratio = 1080 / 720;
-
 var app = new PIXI.Application(
     {
         width: 1080,
@@ -116,6 +114,7 @@ loader.load((loader, resources) => {
     var player_list = [];
     var bullet_list = [];
     var monster_list = [];
+    var floating_item_list = [];
     var inventory_slots = [];
     var equipment_slots = [];
     var maps;
@@ -158,7 +157,7 @@ loader.load((loader, resources) => {
             particles_walk = data;
         }
     });
-    var layers, bullet_layer, player_layer, ui_layer, ui_inventory, inventory_container, inventory_details_container, character_generator_layer, player_particle_layer, bullet_particle_layer, equipment_container, ui_options, mobile_controll_layer, map_layer = null;
+    var layers, bullet_layer, player_layer, ui_layer, floating_item_layer, ui_inventory, inventory_container, inventory_details_container, character_generator_layer, player_particle_layer, bullet_particle_layer, equipment_container, ui_options, mobile_controll_layer, map_layer = null;
     var item_details_view_sprite, item_details_name, item_details_rarity, item_details_description, item_details_count = null;
     var camera = {
         view_x: 0,
@@ -484,7 +483,7 @@ loader.load((loader, resources) => {
         }
 
         createSprite() {
-            let monster_textures = generateTextures(resources['monster'].texture, 3, 4, 48, 48, 144 * Math.floor(Math.random() * 14), 0).textures;
+            let monster_textures = generateTextures(resources['monster'].texture, 3, 4, 48, 48, 144 * Math.floor(Math.random() * 28), 0).textures;
 
             this.textures = [
                 [monster_textures[1], monster_textures[0], monster_textures[1], monster_textures[2]],
@@ -556,14 +555,13 @@ loader.load((loader, resources) => {
     }
 
     class Text {
-        constructor(x, y, text, fontSize, anchor = { x: 0.5, y: 0.5 }, color = 0xFFFFFF) {
+        constructor(x, y, text, fontSize, anchor = { x: 0.5, y: 0.5 }, color = 0xFFFFFF, thickness = 3) {
             this.text = new PIXI.Text(text, {
                 fill: color,
                 fontFamily: "Verdana",
                 fontSize: fontSize,
                 fontVariant: "small-caps",
-                lineJoin: "bevel",
-                strokeThickness: 2.5
+                strokeThickness: thickness
             });
             this.text.x = x;
             this.text.y = y;
@@ -1747,6 +1745,287 @@ loader.load((loader, resources) => {
 
     }
 
+    class FloatingItem {
+        constructor(x, y, itemID, count) {
+            this.id = Math.random();
+            this.sprite = createSprite(item_icons.textures[items[String(itemID)].texture], x, y - 20, 1, 0, { x: 1.7, y: 1.7 });
+            this.sprite.anchor.set(0.5);
+            this.text = new Text(x - 12, y - 20, `+${count}`, 20, { x: 1, y: 0.5 }, `0x${rarity[String(items[String(itemID)].rarity)].color}`);
+
+            this.counter = 0;
+
+            floating_item_list[this.id] = this;
+        }
+
+        update(deltaTime) {
+            this.sprite.y -= 1.5 * deltaTime;
+            this.text.text.y -= 1.5 * deltaTime;
+
+            if (this.counter > 40) {
+                this.sprite.alpha -= 0.03;
+                this.text.text.alpha -= 0.03;
+            }
+
+            if (this.counter++ > 70) {
+                this.die();
+            }
+        }
+
+        die() {
+            this.sprite.destroy();
+            this.text.text.destroy();
+            delete floating_item_list[this.id];
+        }
+    }
+
+    class ExchangeWindow {
+        constructor(player1, player2) {
+            var instance = this;
+            if (ui_inventory.hide) {
+                ui_inventory.hideShow();
+            }
+
+            this.container = new UIContainer(app.screen.width / 3, app.screen.height / 2, 21, 16, 1,
+                function () {
+                    canShoot = false;
+                },
+                function () {
+                    canShoot = true;
+                }, null, null);
+            this.container.container.zIndex = 0;
+            this.container.hideShow();
+
+            this.player1_infos = new UIContainer((this.container.container.width / 4) * 3, 50, 10, 2, 1, null, null, null, null);
+            this.player1_infos.hideShow();
+            this.player2_infos = new UIContainer(this.container.container.width / 4, 50, 10, 2, 1, null, null, null, null);
+            this.player2_infos.hideShow();
+            this.container.container.addChild(this.player1_infos.container);
+            this.container.container.addChild(this.player2_infos.container);
+
+            this.view_player_1 = new UIContainer(32, this.player1_infos.container.height / 2, 2, 2, 1, null, null, null, null);
+            this.view_player_1.hideShow();
+            this.pseudo_player1 = new Text(72, this.player1_infos.container.height / 2 - 2, player1, 20, { x: 0, y: 0.5 });
+            this.view_player_2 = new UIContainer(32, this.player2_infos.container.height / 2, 2, 2, 1, null, null, null, null);
+            this.view_player_2.hideShow();
+            this.pseudo_player2 = new Text(72, this.player2_infos.container.height / 2 - 2, player2, 20, { x: 0, y: 0.5 });
+            this.player1_infos.container.addChild(this.view_player_1.container);
+            this.player2_infos.container.addChild(this.view_player_2.container);
+            this.player1_infos.container.addChild(this.pseudo_player1.text);
+            this.player2_infos.container.addChild(this.pseudo_player2.text);
+
+            this.player1_infos_tint = new PIXI.Container();
+            this.player2_infos_tint = new PIXI.Container();
+            this.player1_infos.container.addChild(this.player1_infos_tint);
+            this.player2_infos.container.addChild(this.player2_infos_tint);
+            this.createBackground(10, 2, this.player1_infos_tint);
+            this.createBackground(10, 2, this.player2_infos_tint);
+            this.createBackground(2, 2, this.player1_infos_tint);
+            this.createBackground(2, 2, this.player2_infos_tint);
+
+            this.player1_exchange = new UIContainer((this.container.container.width / 4) * 3, this.container.container.height / 2 + 16, 10, 11, 1, null, null, null, null);
+            this.player1_exchange.hideShow();
+            this.player2_exchange = new UIContainer(this.container.container.width / 4, this.container.container.height / 2 + 16, 10, 11, 1, null, null, null, null);
+            this.player2_exchange.hideShow();
+            this.container.container.addChild(this.player1_exchange.container);
+            this.container.container.addChild(this.player2_exchange.container);
+
+            this.player1_tint = new PIXI.Container();
+            this.player2_tint = new PIXI.Container();
+            this.player1_exchange.container.addChild(this.player1_tint);
+            this.player2_exchange.container.addChild(this.player2_tint);
+            this.createBackground(10, 11, this.player1_tint);
+            this.createBackground(10, 11, this.player2_tint);
+
+            this.inventory_player1 = [];
+            this.inventory_player2 = [];
+            this.setInventory(27, 24, 8, 9, this.player1_exchange.container, this.inventory_player1);
+            this.setInventory(27, 24, 8, 9, this.player2_exchange.container, this.inventory_player2);
+
+            this.validate_button = new Button(this.container.container.width / 4, this.container.container.height - 34, "Valider", 7, null, null, null, function () {
+                instance.validate_player1();
+            });
+            this.cancel_button = new Button((this.container.container.width / 4) * 3, this.container.container.height - 34, "Annuler", 7, null, null, null, null);
+            this.container.container.addChild(this.validate_button.container);
+            this.container.container.addChild(this.cancel_button.container);
+
+            this.player1_validate = false;
+            this.player2_validate = false;
+        }
+
+        validate_player1() {
+            if (this.player1_validate) {
+                this.player1_validate = false;
+                this.player1_infos_tint.filters = [];
+                this.player1_tint.filters = [];
+            }
+            else {
+                this.player1_validate = true;
+                this.player1_infos_tint.filters = [new PIXI.filters.ColorReplaceFilter(0xEF9B13, 0x00FF00, 0.2)];
+                this.player1_tint.filters = [new PIXI.filters.ColorReplaceFilter(0xEF9B13, 0x00FF00, 0.2)];
+            }
+        }
+
+        validate_player2() {
+            if (this.player2_validate) {
+                this.player2_validate = false;
+                this.player2_infos_tint.filters = [];
+                this.player2_tint.filters = [];
+            }
+            else {
+                this.player2_validate = true;
+                this.player2_infos_tint.filters = [new PIXI.filters.ColorReplaceFilter(0xEF9B13, 0x00FF00, 0.2)];
+                this.player2_tint.filters = [new PIXI.filters.ColorReplaceFilter(0xEF9B13, 0x00FF00, 0.2)];
+            }
+        }
+
+        createBackground(width, height, container) {
+            let sprite_mask;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    switch (x) {
+                        case 0:
+                            switch (y) {
+                                case 0:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[3], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    container.addChild(sprite_mask);
+                                    break;
+
+                                case height - 1:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[9], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    container.addChild(sprite_mask);
+                                    break;
+
+                                default:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[6], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    container.addChild(sprite_mask);
+                                    break;
+                            }
+                            break;
+
+                        case width - 1:
+                            switch (y) {
+                                case 0:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[5], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    container.addChild(sprite_mask);
+                                    break;
+
+                                case height - 1:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[11], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    container.addChild(sprite_mask);
+                                    break;
+
+                                default:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[8], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    container.addChild(sprite_mask);
+                                    break;
+                            }
+                            break;
+
+                        default:
+                            switch (y) {
+                                case 0:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[4], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    container.addChild(sprite_mask);
+                                    break;
+
+                                case height - 1:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[10], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    container.addChild(sprite_mask);
+                                    break;
+
+                                default:
+                                    sprite_mask = createSprite(menu_empty_frame_elements.textures[7], 32 * x, 32 * y, 1, 0, { x: 1, y: 1 });
+                                    sprite_mask.zIndex = 11;
+                                    container.addChild(sprite_mask);
+                                    break;
+                            }
+                            break
+                    }
+                }
+            }
+        }
+
+        setInventory(offset_x, offset_y, width, height, container, list) {
+            let inventory_slots_index = 0;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    switch (x) {
+                        case 0:
+                            switch (y) {
+                                case 0:
+                                    list[inventory_slots_index] = new InventorySlot(offset_x + 38 * x, offset_y + 38 * y, [ui_inventory_slots_2.textures[0], ui_inventory_slots_2.textures[9], ui_inventory_slots_2.textures[18]]);
+                                    container.addChild(list[inventory_slots_index].container);
+                                    break;
+
+                                case height - 1:
+                                    list[inventory_slots_index] = new InventorySlot(offset_x + 38 * x, offset_y + 38 * y, [ui_inventory_slots_2.textures[6], ui_inventory_slots_2.textures[15], ui_inventory_slots_2.textures[24]]);
+                                    container.addChild(list[inventory_slots_index].container);
+                                    break;
+
+                                default:
+                                    list[inventory_slots_index] = new InventorySlot(offset_x + 38 * x, offset_y + 38 * y, [ui_inventory_slots_2.textures[3], ui_inventory_slots_2.textures[12], ui_inventory_slots_2.textures[21]]);
+                                    container.addChild(list[inventory_slots_index].container);
+                                    break;
+                            }
+                            break;
+
+                        case width - 1:
+                            switch (y) {
+                                case 0:
+                                    list[inventory_slots_index] = new InventorySlot(offset_x + 38 * x, offset_y + 38 * y, [ui_inventory_slots_2.textures[2], ui_inventory_slots_2.textures[11], ui_inventory_slots_2.textures[20]]);
+                                    container.addChild(list[inventory_slots_index].container);
+                                    break;
+
+                                case height - 1:
+                                    list[inventory_slots_index] = new InventorySlot(offset_x + 38 * x, offset_y + 38 * y, [ui_inventory_slots_2.textures[8], ui_inventory_slots_2.textures[17], ui_inventory_slots_2.textures[26]]);
+                                    container.addChild(list[inventory_slots_index].container);
+                                    break;
+
+                                default:
+                                    list[inventory_slots_index] = new InventorySlot(offset_x + 38 * x, offset_y + 38 * y, [ui_inventory_slots_2.textures[5], ui_inventory_slots_2.textures[14], ui_inventory_slots_2.textures[23]]);
+                                    container.addChild(list[inventory_slots_index].container);
+                                    break;
+                            }
+                            break;
+
+                        default:
+                            switch (y) {
+                                case 0:
+                                    list[inventory_slots_index] = new InventorySlot(offset_x + 38 * x, offset_y + 38 * y, [ui_inventory_slots_2.textures[1], ui_inventory_slots_2.textures[10], ui_inventory_slots_2.textures[19]]);
+                                    container.addChild(list[inventory_slots_index].container);
+                                    break;
+
+                                case height - 1:
+                                    list[inventory_slots_index] = new InventorySlot(offset_x + 38 * x, offset_y + 38 * y, [ui_inventory_slots_2.textures[7], ui_inventory_slots_2.textures[16], ui_inventory_slots_2.textures[25]]);
+                                    container.addChild(list[inventory_slots_index].container);
+                                    break;
+
+                                default:
+                                    list[inventory_slots_index] = new InventorySlot(offset_x + 38 * x, offset_y + 38 * y, [ui_inventory_slots_2.textures[4], ui_inventory_slots_2.textures[13], ui_inventory_slots_2.textures[22]]);
+                                    container.addChild(list[inventory_slots_index].container);
+                                    break;
+                            }
+                            break
+                    }
+                    inventory_slots_index++;
+                }
+            }
+        }
+
+        die() {
+            this.container.container.destroy();
+            delete this;
+        }
+    }
+
     // Function
     function generateTextures(texture, nbr_tile_x, nbr_tile_y, tile_size_x, tile_size_y, offset_x = 0, offset_y = 0) {
         let textures = [];
@@ -2753,24 +3032,25 @@ loader.load((loader, resources) => {
 
     function createInventory() {
         let inventory_slots_index = 0;
-        ui_inventory = new UIContainer(app.screen.width / 2, app.screen.height / 2, 20, 18, 1,
+        ui_inventory = new UIContainer((app.screen.width / 5) * 4 + 32, app.screen.height / 2 + 32, 11, 20, 1,
             function () {
                 canShoot = false;
             },
             function () {
                 canShoot = true;
             }, null, null);
-        let groupButton = new MiniButton(10 * 32 + 24, 34, 3, button_icons.textures[4], null, null, null,
+        ui_inventory.container.zIndex = 1;
+        let groupButton = new MiniButton(10 * 32 + 20, 34, 3, button_icons.textures[4], null, null, null,
             function () {
                 socket.emit('sort inventory', "groupe");
             },
             "Grouper");
-        let sortPlusButton = new MiniButton(10 * 32 + 24, 82, 3, button_icons.textures[12], null, null, null,
+        let sortPlusButton = new MiniButton(10 * 32 + 20, 82, 3, button_icons.textures[12], null, null, null,
             function () {
                 socket.emit('sort inventory', "plus");
             },
             "Trier +");
-        let sortMoinsButton = new MiniButton(10 * 32 + 24, 130, 3, button_icons.textures[13], null, null, null,
+        let sortMoinsButton = new MiniButton(10 * 32 + 20, 130, 3, button_icons.textures[13], null, null, null,
             function () {
                 socket.emit('sort inventory', "moins");
             },
@@ -2781,8 +3061,8 @@ loader.load((loader, resources) => {
         inventory_container = new PIXI.Container();
         inventory_container.sortableChildren = true;
         inventory_container.zIndex = 1;
-        inventory_container.x = 32;
-        inventory_container.y = 32;
+        inventory_container.x = 28;
+        inventory_container.y = 24;
         ui_inventory.container.addChild(inventory_container);
         let width = 8;
         let height = 9;
@@ -2848,34 +3128,34 @@ loader.load((loader, resources) => {
                 }
                 inventory_slots_index++;
             }
-
-            equipment_container = new UIContainer(8 * 64, 184, 7, 10, 1, null, null, null, null);
-            equipment_container.hideShow();
-            equipment_container.zIndex = 0;
-            ui_inventory.container.addChild(equipment_container.container);
-            let casque = new EquipmentSlot(128 - 16, 64 - 24, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 0);
-            let plastron = new EquipmentSlot(128 - 16, 128 - 24 - 4, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 1);
-            let ceinture = new EquipmentSlot(128 - 16, 192 - 24 - 8, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 5);
-            let bottes = new EquipmentSlot(128 - 16, 256 - 24 - 12, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 6);
-            let arme_1 = new EquipmentSlot(96 - 16, 320 - 24 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 4);
-            let arme_2 = new EquipmentSlot(160 - 16, 320 - 24 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 4);
-            let bouclier = new EquipmentSlot(192 - 16, 128 - 24 - 4, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 3);
-            let amulette = new EquipmentSlot(64 - 16, 64 - 24, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 2);
-            let accessoire_1 = new EquipmentSlot(64 - 16, 192 - 24 - 8, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 7);
-            let accessoire_2 = new EquipmentSlot(192 - 16, 192 - 24 - 8, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 7);
-            equipment_container.container.addChild(casque.container);
-            equipment_container.container.addChild(plastron.container);
-            equipment_container.container.addChild(ceinture.container);
-            equipment_container.container.addChild(bottes.container);
-            equipment_container.container.addChild(arme_1.container);
-            equipment_container.container.addChild(arme_2.container);
-            equipment_container.container.addChild(bouclier.container);
-            equipment_container.container.addChild(amulette.container);
-            equipment_container.container.addChild(accessoire_1.container);
-            equipment_container.container.addChild(accessoire_2.container);
         }
 
-        inventory_details_container = new UIContainer(ui_inventory.container.width / 2, (ui_inventory.container.height / 4) * 3 + 32, 19, 6, 1, null, null, null, null);
+        // equipment_container = new UIContainer(8 * 64, 184, 7, 10, 1, null, null, null, null);
+        // equipment_container.hideShow();
+        // equipment_container.zIndex = 0;
+        // ui_inventory.container.addChild(equipment_container.container);
+        // let casque = new EquipmentSlot(128 - 16, 64 - 24, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 0);
+        // let plastron = new EquipmentSlot(128 - 16, 128 - 24 - 4, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 1);
+        // let ceinture = new EquipmentSlot(128 - 16, 192 - 24 - 8, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 5);
+        // let bottes = new EquipmentSlot(128 - 16, 256 - 24 - 12, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 6);
+        // let arme_1 = new EquipmentSlot(96 - 16, 320 - 24 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 4);
+        // let arme_2 = new EquipmentSlot(160 - 16, 320 - 24 - 16, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 4);
+        // let bouclier = new EquipmentSlot(192 - 16, 128 - 24 - 4, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 3);
+        // let amulette = new EquipmentSlot(64 - 16, 64 - 24, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 2);
+        // let accessoire_1 = new EquipmentSlot(64 - 16, 192 - 24 - 8, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 7);
+        // let accessoire_2 = new EquipmentSlot(192 - 16, 192 - 24 - 8, [ui_inventory_slots.textures[0], ui_inventory_slots.textures[7], ui_inventory_slots.textures[14]], 7);
+        // equipment_container.container.addChild(casque.container);
+        // equipment_container.container.addChild(plastron.container);
+        // equipment_container.container.addChild(ceinture.container);
+        // equipment_container.container.addChild(bottes.container);
+        // equipment_container.container.addChild(arme_1.container);
+        // equipment_container.container.addChild(arme_2.container);
+        // equipment_container.container.addChild(bouclier.container);
+        // equipment_container.container.addChild(amulette.container);
+        // equipment_container.container.addChild(accessoire_1.container);
+        // equipment_container.container.addChild(accessoire_2.container);
+
+        inventory_details_container = new UIContainer(ui_inventory.container.width / 2, (ui_inventory.container.height / 4) * 3 + 12, 10, 9, 1, null, null, null, null);
         inventory_details_container.hideShow();
 
         let item_details_view = new UIContainer(38, 38, 2, 2, 1, null, null, null, null);
@@ -2885,10 +3165,10 @@ loader.load((loader, resources) => {
         item_details_view_sprite.anchor.set(0.5);
         item_details_view.container.addChild(item_details_view_sprite);
 
-        item_details_name = new Text(80, 24, "", 20, { x: 0, y: 0.5 });
-        item_details_rarity = new Text(80, 48, "", 18, { x: 0, y: 0.5 });
-        item_details_description = new Text(12, 80, "", 16, { x: 0, y: 0 });
-        item_details_count = new Text(inventory_details_container.container.width - 8, inventory_details_container.container.height - 8, "", 16, { x: 1, y: 1 });
+        item_details_name = new Text(80, 24, "", 14, { x: 0, y: 0.5 }, 0xFFFFFF, 2);
+        item_details_rarity = new Text(80, 48, "", 12, { x: 0, y: 0.5 }, 0xFFFFFF, 2);
+        item_details_description = new Text(12, 80, "", 11, { x: 0, y: 0 }, 0xFFFFFF, 0);
+        item_details_count = new Text(inventory_details_container.container.width - 8, inventory_details_container.container.height - 8, "", 12, { x: 1, y: 1 }, 0xFFFFFF, 1);
 
         inventory_details_container.container.addChild(item_details_name.text);
         inventory_details_container.container.addChild(item_details_rarity.text);
@@ -2982,8 +3262,13 @@ loader.load((loader, resources) => {
         player_particle_layer.zIndex = 3;
         player_particle_layer.sortableChildren = true;
         layers.addChild(player_particle_layer);
+        floating_item_layer = new PIXI.Container();
+        floating_item_layer.sortableChildren = true;
+        floating_item_layer.zIndex = 5;
+        layers.addChild(floating_item_layer);
         ui_layer = new PIXI.Container();
-        ui_layer.zIndex = 5;
+        ui_layer.sortableChildren = true;
+        ui_layer.zIndex = 6;
         layers.addChild(ui_layer);
 
         changeMapLayer(maps[player.map], tileset.textures, scale);
@@ -2992,6 +3277,9 @@ loader.load((loader, resources) => {
         createOptions();
         createInventory();
         createMenuButtons();
+
+        // let test = new ExchangeWindow("Bonjour", "Aurevoir");
+        // ui_layer.addChild(test.container.container);
 
         // Current player
         current_player = player;
@@ -3004,10 +3292,31 @@ loader.load((loader, resources) => {
             current_player.inventory[i] != null ? inventory_slots[i].addItem(current_player.inventory[i][0], current_player.inventory[i][1]) : null;
         }
 
-        socket.on('update inventory', function (inventory) {
-            console.log(inventory);
-            if (current_player.inventory != inventory) {
-                current_player.inventory = inventory;
+        socket.on('update inventory', function (data) {
+            if (current_player.inventory != data.inventory) {
+                if (data.type == "add") {
+                    let old_inventory = current_player.inventory;
+                    let diff = [];
+                    for (let i = 0; i < old_inventory.length; i++) {
+                        if (old_inventory[i] && old_inventory[i] != data.inventory[i]) {
+                            if (data.inventory[i][1] - old_inventory[i][1] != 0) {
+                                diff.push([data.inventory[i][0], data.inventory[i][1] - old_inventory[i][1]]);
+                            }
+                        }
+                        else {
+                            if (data.inventory[i]) {
+                                diff.push([data.inventory[i][0], data.inventory[i][1]]);
+                            }
+                        }
+                    }
+
+                    for (let i = 0; i < diff.length; i++) {
+                        let floating_item = new FloatingItem(current_player.x + (-20 + Math.floor(Math.random() * 40)), current_player.y + (-20 + Math.floor(Math.random() * 40)), diff[i][0], diff[i][1]);
+                        floating_item_layer.addChild(floating_item.sprite);
+                        floating_item_layer.addChild(floating_item.text.text);
+                    }
+                }
+                current_player.inventory = data.inventory;
                 for (let i = 0; i < inventory_slots.length; i++) {
                     if (inventory_slots[i].item != null) {
                         inventory_slots[i].deleteItem();
@@ -3127,6 +3436,10 @@ loader.load((loader, resources) => {
         app.ticker.add(function (deltaTime) {
             for (let i in player_list) {
                 player_list[i].breath(deltaTime);
+            }
+
+            for (let i in floating_item_list) {
+                floating_item_list[i].update(deltaTime);
             }
         });
 
@@ -3281,7 +3594,7 @@ loader.load((loader, resources) => {
 
             var angle = Math.atan2(y, x) / Math.PI * 180;
             socket.emit('input', { key: 'mouseAngle', state: angle });
-        }, 1000 / 15);
+        }, 1000 / 10);
     });
 });
 
