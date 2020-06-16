@@ -6,12 +6,12 @@ Bonne journée à vous ^^
 (WIP)
 Disponible sur https://kingdomofnalleor.herokuapp.com/
 
-Pour faire fonctionner votre propre version, veuillez remplir le fichier config.json.
-Pseudo: identifiant de connexion à votre base de données MongoDB
-Mdp: Mot de passe de votre base de données MondoDB
-Email: Email servant à envoyer les mails de vérification
-Emailmdp: Mot de passe de l'email
-Secret: Clé de criptage pour les variables session sur le serveur
+-Pour faire fonctionner votre propre version, veuillez remplir le fichier config.json.
+>Pseudo: identifiant de connexion à votre base de données MongoDB
+>Mdp: Mot de passe de votre base de données MondoDB
+>Email: Email servant à envoyer les mails de vérification
+>Emailmdp: Mot de passe de l'email
+>Secret: Clé de criptage pour les variables session sur le serveur
 
 ---
 ## Installation pour Ubuntu : 
