@@ -1,0 +1,8 @@
+ancien/
+test/
+package-lock.json
+node_modules/
+.vscode
+.git
+exemple_presentation/
+config.json
