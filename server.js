@@ -59,7 +59,7 @@ function sendMail(email, hash, pseudo) {
 
 // Connexion base de donnée
 const mongojs = require('mongojs');
-const db = mongojs(`mongodb+srv://${config.pseudo}:${config.mdp}@mmo-project-anpkb.mongodb.net/mmo-project?retryWrites=true&w=majority`, ['account', 'blog']);
+const db = mongojs(`mongodb+srv://${config.pseudo}:${config.mdp}@projectmmo.k1qqgbw.mongodb.net/?retryWrites=true&w=majority`, ['account', 'blog']);
 
 // Modification de la variable inGame de tous les joueurs à false lors du démarrage du serveur histoire de ne pas bloquer l'accès aux joueurs
 function setIngameFalse(token) {
@@ -78,7 +78,7 @@ function setIngameFalse(token) {
 var sessionMiddleware = session({
     name: "sid",
     store: new mongoStore({
-        url: `mongodb+srv://${config.pseudo}:${config.mdp}@mmo-project-anpkb.mongodb.net/mmo-project?retryWrites=true&w=majority`
+        url: `mongodb+srv://${config.pseudo}:${config.mdp}@projectmmo.k1qqgbw.mongodb.net/?retryWrites=true&w=majority`
     }),
     secret: config.secret,
     resave: false,
